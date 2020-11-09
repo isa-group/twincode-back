@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>FlockJS - Debug console</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/icon" href="/static/favicon.ico" />
+
+    <link
+      href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.slim.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-socket.io-extended"></script>
+  </head>
+
+  <body class="bg-yellow-100 h-screen font-sans">
+    <div
+      id="app"
+      class="container mx-auto h-full flex justify-center items-center"
+    >
+      <div class="w-1/3">
+        <h1 class="mb-6 text-center font-hairline text-3xl">
+          Debug console
+        </h1>
+        <div
+          class="border-yellow-600 p-8 border-t-8 bg-white mb-6 rounded-lg shadow-lg text-center"
+        >
+          <button
+            class="p-3 bg-pink-600 text-white rounded-lg hover:bg-pink-500 shadow-md"
+            @click="startDebugSession"
+          >
+            Click here to start the debug session
+          </button>
+        </div>
+        <div class="text-center">
+          <p class="text-grey-dark text-sm inline">
+            Universidad de Sevilla
+          </p>
+          <p class="text-grey-dark text-sm inline font-hairline mr-1 ml-1">|</p>
+          <p class="text-grey-dark text-sm inline">
+            University of California, Berkeley
+          </p>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/assets/admin.js"></script>
+  </body>
+</html>

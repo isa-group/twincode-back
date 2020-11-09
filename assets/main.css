@@ -1,0 +1,108 @@
+body {
+    font-family: 'Montserrat', sans-serif;
+}
+
+#text {
+    background: #fff;
+    color: #4f559c;
+}
+
+#editor {
+    position: relative;
+    width: 100%;
+    height: 336px;
+    border: 1px solid lightgray;
+}
+
+#submitBtn {
+    display: inline;
+    margin-left: auto;
+    margin-right: auto;
+    width: 40%;
+    margin-top: 1ex;
+    font-size: 80%;
+}
+
+#controlBtn {
+    display: inline;
+    margin-left: auto;
+    margin-right: auto;
+    width: 40%;
+    margin-top: 1ex;
+    font-size: 80%;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#return {
+    display: none;
+    margin-left: auto;
+    margin-right: auto;
+    width: 80%;
+    text-align: center;
+    border: 1px solid #bbb;
+    margin-top: 2ex;
+    background-color: #eee;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#result {
+    display: none;
+    margin-left: auto;
+    margin-right: auto;
+    width: 80%;
+    text-align: center;
+    margin-top: 2ex;
+}
+
+
+.container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+}
+
+#leftArea {
+    flex-grow: 30;
+}
+
+#separator {
+    flex-grow: 1;
+}
+
+#rightArea {
+    flex-grow: 10;
+    height: 380px;
+    overflow-y: scroll;
+}
+
+#chat {
+    max-width: 20em;
+}
+
+.chat-name {
+    font-size: 70%;
+
+}
+
+.chat-msg {
+    font-size: 60%;
+    line-height: 100%;
+}
+
+.small {
+    min-height: 60px;
+}
+
+.input-msg {
+    font-size: 60%;
+    max-width: 20em;
+}
+
+#help-submit-chat {
+    font-size: 60%;
+    display: none;
+}

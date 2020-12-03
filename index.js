@@ -17,8 +17,8 @@ dbConnect().then(
     const io = socket(server);
     consumer.start(io);
     console.log("Saving io / consumer on server.");
-    app.io = io;
-    app.consumer = consumer;
+    app._io = io;
+    app._consumer = consumer;
     console.log("app.io:"+app.io+", app.comsumer:"+app.consumer);
 
   },

@@ -9,8 +9,8 @@ const User = require("./models/User.js");
 
 var app = express();
 
-var io = null;
-var consumer = null;
+app._io = null;
+app._consumer = null;
 
 app.use(cors());
 app.options("*", cors());
@@ -126,6 +126,9 @@ app.get("/finishMessage", async (req, res) => {
 
 app.get("/s.io/info", async (req, res) => {
   try {
+    io = app._io;
+    consumer = app._consumer;
+    
     if(io && consumer){
 
       var clients = io.sockets.clients();

@@ -15,8 +15,6 @@ var consumer = null;
 app.use(cors());
 app.options("*", cors());
 
-app.use("/static", express.static("static"));
-app.use("/assets", express.static("assets"));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
@@ -30,19 +28,7 @@ app.use(tests);
 app.use(admin);
 
 app.get("/", (req, res) => {
-  res.sendFile("login.html", { root: fileDirectory });
-});
-
-app.get("/finished", (req, res) => {
-  res.sendFile("finish.html", { root: fileDirectory });
-});
-
-app.get("/admin", (req, res) => {
-  res.sendFile("admin.html", { root: fileDirectory });
-});
-
-app.get("/signup", (req, res) => {
-  res.sendFile("signup.html", { root: fileDirectory });
+  res.redirect(process.env.FRONTEND_URL);
 });
 
 app.post("/registerUser", async (req, res) => {

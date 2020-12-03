@@ -334,21 +334,24 @@ module.exports = {
       });
 
       socket.on("updateCode", (pack) => {
-        if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
-          io.to(userToSocketID.get(connectedUsers.get(pack.token))).emit(
-            "refreshCode",
-            pack.data
+        const sessionInMemory = sessions.get(tokens.get(pack.token));
+        if (sessionInMemory != null) {
+          if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
+            io.to(userToSocketID.get(connectedUsers.get(pack.token))).emit(
+              "refreshCode",
+              pack.data
+            );
+          }
+          lastText = pack.data;
+          var uid = uids.get(socket.id);
+          Logger.log(
+            "Code",
+            pack.token,
+            pack.data,
+            sessions.get(tokens.get(pack.token)).session.exerciseCounter,
+            sessions.get(tokens.get(pack.token)).session.testCounter
           );
         }
-        lastText = pack.data;
-        var uid = uids.get(socket.id);
-        Logger.log(
-          "Code",
-          pack.token,
-          pack.data,
-          sessions.get(tokens.get(pack.token)).session.exerciseCounter,
-          sessions.get(tokens.get(pack.token)).session.testCounter
-        );
       });
 
       socket.on("msg", (pack) => {

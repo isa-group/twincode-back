@@ -23,6 +23,7 @@ const fileDirectory = __dirname + "/assets/";
 const auth = require("./routes/auth");
 const tests = require("./routes/tests.js");
 const admin = require("./routes/admin");
+const consumer = require("./consumer.js");
 app.use(auth);
 app.use(tests);
 app.use(admin);
@@ -136,7 +137,7 @@ app.get("/s.io/info", async (req, res) => {
       var clientsJSON = JSON.stringify(clients,null,2);
   
       res.send("<html><body><pre>"+clientsJSON+"</pre></body></html>");
-  
+      
 
     }else{
       res.status(404).send("io: "+io+", consumer: "+consumer);
@@ -147,5 +148,35 @@ app.get("/s.io/info", async (req, res) => {
     res.status(500).send(err);
   }
 });
+
+
+app.get("/s.io/start", async (req, res) => {
+  try {
+    io = app._io;
+    consumer = app._consumer;
+    
+    if(io && consumer){
+
+
+      session = {
+        name: "test",
+        tokenPairing: false
+      }
+   
+      consumer.pairing(session,io);
+
+      res.send("<html><body><pre>"+clientsJSON+"</pre></body></html>");
+      
+
+    }else{
+      res.status(404).send("io: "+io+", consumer: "+consumer);
+
+    }
+
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
 
 module.exports = app;

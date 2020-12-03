@@ -19,7 +19,7 @@ dbConnect().then(
     console.log("Saving io / consumer on server.");
     app._io = io;
     app._consumer = consumer;
-    console.log("app.io:"+app.io+", app.comsumer:"+app.consumer);
+    console.log("app.io:"+app._io+", app.comsumer:"+app._consumer);
 
   },
   (err) => {

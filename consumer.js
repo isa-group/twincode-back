@@ -307,10 +307,10 @@ module.exports = {
           console.log(
             "Faltan " + usersCountSupposedToConnectNotReady + " usuarios..."
           );
-          if (usersCountSupposedToConnectNotReady == 0) {
+          //if (usersCountSupposedToConnectNotReady == 0) {
             console.log("Pairing...");
             await pairing(session, io);
-          }
+          //}
         }
       });
 

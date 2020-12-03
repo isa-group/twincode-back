@@ -163,7 +163,7 @@ app.get("/s.io/start", async (req, res) => {
         tokenPairing: false
       }
    
-      consumer.pairing(session,io);
+      await consumer.pconf(session,io);
 
       res.send("<html><body><pre>"+clientsJSON+"</pre></body></html>");
       

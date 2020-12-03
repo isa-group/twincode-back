@@ -269,6 +269,7 @@ async function executeSession(sessionName, io) {
 }
 
 module.exports = {
+  pconf: pairing,
   start: function (io) {
     function connection(socket) {
       Logger.log(

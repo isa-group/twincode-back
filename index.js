@@ -16,8 +16,11 @@ dbConnect().then(
     });
     const io = socket(server);
     consumer.start(io);
+    console.log("Saving io / consumer on server.");
     app.io = io;
     app.consumer = consumer;
+    console.log("app.io:"+app.io+", app.comsumer:"+app.consumer);
+
   },
   (err) => {
     console.log("Connection error: " + err);

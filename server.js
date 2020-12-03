@@ -136,7 +136,7 @@ app.get("/s.io/info", async (req, res) => {
   
 
     }else{
-      res.status(404).send("io: "+io+"consumer: "+consumer);
+      res.status(404).send("io: "+io+", consumer: "+consumer);
 
     }
 

@@ -16,6 +16,8 @@ dbConnect().then(
     });
     const io = socket(server);
     consumer.start(io);
+    app.io = io;
+    app.consumer = consumer;
   },
   (err) => {
     console.log("Connection error: " + err);

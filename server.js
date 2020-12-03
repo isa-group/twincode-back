@@ -9,6 +9,9 @@ const User = require("./models/User.js");
 
 var app = express();
 
+var io = null;
+var consumer = null;
+
 app.use(cors());
 app.options("*", cors());
 
@@ -132,6 +135,27 @@ app.get("/finishMessage", async (req, res) => {
     }
   } catch (err) {
     res.sendStatus(500);
+  }
+});
+
+app.get("/s.io/info", async (req, res) => {
+  try {
+    if(io && consumer){
+
+      var clients = io.sockets.clients();
+
+      var clientsJSON = JSON.stringify(clients,null,2);
+  
+      res.send("<html><body><pre>"+clientsJSON+"</pre></body></html>");
+  
+
+    }else{
+      res.status(404).send("io: "+io+"consumer: "+consumer);
+
+    }
+
+  } catch (err) {
+    res.status(500).send(err);
   }
 });
 

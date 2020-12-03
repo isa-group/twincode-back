@@ -177,6 +177,7 @@ router.get("/status/:sessionName", async (req, res) => {
     res.send({
       exists: true,
       active: retrievedSession.active,
+      running: retrievedSession.running,
     });
   } else {
     res.send({

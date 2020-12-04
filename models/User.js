@@ -23,6 +23,11 @@ const UserSchema = new Schema({
   currentTest: { type: Number },
 });
 
-UserSchema.index({ code: 1 });
+UserSchema.index(
+  { subject: 1, mail: 1, environment: 1 },
+  {
+    unique: true,
+  }
+);
 
 module.exports = mongoose.model("User", UserSchema);

@@ -168,6 +168,24 @@ router.get("/tests/:sessionName", (req, res) => {
   }
 });
 
+router.get("/status/:sessionName", async (req, res) => {
+  const retrievedSession = await Session.findOne({
+    name: req.params.sessionName,
+    environment: process.env.NODE_ENV,
+  });
+  if (retrievedSession != null) {
+    res.send({
+      exists: true,
+      active: retrievedSession.active,
+      running: retrievedSession.running,
+    });
+  } else {
+    res.send({
+      exists: false,
+    });
+  }
+});
+
 router.get("/sessions/:sessionName/:type", async (req, res) => {
   const adminSecret = req.headers.authorization;
 

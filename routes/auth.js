@@ -39,47 +39,56 @@ router.post("/signup", async (req, res) => {
     environment: process.env.NODE_ENV,
   });
 
-  const bodyResponse = {
-    registrationText:
-      session.registrationText ||
-      "You will receive now an email with the next steps.",
-  };
+  if (session != null && session.active && !session.running) {
+    const bodyResponse = {
+      registrationText:
+        session.registrationText ||
+        "You will receive now an email with the next steps.",
+    };
 
-  try {
-    await newUser.save();
+    try {
+      await newUser.save();
 
-    let transporter = nodemailer.createTransport({
-      host: "mail.us.es",
-      port: 587,
-      requireTLS: true,
-      auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
+      let transporter = nodemailer.createTransport({
+        host: "mail.us.es",
+        port: 587,
+        requireTLS: true,
+        auth: {
+          user: process.env.EMAIL_USERNAME,
+          pass: process.env.EMAIL_PASSWORD,
+        },
+      });
 
-    let info = await transporter.sendMail({
-      from: '"TwinCode Team 👩🏼‍💻👨🏽‍💻" <no-reply@twincode.com>', // sender address
-      to: newUser.mail, // list of receivers
-      subject: "Welcome to TwinCode ✔", // Subject line
-      text: "Welcome to TwinCode", // plain text body
-      html: `
+      let info = await transporter.sendMail({
+        from: '"TwinCode Team 👩🏼‍💻👨🏽‍💻" <no-reply@twincode.com>', // sender address
+        to: newUser.mail, // list of receivers
+        subject: "Welcome to TwinCode ✔", // Subject line
+        text: "Welcome to TwinCode", // plain text body
+        html: `
     <h1>Welcome to TwinCode</h1>
     <br/>
     <p>Your code in order to participate in the session is the following: <b>${code}</b></p>
     <p>Detailed instructions on how to participate in the experiment will be sent in a further email.</p><br/>
     <p>But you can click directly <a href="https://twincode.netlify.app/?code=${code}">here</a> for easy access when the session starts.</p>`, // html body
-    });
+      });
 
-    Logger.monitorLog("Message sent: %s", info.messageId);
-    res.send(bodyResponse);
-  } catch (e) {
-    Logger.monitorLog(e);
-    if (e.name == "ValidationError") {
-      res.sendStatus(400);
-    } else {
-      res.sendStatus(500);
+      Logger.monitorLog("Message sent: %s", info.messageId);
+      res.send(bodyResponse);
+    } catch (e) {
+      Logger.monitorLog(e);
+      if (e.name == "ValidationError") {
+        res.sendStatus(400);
+      } else if (e.code == 11000) {
+        res.status(400).send({
+          code: "DUPLICATE",
+          message: "User already registered on the session.",
+        });
+      } else {
+        res.sendStatus(500);
+      }
     }
+  } else {
+    res.status(404).send("No active session exists");
   }
 });
 

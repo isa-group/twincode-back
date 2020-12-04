@@ -10,6 +10,7 @@ const dbConnect = function () {
   return mongoose.connect(DB_URL, {
     useUnifiedTopology: true,
     useNewUrlParser: true,
+    autoIndex: true,
   });
 };
 

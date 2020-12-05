@@ -24,9 +24,12 @@ const auth = require("./routes/auth");
 const tests = require("./routes/tests.js");
 const admin = require("./routes/admin");
 const consumer = require("./consumer.js");
+const participants = require("./routes/participants");
+
 app.use(auth);
 app.use(tests);
 app.use(admin);
+app.use(participants);
 
 app.get("/", (req, res) => {
   res.redirect(process.env.FRONTEND_URL);

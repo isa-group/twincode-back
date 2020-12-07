@@ -6,6 +6,7 @@ var cors = require("cors");
 const Logger = require("./logger.js");
 const Session = require("./models/Session.js");
 const User = require("./models/User.js");
+const io = require("socket.io");
 
 var app = express();
 
@@ -128,58 +129,49 @@ app.get("/finishMessage", async (req, res) => {
   }
 });
 
+app.get("/connectedUsers", (req, res) => {
+  res.send(Object.keys(app._io.sockets.sockets));
+});
+
 app.get("/s.io/info", async (req, res) => {
   try {
     io = app._io;
     consumer = app._consumer;
-    
-    if(io && consumer){
 
+    if (io && consumer) {
       var clients = io.sockets.clients();
 
-      var clientsJSON = JSON.stringify(clients,null,2);
-  
-      res.send("<html><body><pre>"+clientsJSON+"</pre></body></html>");
-      
+      var clientsJSON = JSON.stringify(clients, null, 2);
 
-    }else{
-      res.status(404).send("io: "+io+", consumer: "+consumer);
-
+      res.send("<html><body><pre>" + clientsJSON + "</pre></body></html>");
+    } else {
+      res.status(404).send("io: " + io + ", consumer: " + consumer);
     }
-
   } catch (err) {
     res.status(500).send(err);
   }
 });
-
 
 app.get("/s.io/start", async (req, res) => {
   try {
     io = app._io;
     consumer = app._consumer;
-    
-    if(io && consumer){
 
-
+    if (io && consumer) {
       session = {
         name: "test",
-        tokenPairing: false
-      }
-   
-      await consumer.pconf(session,io);
+        tokenPairing: false,
+      };
 
-      res.send("<html><body><pre>"+clientsJSON+"</pre></body></html>");
-      
+      await consumer.pconf(session, io);
 
-    }else{
-      res.status(404).send("io: "+io+", consumer: "+consumer);
-
+      res.send("<html><body><pre>" + clientsJSON + "</pre></body></html>");
+    } else {
+      res.status(404).send("io: " + io + ", consumer: " + consumer);
     }
-
   } catch (err) {
     res.status(500).send(err);
   }
 });
-
 
 module.exports = app;

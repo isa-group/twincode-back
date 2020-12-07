@@ -6,6 +6,8 @@ const Logger = require("../logger.js");
 const User = require("../models/User.js");
 const Room = require("../models/Room.js");
 const Session = require("../models/Session.js");
+const app = require("../server.js");
+const consumer = require("../consumer.js");
 
 router.get("/participants/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -17,17 +19,21 @@ router.get("/participants/:sessionName", (req, res) => {
           environment: process.env.NODE_ENV,
           subject: req.params.sessionName,
         },
-        { code: 1, firstName: 1, mail: 1, room: 1, _id: 0 }
+        { code: 1, firstName: 1, mail: 1, room: 1, socketId: 1, _id: 0 }
       )
         .then((users) => {
           if (users.length > 0) {
             let orderedUsers = [];
             users.forEach((user) => {
+              let isConnected = Object.keys(
+                req.app._io.sockets.sockets
+              ).includes(user.socketId);
               orderedUsers.push({
                 code: user.code,
                 firstName: user.firstName,
                 mail: user.mail,
-                room: user.room,
+                room: user.room || "",
+                status: isConnected,
               });
             });
             res.send(orderedUsers);

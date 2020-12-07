@@ -278,6 +278,21 @@ module.exports = {
         "New user with id " + socket.id + " has entered"
       );
 
+      socket.on("adminConnected", (session) => {
+        console.log("Admin watching " + session);
+        socket.join(session);
+      });
+
+      socket.on("clientConnected", async (pack) => {
+        const user = await User.findOne({
+          code: pack,
+          environment: process.env.NODE_ENV,
+        });
+        if (user) {
+          io.to(user.subject).emit("clientConnected", user.code);
+        }
+      });
+
       socket.on("clientReady", async (pack) => {
         const user = await User.findOne({
           code: pack,
@@ -287,7 +302,6 @@ module.exports = {
           name: user.subject,
           environment: process.env.NODE_ENV,
         });
-        console.log(session);
         if (session && session.active) {
           userToSocketID.set(user.code, socket.id);
           user.socketId = socket.id; // TODO: Will be placed outside this function at some point
@@ -464,6 +478,15 @@ module.exports = {
         if (process.env.NODE_ENV === "local") await executeSession("TFM", io);
       });
 
+      socket.on("disconnect", async () => {
+        const user = await User.findOne({
+          socketId: socket.id,
+          environment: process.env.NODE_ENV,
+        });
+        if (user) {
+          io.to(user.subject).emit("clientDisconnected", user.code);
+        }
+      });
       // In case of a failure in the connection.
       io.to(socket.id).emit("reconnect");
     }

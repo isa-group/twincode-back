@@ -284,7 +284,7 @@ router.post("/startSession/:sessionName", async (req, res) => {
 
   if (adminSecret === process.env.ADMIN_SECRET) {
     consumer.startSession(req.params.sessionName, req.app._io);
-    res.send("Session started.");
+    res.send({ msg: "Session started" });
   } else {
     res.sendStatus(401);
   }

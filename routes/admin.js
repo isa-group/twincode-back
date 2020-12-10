@@ -7,6 +7,8 @@ const User = require("../models/User.js");
 const Room = require("../models/Room.js");
 const Session = require("../models/Session.js");
 const Log = require("../models/Log.js");
+const Consumer = require("../consumer.js");
+const consumer = require("../consumer.js");
 
 router.get("/sessions", async (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -272,6 +274,17 @@ router.post("/resetSession", async (req, res) => {
       { multi: true, safe: true }
     );
     res.send(users);
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+router.post("/startSession/:sessionName", async (req, res) => {
+  const adminSecret = req.headers.authorization;
+
+  if (adminSecret === process.env.ADMIN_SECRET) {
+    consumer.startSession(req.params.sessionName, req.app._io);
+    res.send("Session started.");
   } else {
     res.sendStatus(401);
   }

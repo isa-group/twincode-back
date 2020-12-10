@@ -10,6 +10,7 @@ const SessionSchema = new Schema({
   testCounter: { type: Number, default: 0 },
   exerciseCounter: { type: Number, default: -1 },
   running: { type: Boolean, default: false },
+  pairingMode: { type: String, default: "AUTO" },
   registrationText: { type: String },
   finishMessage: { type: String },
 });

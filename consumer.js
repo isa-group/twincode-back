@@ -349,13 +349,22 @@ module.exports = {
             let lastUserJoined = await User.find({
               subject: session.name,
               environment: process.env.NODE_ENV,
+              room: { $exists: true },
             }).sort("-room");
+            console.log(lastUserJoined);
 
-            if (lastUserJoined && lastUserJoined.length < 2) {
-              user.room = lastUserJoined[0].room;
+            if (lastUserJoined.length != 0) {
+              if (lastUserJoined.length < 2) {
+                user.room = lastUserJoined[0].room;
+                connectedUsers.set(user.code, lastUserJoined[0].code);
+                connectedUsers.set(lastUserJoined[0].code, user.code);
+              } else {
+                user.room = lastUserJoined[0].room + 1;
+              }
             } else {
               user.room = 0;
             }
+
             user.save();
           }
         }
@@ -384,6 +393,9 @@ module.exports = {
         const sessionInMemory = sessions.get(tokens.get(pack.token));
         if (sessionInMemory != null) {
           if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
+            console.log(
+              "-----> " + userToSocketID.get(connectedUsers.get(pack.token))
+            );
             io.to(userToSocketID.get(connectedUsers.get(pack.token))).emit(
               "refreshCode",
               pack.data

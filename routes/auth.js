@@ -49,6 +49,9 @@ router.post("/signup", async (req, res) => {
     try {
       await newUser.save();
 
+      console.log("New user saved: "+JSON.stringify(newUser,null,2));
+
+
       let transporter = nodemailer.createTransport({
         host: "mail.us.es",
         port: 587,
@@ -58,6 +61,7 @@ router.post("/signup", async (req, res) => {
           pass: process.env.EMAIL_PASSWORD,
         },
       });
+
 
       let info = await transporter.sendMail({
         from: '"TwinCode Team 👩🏼‍💻👨🏽‍💻" <no-reply@twincode.com>', // sender address
@@ -72,7 +76,7 @@ router.post("/signup", async (req, res) => {
     <p>But you can click directly <a href="https://twincode.netlify.app/?code=${code}">here</a> for easy access when the session starts.</p>`, // html body
       });
 
-      Logger.monitorLog("Message sent: %s", info.messageId);
+      Logger.monitorLog("Message sent: "+ info.messageId);
       res.send(bodyResponse);
     } catch (e) {
       Logger.monitorLog(e);

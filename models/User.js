@@ -22,6 +22,7 @@ const UserSchema = new Schema({
   socketId: { type: String },
   lastExercise: { type: Number },
   currentTest: { type: Number },
+  blind: { type: Boolean}
 });
 
 UserSchema.index(

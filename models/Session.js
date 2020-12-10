@@ -13,6 +13,7 @@ const SessionSchema = new Schema({
   pairingMode: { type: String, default: "AUTO" },
   registrationText: { type: String },
   finishMessage: { type: String },
+  blindParticipant: { type: Boolean, default: false },
 });
 
 SessionSchema.index(

@@ -444,7 +444,10 @@ module.exports = {
         );
       });
 
-      socket.on("registry", (pack) => {
+      socket.on("registry", async (pack) => {
+        
+        console.log("Registry event for: "+socket.id+","+ pack.uid);
+        
         uids.set(socket.id, pack.uid);
 
         var room = new Object();
@@ -490,6 +493,15 @@ module.exports = {
           uid: pack.uid,
           sid: socket.id,
         });
+
+        const user = await User.findOne({
+          socketId: socket.id,
+          environment: process.env.NODE_ENV,
+        });
+
+        console.log("###################################################");
+        console.log("User to enter in room: "+JSON.stringify(user,null,2));
+
         room.session = rooms.set(pack.rid, room);
 
         Logger.log(

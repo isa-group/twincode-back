@@ -4,10 +4,6 @@ const router = express.Router();
 const Test = require("../models/Test.js");
 const Logger = require("../logger.js");
 const User = require("../models/User.js");
-const Room = require("../models/Room.js");
-const Session = require("../models/Session.js");
-const app = require("../server.js");
-const consumer = require("../consumer.js");
 
 router.get("/participants/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -32,7 +28,7 @@ router.get("/participants/:sessionName", (req, res) => {
                 code: user.code,
                 firstName: user.firstName,
                 mail: user.mail,
-                room: user.room || "",
+                room: user.room != undefined ? user.room : "",
                 status: isConnected,
               });
             });

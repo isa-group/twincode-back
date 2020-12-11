@@ -268,8 +268,24 @@ async function executeSession(sessionName, io) {
   }, 1000);
 }
 
+async function notifyParticipants(sessionName, io) {
+  const participants = await User.find({
+    environment: process.env.NODE_ENV,
+    subject: sessionName,
+  });
+
+  for (const participant of participants) {
+    io.to(participant.socketId).emit("sessionStart", {
+      room: sessionName + participant.room,
+    });
+  }
+}
+
 module.exports = {
-  pconf: pairing,
+  startSession: function (sessionName, io) {
+    notifyParticipants(sessionName, io);
+    executeSession(sessionName, io);
+  },
   start: function (io) {
     function connection(socket) {
       Logger.log(
@@ -313,18 +329,43 @@ module.exports = {
             "Client " + user.code + " is ready!"
           );
 
-          let usersCountSupposedToConnectNotReady = await User.countDocuments({
-            subject: session.name,
-            token: { $exists: false },
-            room: { $exists: false },
-            environment: process.env.NODE_ENV,
-          });
-          console.log(
-            "Faltan " + usersCountSupposedToConnectNotReady + " usuarios..."
-          );
-          if (usersCountSupposedToConnectNotReady == 0) {
-            console.log("Pairing...");
-            await pairing(session, io);
+          if (session.pairingMode === "AUTO") {
+            let usersCountSupposedToConnectNotReady = await User.countDocuments(
+              {
+                subject: session.name,
+                token: { $exists: false },
+                room: { $exists: false },
+                environment: process.env.NODE_ENV,
+              }
+            );
+            console.log(
+              "Faltan " + usersCountSupposedToConnectNotReady + " usuarios..."
+            );
+            if (usersCountSupposedToConnectNotReady == 0) {
+              console.log("Pairing...");
+              await pairing(session, io);
+            }
+          } else {
+            let lastUserJoined = await User.find({
+              subject: session.name,
+              environment: process.env.NODE_ENV,
+              room: { $exists: true },
+            }).sort("-room");
+            console.log(lastUserJoined);
+
+            if (lastUserJoined.length != 0) {
+              if (lastUserJoined.length < 2) {
+                user.room = lastUserJoined[0].room;
+                connectedUsers.set(user.code, lastUserJoined[0].code);
+                connectedUsers.set(lastUserJoined[0].code, user.code);
+              } else {
+                user.room = lastUserJoined[0].room + 1;
+              }
+            } else {
+              user.room = 0;
+            }
+
+            user.save();
           }
         }
       });
@@ -352,6 +393,9 @@ module.exports = {
         const sessionInMemory = sessions.get(tokens.get(pack.token));
         if (sessionInMemory != null) {
           if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
+            console.log(
+              "-----> " + userToSocketID.get(connectedUsers.get(pack.token))
+            );
             io.to(userToSocketID.get(connectedUsers.get(pack.token))).emit(
               "refreshCode",
               pack.data

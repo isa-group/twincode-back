@@ -275,9 +275,24 @@ async function notifyParticipants(sessionName, io) {
   });
 
   for (const participant of participants) {
-    io.to(participant.socketId).emit("sessionStart", {
-      room: sessionName + participant.room,
-    });
+    if (connectedUsers.get(participant.code)) {
+      const pair = await User.findOne({
+        environment: process.env.NODE_ENV,
+        subject: sessionName,
+        code: connectedUsers.get(participant.code),
+      });
+
+      console.log(participant.code);
+
+      io.to(participant.socketId).emit("sessionStart", {
+        room: sessionName + participant.room,
+        user: {
+          code: participant.code,
+          blind: participant.blind,
+        },
+        pairedTo: pair.gender,
+      });
+    }
   }
 }
 
@@ -358,6 +373,10 @@ module.exports = {
                 user.room = lastUserJoined[0].room;
                 connectedUsers.set(user.code, lastUserJoined[0].code);
                 connectedUsers.set(lastUserJoined[0].code, user.code);
+
+                if (session.blindParticipant) {
+                  user.blind = true;
+                }
               } else {
                 user.room = lastUserJoined[0].room + 1;
               }
@@ -445,9 +464,8 @@ module.exports = {
       });
 
       socket.on("registry", async (pack) => {
-        
-        console.log("Registry event for: "+socket.id+","+ pack.uid);
-        
+        console.log("Registry event for: " + socket.id + "," + pack.uid);
+
         uids.set(socket.id, pack.uid);
 
         var room = new Object();
@@ -500,7 +518,7 @@ module.exports = {
         });
 
         console.log("###################################################");
-        console.log("User to enter in room: "+JSON.stringify(user,null,2));
+        console.log("User to enter in room: " + JSON.stringify(user, null, 2));
 
         room.session = rooms.set(pack.rid, room);
 

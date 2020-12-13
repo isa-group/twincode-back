@@ -245,6 +245,7 @@ async function executeSession(sessionName, io) {
             maxTime: exercise.time,
             exerciseDescription: exercise.description,
             exerciseType: exercise.type,
+            inputs: exercise.inputs,
           },
         });
         sessions.set(session.name, {

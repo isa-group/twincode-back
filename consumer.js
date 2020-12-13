@@ -245,6 +245,7 @@ async function executeSession(sessionName, io) {
             maxTime: exercise.time,
             exerciseDescription: exercise.description,
             exerciseType: exercise.type,
+            inputs: exercise.inputs,
           },
         });
         sessions.set(session.name, {
@@ -299,7 +300,9 @@ async function notifyParticipants(sessionName, io) {
 module.exports = {
   startSession: function (sessionName, io) {
     notifyParticipants(sessionName, io);
-    executeSession(sessionName, io);
+    setTimeout(() => {
+      executeSession(sessionName, io);
+    }, 5000);
   },
   start: function (io) {
     function connection(socket) {

@@ -85,9 +85,16 @@ router.post("/verify", async (req, res) => {
 
     if (exercise) {
       console.log("Validating exercise " + exercise.description);
-      const solution = exercise.solution;
+      const solutions = exercise.solutions;
 
-      const isCorrect = solution === req.body.solution;
+      let isCorrect = true;
+
+      for (var i = 0; i < solutions.length; i++) {
+        isCorrect =
+          isCorrect &&
+          JSON.stringify(solutions[i]) ===
+            JSON.stringify(req.body.solutions[i]);
+      }
 
       Logger.log(
         "Verify",

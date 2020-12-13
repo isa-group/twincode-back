@@ -270,11 +270,11 @@ router.post("/resetSession", async (req, res) => {
     );
     const users = await User.collection.updateMany(
       { subject: req.body.session, environment: process.env.NODE_ENV },
-      { $unset: { token: true, socketId: true, room: true } },
+      { $unset: { token: true, socketId: true, room: true, blind: true } },
       { multi: true, safe: true }
     );
     res.send(users);
-    console.log("Session "+req.body.session+" reset completed");
+    console.log("Session " + req.body.session + " reset completed");
   } else {
     res.sendStatus(401);
   }
@@ -366,7 +366,6 @@ router.put("/sessions/:sessionName/toggleActivation", (req, res) => {
   }
 });
 
-
 router.put("/sessions/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -377,16 +376,20 @@ router.put("/sessions/:sessionName", (req, res) => {
         name: req.params.sessionName,
       })
         .then((session) => {
-          console.log("Session found in DB: "+JSON.stringify(session,null,2));
+          console.log(
+            "Session found in DB: " + JSON.stringify(session, null, 2)
+          );
 
-          console.log("Session data to be updated: "+JSON.stringify(req.body,null,2));
+          console.log(
+            "Session data to be updated: " + JSON.stringify(req.body, null, 2)
+          );
 
           session.tokens = req.body.tokens;
           session.tokenPairing = req.body.tokenPairing;
           session.blindParticipant = req.body.blindParticipant;
 
-          console.log("Session updated: "+JSON.stringify(session,null,2));          
-          
+          console.log("Session updated: " + JSON.stringify(session, null, 2));
+
           session
             .save()
             .then((ret) => {
@@ -415,7 +418,6 @@ router.put("/sessions/:sessionName", (req, res) => {
     res.sendStatus(401);
   }
 });
-
 
 router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
   const adminSecret = req.headers.authorization;

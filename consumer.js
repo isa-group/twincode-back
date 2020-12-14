@@ -369,19 +369,23 @@ module.exports = {
               environment: process.env.NODE_ENV,
               room: { $exists: true },
             }).sort("-room");
-            console.log(lastUserJoined);
 
             if (lastUserJoined.length != 0) {
-              if (lastUserJoined.length < 2) {
-                user.room = lastUserJoined[0].room;
-                connectedUsers.set(user.code, lastUserJoined[0].code);
-                connectedUsers.set(lastUserJoined[0].code, user.code);
+              let lastUserPairJoined = await User.find({
+                subject: session.name,
+                environment: process.env.NODE_ENV,
+                room: lastUserJoined[0].room,
+              });
+              if (lastUserPairJoined.length < 2) {
+                user.room = lastUserPairJoined[0].room;
+                connectedUsers.set(user.code, lastUserPairJoined[0].code);
+                connectedUsers.set(lastUserPairJoined[0].code, user.code);
 
                 if (session.blindParticipant) {
                   user.blind = true;
                 }
               } else {
-                user.room = lastUserJoined[0].room + 1;
+                user.room = lastUserPairJoined[0].room + 1;
               }
             } else {
               user.room = 0;

@@ -20,6 +20,23 @@ class Logger {
     });
   }
 
+  static dbg(msg, obj) {
+    if(obj)
+      console.log("DEBUG - "+msg+" <"+JSON.stringify(obj)+">");
+    else
+      console.log("DEBUG - "+msg);
+
+  }
+
+  static dbgerr(msg, err) {
+    if(obj)
+      console.log("DEBUG - ERROR - "+msg+" <"+JSON.stringify(err)+">");
+    else
+      console.log("DEBUG - ERROR - "+msg);
+      
+  }
+
+
   static monitorLog(msg) {
     this.log("Monitor", "Server", msg);
   }

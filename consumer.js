@@ -23,6 +23,7 @@ async function wait(ms) {
 
 async function pairing(session, io) {
   console.log("Starting the pairing of", session.name);
+  Logger.dbg("Pairing - Starting the pairing of "+ session.name);
   let usersWaitingForRoom = await User.find({
     subject: session.name,
     token: { $exists: true },
@@ -44,11 +45,17 @@ async function pairing(session, io) {
     // Number of the last room that was assigned
     const numberOfMaxRoom = numberOfMaxRoomArray[0];
 
+    Logger.dbg("Pairing - Number of the last room that was assigned "+ numberOfMaxRoom);
+
     // Update the user (Workaround)
     const user = await User.findById(userTaken.id);
 
+    Logger.dbg("Pairing - User to be updated: ",user);
+
     // If the user is not assigned to a room yet
     if (typeof user.room === "undefined") {
+
+      
       // Take a user to pair with
       const pairedUser = await User.findOne({
         subject: session.name,
@@ -59,6 +66,8 @@ async function pairing(session, io) {
         room: { $exists: false },
         environment: process.env.NODE_ENV,
       });
+
+      Logger.dbg("Pairing - User.room undefined, paired user: ",pairedUser);
 
       if (pairedUser) {
         console.log("We found a great user to pair with!");
@@ -71,6 +80,8 @@ async function pairing(session, io) {
         }
         await user.save();
         await pairedUser.save();
+
+        Logger.dbg("Pairing - Saved ",[user,pairedUser]);
 
         io.to(user.socketId).emit("sessionStart", {
           room: session.name + user.room,
@@ -125,6 +136,9 @@ async function pairing(session, io) {
           console.log(
             "User " + user.socketId + " is paired alone in room " + user.room
           );
+
+          Logger.dbg("Pairing - Finish ",[user,numberOfMaxRoom]);
+
         }
       }
     }
@@ -132,6 +146,7 @@ async function pairing(session, io) {
 
   console.log("Pairing done!");
   setTimeout(function () {
+    Logger.dbg("Pairing - executeSession ",session);
     executeSession(session.name, io);
   }, 5000);
 }
@@ -186,6 +201,7 @@ async function exerciseTimeUp(id, description) {
 
 async function executeSession(sessionName, io) {
   console.log("Starting session...");
+  Logger.dbg("executeSession - Starting "+ sessionName);
   const session = await Session.findOne({
     name: sessionName,
     environment: process.env.NODE_ENV,
@@ -193,6 +209,7 @@ async function executeSession(sessionName, io) {
 
   session.running = true;
   session.save();
+  Logger.dbg("executeSession - Running ",session);
 
   const tests = await Test.find({
     session: session.name,
@@ -306,6 +323,8 @@ module.exports = {
   },
   start: function (io) {
     function connection(socket) {
+      Logger.dbg("CONNECTION "+socket.id);
+
       Logger.log(
         "NewConn",
         socket.id,
@@ -313,11 +332,14 @@ module.exports = {
       );
 
       socket.on("adminConnected", (session) => {
+        Logger.dbg("EVENT adminConnected",session);
         console.log("Admin watching " + session);
         socket.join(session);
       });
 
       socket.on("clientConnected", async (pack) => {
+        Logger.dbg("EVENT clientConnected",pack);
+
         const user = await User.findOne({
           code: pack,
           environment: process.env.NODE_ENV,
@@ -328,10 +350,16 @@ module.exports = {
       });
 
       socket.on("clientReady", async (pack) => {
+        Logger.dbg("EVENT clientReady",pack);
+
         const user = await User.findOne({
           code: pack,
           environment: process.env.NODE_ENV,
         });
+
+
+        Logger.dbg("EVENT clientReady - User Retrival",[pack,user]);
+
         const session = await Session.findOne({
           name: user.subject,
           environment: process.env.NODE_ENV,
@@ -370,12 +398,16 @@ module.exports = {
               room: { $exists: true },
             }).sort("-room");
 
+            Logger.dbg("EVENT clientReady - Manual Pairing",[pack,user,lastUserJoined]);
+
             if (lastUserJoined.length != 0) {
               let lastUserPairJoined = await User.find({
                 subject: session.name,
                 environment: process.env.NODE_ENV,
                 room: lastUserJoined[0].room,
               });
+              Logger.dbg("EVENT clientReady - Length !=0",[user,session]);
+
               if (lastUserPairJoined.length < 2) {
                 user.room = lastUserPairJoined[0].room;
                 connectedUsers.set(user.code, lastUserPairJoined[0].code);
@@ -390,13 +422,14 @@ module.exports = {
             } else {
               user.room = 0;
             }
-
+            Logger.dbg("EVENT clientReady - FINISH",[user,session]);
             user.save();
           }
         }
       });
 
       socket.on("clientReconnection", async (pack) => {
+        Logger.dbg("EVENT clientReconnection",pack);
         const user = await User.findOne({
           code: pack,
           environment: process.env.NODE_ENV,
@@ -412,10 +445,12 @@ module.exports = {
       });
 
       socket.on("cursorActivity", (data) => {
+        Logger.dbg("EVENT cursorActivity");
         io.to(connectedUsers.get(socket.id)).emit("cursorActivity", data);
       });
 
       socket.on("updateCode", (pack) => {
+        Logger.dbg("EVENT updateCode");
         const sessionInMemory = sessions.get(tokens.get(pack.token));
         if (sessionInMemory != null) {
           if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
@@ -440,6 +475,7 @@ module.exports = {
       });
 
       socket.on("msg", (pack) => {
+        Logger.dbg("EVENT msg",pack);
         if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
           io.sockets.emit("msg", pack);
         }
@@ -454,6 +490,7 @@ module.exports = {
       });
 
       socket.on("giveControl", (pack) => {
+        Logger.dbg("EVENT giveControl",pack);
         io.sockets.emit("giveControl", pack);
         var uid = uids.get(socket.id);
         Logger.log(
@@ -471,6 +508,7 @@ module.exports = {
       });
 
       socket.on("registry", async (pack) => {
+        Logger.dbg("EVENT registry",pack);
         console.log("Registry event for: " + socket.id + "," + pack.uid);
 
         uids.set(socket.id, pack.uid);
@@ -544,6 +582,7 @@ module.exports = {
       });
 
       socket.on("nextExercise", async (pack) => {
+        
         io.sockets.emit("nextExercise", {
           uid: pack.uid,
           rid: pack.rid,

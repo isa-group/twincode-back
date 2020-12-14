@@ -37,6 +37,8 @@ app.get("/", (req, res) => {
 });
 
 app.post("/registerUser", async (req, res) => {
+  Logger.dbg("/registerUser",req.body.code);
+
   try {
     const user = await User.findOne({
       code: req.body.code,
@@ -50,17 +52,21 @@ app.post("/registerUser", async (req, res) => {
     if (session && session.tokens.indexOf(req.body.tokenId) > -1) {
       user.token = req.body.tokenId;
       await user.save();
+      Logger.dbg("/registerUser - 200",req.body.code);
       res.sendStatus(200);
     } else {
+      Logger.dbgerr("/registerUser - 404"+ req.body.code);
       res.sendStatus(404);
     }
   } catch (err) {
     console.log(err);
+    Logger.dbgerr("/registerUser - 500"+ req.body.code,err);
     res.sendStatus(500);
   }
 });
 
 app.get("/joinSession", async (req, res) => {
+  Logger.dbg("/joinSession",req.query);
   User.findOne({
     code: req.query.code,
     environment: process.env.NODE_ENV,
@@ -75,34 +81,42 @@ app.get("/joinSession", async (req, res) => {
             if (session) {
               if (session.active) {
                 res.send({ code: req.query.code });
+                Logger.dbg("/joinSession - Active - "+ req.query.code);
               } else {
+                Logger.dbg("/joinSession - Not active - "+ req.query.code);
                 res.send(
                   "Session is not active yet. If you think it is an error, contact with your coordinator."
                 );
               }
             } else {
+              Logger.dbgerr("/joinSession - 401a - "+ req.query.code);
               res.sendStatus(401);
             }
           })
           .catch((err) => {
+            Logger.dbgerr("/joinSession - 500a - "+ req.query.code,err);
             res.sendStatus(500);
           });
       } else {
+        Logger.dbgerr("/joinSession - 401b - "+ req.query.code);
         res.sendStatus(401);
       }
     })
     .catch((err) => {
+      Logger.dbgerr("/joinSession - 500b - "+ req.query.code,err);
       res.sendStatus(500);
     });
 });
 
-app.get("/rooms/:mode/:rid/", (req, res) => {
+app.get("//:mode/:rid/", (req, res) => {
+  Logger.dbg("/rooms",req.params);
   res.sendFile(
     "main.html",
     {
       root: fileDirectory,
     },
     (err) => {
+      Logger.dbgerr("/rooms "+ req.params,err);
       res.end();
       if (err) throw err;
     }
@@ -110,6 +124,7 @@ app.get("/rooms/:mode/:rid/", (req, res) => {
 });
 
 app.get("/finishMessage", async (req, res) => {
+  Logger.dbg("/finishMessage",req.query);
   try {
     const user = await User.findOne({
       code: req.query.code,
@@ -122,19 +137,23 @@ app.get("/finishMessage", async (req, res) => {
     if (session) {
       res.send({ finishMessage: session.finishMessage });
     } else {
+      Logger.dbgerr("/finishMessage - 404 - "+ req.query.code);
       res.sendStatus(404);
     }
   } catch (err) {
+    Logger.dbgerr("/finishMessage - 500 - "+ req.query.code,err);
     res.sendStatus(500);
   }
 });
 
 app.get("/connectedUsers", (req, res) => {
+  Logger.dbg("/connectedUsers");
   res.send(Object.keys(app._io.sockets.sockets));
 });
 
 app.get("/s.io/info", async (req, res) => {
   try {
+    Logger.dbg("/s.io/info");
     io = app._io;
     consumer = app._consumer;
 
@@ -154,6 +173,7 @@ app.get("/s.io/info", async (req, res) => {
 
 app.get("/s.io/start", async (req, res) => {
   try {
+    Logger.dbg("/s.io/start");
     io = app._io;
     consumer = app._consumer;
 

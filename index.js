@@ -13,16 +13,17 @@ dbConnect().then(
   async () => {
     const server = await app.listen(PORT, () => {
       Logger.monitorLog("Listening on port " + PORT);
+      Logger.dbg("Listening on port " + PORT);
     });
     const io = socket(server);
     consumer.start(io);
-    console.log("Saving io / consumer on server.");
+    Logger.dbg("Saving io / consumer on server.");
     app._io = io;
     app._consumer = consumer;
-    console.log("app.io:"+app._io+", app.comsumer:"+app._consumer);
-
+    Logger.dbg("app.io:"+app._io+", app.comsumer:"+app._consumer);
   },
   (err) => {
     console.log("Connection error: " + err);
+    Logger.dbgerr("Connection error",err);
   }
 );

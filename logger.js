@@ -29,7 +29,7 @@ class Logger {
   }
 
   static dbgerr(msg, err) {
-    if(obj)
+    if(err)
       console.log("DEBUG - ERROR - "+msg+" <"+JSON.stringify(err)+">");
     else
       console.log("DEBUG - ERROR - "+msg);

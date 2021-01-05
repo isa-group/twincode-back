@@ -22,6 +22,11 @@ async function wait(ms) {
 }
 
 async function pairing(session, io) {
+  /*****************************************
+   * FUNCTION  USED IN "AUTO" PAIRING
+   * For "MANUAL" Pairing: -> "ClientReady" Event Listener
+   ****************************************/
+
   console.log("Starting the pairing of", session.name);
   Logger.dbg("Pairing - Starting the pairing of "+ session.name);
   let usersWaitingForRoom = await User.find({
@@ -130,9 +135,11 @@ async function pairing(session, io) {
           }
 
           await user.save();
+
           io.to(user.socketId).emit("sessionStart", {
             room: session.name + user.room,
           });
+
           console.log(
             "User " + user.socketId + " is paired alone in room " + user.room
           );
@@ -200,7 +207,6 @@ async function exerciseTimeUp(id, description) {
 }
 
 async function executeSession(sessionName, io) {
-  console.log("Starting session...");
   Logger.dbg("executeSession - Starting "+ sessionName);
   const session = await Session.findOne({
     name: sessionName,
@@ -209,7 +215,7 @@ async function executeSession(sessionName, io) {
 
   session.running = true;
   session.save();
-  Logger.dbg("executeSession - Running ",session);
+  Logger.dbg("executeSession - Running ",session,["name","pairingMode","tokenPairing","blindParticipant"]);
 
   const tests = await Test.find({
     session: session.name,
@@ -220,6 +226,9 @@ async function executeSession(sessionName, io) {
 
   let timer = 0;
   let maxExercises = tests[session.testCounter].exercises.length;
+
+  Logger.dbg("executeSession - testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
+
   io.to(sessionName).emit("loadTest", {
     data: {
       testDescription: tests[0].description,
@@ -227,8 +236,11 @@ async function executeSession(sessionName, io) {
     },
   });
   const interval = setInterval(function () {
+    
     if (session.testCounter == numTests) {
-      console.log("Oh there are no more tests, you finished!");
+      console.log("There are no more tests, the session <"+session.name+"> has finish!");
+      Logger.dbg("executeSession - emitting 'finish' event in session "+session.name+" #############################");
+      
       io.to(sessionName).emit("finish");
       clearInterval(interval);
     } else if (timer > 0) {
@@ -251,12 +263,14 @@ async function executeSession(sessionName, io) {
       });
       timer = tests[session.testCounter].time;
       session.exerciseCounter = 0;
+      Logger.dbg("executeSession - testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
+
     } else {
-      console.log("Starting new exercise!");
+      console.log("Starting new exercise:");
       let exercise =
         tests[session.testCounter].exercises[session.exerciseCounter];
       if (exercise) {
-        console.log(exercise.description);
+        console.log("   "+exercise.description.substring(0,Math.min(80,exercise.description.length))+"...");
         io.to(sessionName).emit("newExercise", {
           data: {
             maxTime: exercise.time,
@@ -272,36 +286,143 @@ async function executeSession(sessionName, io) {
         timer = exercise.time;
       }
       session.exerciseCounter++;
+      Logger.dbg("executeSession - testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
+
       session.save();
+      Logger.dbg("executeSession - session saved ");
     }
 
+    
     Session.findOne({
       name: sessionName,
       environment: process.env.NODE_ENV,
     }).then((currentSession) => {
       if (!currentSession.running) {
         clearInterval(interval);
+        Logger.dbg("executeSession - clearInterval");
       }
     });
   }, 1000);
 }
 
 async function notifyParticipants(sessionName, io) {
-  const participants = await User.find({
+  const potentialParticipants = await User.find({
     environment: process.env.NODE_ENV,
     subject: sessionName,
+  })
+  
+  var participants = [];
+  Logger.dbg("notifyParticipants - Number of potential participants: "+potentialParticipants.length);
+  potentialParticipants.forEach((p)=>{
+    //Filter out the one not connected : they don't have the property socketId! 
+    if(p.socketId){
+      Logger.dbg("notifyParticipants - Including connected participant",p.mail);
+      participants.push(p);
+    }else{
+      Logger.dbg("notifyParticipants - Skipping NOT CONNECTED participant",p.mail);
+    }
   });
 
+  if(participants.length < 2){
+    Logger.dbg("notifyParticipants - UNEXPECTED ERROR - THERE ARE NOT CONNECTED PARTICIPANTS:"+JSON.stringify(potentialParticipants,null,2));
+    return;
+  }
+
+  const session = await Session.findOne({
+    name: sessionName,
+    environment: process.env.NODE_ENV,
+  });
+
+  var excluded = {code: "XXXX"};
+
+  if (session.pairingMode == "MANUAL"){
+    Logger.dbg("notifyParticipants - MANUAL pairing");
+ 
+    var participantCount = participants.length;
+    var roomCount = Math.floor(participantCount / 2);
+    
+
+    if((participantCount % 2) == 0)
+      Logger.dbg("notifyParticipants - the participant count is even, PERFECT PAIRING! :-)");
+    else{
+      excluded = participants[participantCount-1];
+      Logger.dbg("notifyParticipants - the participant count is odd: IMPERFECT PAIRING :-(");
+      Logger.dbg("   -> One participant will be excluded: ",excluded,["code","mail"]);
+    }
+    
+    var initialRoom = 100;
+
+    Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
+
+    for(i=0;i<roomCount;i++){
+      peer1 = participants[i*2];
+      peer2 = participants[(i*2)+1];
+      peer1.room = i+initialRoom;
+      peer2.room = i+initialRoom;
+      
+      peer1.blind = session.blindParticipant;
+      peer2.blind = false;
+    }
+    
+   
+  }else{
+    Logger.dbg("notifyParticipants - AUTO pairing");
+  } 
+  
+
+  participants.forEach((p)=>{
+    Logger.dbg("notifyParticipants - connected participants: ",p,["code","mail","room","blind"]);
+  });
+  
+  connectedUsers = new Map();
+
+  Logger.dbg("notifyParticipants - connectedUsers cleared",connectedUsers);
+
+
   for (const participant of participants) {
-    if (connectedUsers.get(participant.code)) {
-      const pair = await User.findOne({
-        environment: process.env.NODE_ENV,
+  
+    /** VERBOSE DEBUG ******************************************************************
+    Logger.dbg("notifyParticipants - excluded: ",excluded,["code"]);
+    Logger.dbg("notifyParticipants - participant: ",participant,["code"]);
+    Logger.dbg("notifyParticipants - (<"+excluded.code+"> == <"+participant.code+">)?");
+    ************************************************************************************/
+
+    if(excluded.code != participant.code){
+
+      myRoom = participant.room; 
+      myCode = participant.code;
+
+      var user = await User.findOne({
         subject: sessionName,
-        code: connectedUsers.get(participant.code),
+        environment: process.env.NODE_ENV,
+        code: myCode
       });
+  
+      if(!user){
+        Logger.dbg("notifyParticipants - UNEXPECTED ERROR - USER NOT FOUND for "+myCode+" in DB");
+        return;
+      }
+      user.room = myRoom;
+      user.save();
+      Logger.dbg("notifyParticipants - Saving room in DB for "+myCode,user.room);
 
-      console.log(participant.code);
+      // DBG-VERBOSE: Logger.dbg("notifyParticipants - Searching pair of "+myCode+" in room"+myRoom);  
 
+      const pair = participants.filter((p)=>{
+        return (p.room == myRoom) && (p.code != myCode);
+      })[0];
+        
+      connectedUsers.set(myCode, pair.code);
+
+      if(!pair){
+        Logger.dbg("notifyParticipants - UNEXPECTED ERROR - PAIR NOT FOUND for "+myCode+" in room");
+        return;
+      }
+      
+      Logger.dbg("notifyParticipants - Found pair of "+myCode+" in room"+myRoom,pair,["code","mail"]);
+
+
+      Logger.dbg("notifyParticipants - Session <"+sessionName+"> - Emitting 'sessionStart' event to <"+participant.code+"> in room <"+sessionName + participant.room+">");
       io.to(participant.socketId).emit("sessionStart", {
         room: sessionName + participant.room,
         user: {
@@ -310,25 +431,35 @@ async function notifyParticipants(sessionName, io) {
         },
         pairedTo: pair.gender,
       });
+
+    }else{
+      Logger.dbg("notifyParticipants - Session <"+sessionName+"> - Excluding  <"+participant.code+"> from the 'sessionStart' event");
     }
+
   }
+  Logger.dbg("notifyParticipants - connectedUsers after notification",connectedUsers);
+
 }
 
 module.exports = {
   startSession: function (sessionName, io) {
+    
+    Logger.dbg("startSession "+sessionName);
+    
     notifyParticipants(sessionName, io);
+    
     setTimeout(() => {
       executeSession(sessionName, io);
     }, 5000);
   },
   start: function (io) {
     function connection(socket) {
-      Logger.dbg("CONNECTION "+socket.id);
+      Logger.dbg("NEW CONNECTION "+socket.id);
 
       Logger.log(
         "NewConn",
         socket.id,
-        "New user with id " + socket.id + " has entered"
+        "New user with socket id " + socket.id + " has entered"
       );
 
       socket.on("adminConnected", (session) => {
@@ -358,7 +489,7 @@ module.exports = {
         });
 
 
-        Logger.dbg("EVENT clientReady - User Retrival",[pack,user]);
+        Logger.dbg("EVENT clientReady - User Retrival ["+pack+"] - ",user,["code","mail"]);
 
         const session = await Session.findOne({
           name: user.subject,
@@ -369,12 +500,7 @@ module.exports = {
           user.socketId = socket.id; // TODO: Will be placed outside this function at some point
           await user.save();
 
-          Logger.log(
-            "NewConn",
-            user.code,
-            "Client " + user.code + " is ready!"
-          );
-
+          Logger.dbg("EVENT clientReady ------- Starting " + session.pairingMode+" pairing in session <"+session.name +"> for User "+user.code+"------------------------------");
           if (session.pairingMode === "AUTO") {
             let usersCountSupposedToConnectNotReady = await User.countDocuments(
               {
@@ -398,7 +524,8 @@ module.exports = {
               room: { $exists: true },
             }).sort("-room");
 
-            Logger.dbg("EVENT clientReady - Manual Pairing",[pack,user,lastUserJoined]);
+            Logger.dbg("EVENT clientReady - MANUAL Pairing ["+pack+"] - Last User: ",lastUserJoined[lastUserJoined.length-1],["code"]);
+            Logger.dbg("EVENT clientReady - lastUserJoined Length:",lastUserJoined.length);
 
             if (lastUserJoined.length != 0) {
               let lastUserPairJoined = await User.find({
@@ -406,30 +533,39 @@ module.exports = {
                 environment: process.env.NODE_ENV,
                 room: lastUserJoined[0].room,
               });
-              Logger.dbg("EVENT clientReady - Length !=0",[user,session]);
-
+                    
+              Logger.dbg("EVENT clientReady - lastUserPairJoined Length: ", lastUserPairJoined.length);
+              
               if (lastUserPairJoined.length < 2) {
                 user.room = lastUserPairJoined[0].room;
+
+                Logger.dbg("EVENT clientReady - Peer Assigned: ",lastUserPairJoined[0],["code","mail"]);                
+                Logger.dbg("EVENT clientReady - Room Assigned: "+user.room);
+
                 connectedUsers.set(user.code, lastUserPairJoined[0].code);
                 connectedUsers.set(lastUserPairJoined[0].code, user.code);
+
+                Logger.dbg("EVENT clientReady - connectedUsers: ",connectedUsers);
 
                 if (session.blindParticipant) {
                   user.blind = true;
                 }
               } else {
                 user.room = lastUserPairJoined[0].room + 1;
+                Logger.dbg("EVENT clientReady - Room Assigned: "+user.room);
               }
             } else {
               user.room = 0;
+              Logger.dbg("EVENT clientReady - First PEER - Assigned Room 0 ");
             }
-            Logger.dbg("EVENT clientReady - FINISH",[user,session]);
+            Logger.dbg("EVENT clientReady - FINISH",user,["code"]);
             user.save();
           }
         }
       });
 
       socket.on("clientReconnection", async (pack) => {
-        Logger.dbg("EVENT clientReconnection",pack);
+        Logger.dbg("EVENT clientReconnection ",pack);
         const user = await User.findOne({
           code: pack,
           environment: process.env.NODE_ENV,
@@ -437,9 +573,10 @@ module.exports = {
         if (user) {
           userToSocketID.set(user.code, socket.id);
           user.socketId = socket.id;
-          console.log("Reconnecting in session " + user.subject);
           socket.join(user.subject);
           await user.save();
+        }else{
+          Logger.dbg("EVENT clientReconnection : USER NOT FOUND");
         }
         tokens.set(pack, user.subject);
       });
@@ -475,7 +612,17 @@ module.exports = {
       });
 
       socket.on("msg", (pack) => {
+
         Logger.dbg("EVENT msg",pack);
+
+        if(sessions.get(tokens.get(pack.token)) == null ){
+          Logger.dbg("EVENT msg - MESSAGE SENT when exercise hasn't started!!!: Ignored ",pack.token);
+          Logger.dbg("EVENT msg - tokens ",tokens);
+          Logger.dbg("EVENT msg - tokens.get(pack.token) ",tokens.get(pack.token));  
+          return;
+        }
+        
+
         if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
           io.sockets.emit("msg", pack);
         }
@@ -592,6 +739,10 @@ module.exports = {
         if (!pack.data.gotRight) {
           await exerciseTimeUp(socket.id, pack.data);
         }
+      });
+
+      socket.on("clientFinished", async (data) => {
+        Logger.dbg("EVENT clientFinished",data);
       });
 
       socket.on("startDebugSession", async (pack) => {

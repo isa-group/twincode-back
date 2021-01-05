@@ -1,6 +1,8 @@
-# flockjs
-FlockJS is a simple collaborative coding for JS learning;
-you can try a **on-line demo** deployment at: https://flockjs.herokuapp.com 
+# Twincode
+Twincode is a simple collaborative coding in JS for pair programming;
+you can try a **on-line demo** deployment at: https://twincode.netlify.app
+
+This repo correspond with the BACKEND of the platform.
 
 ### Running the server
 

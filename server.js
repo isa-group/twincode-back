@@ -45,14 +45,14 @@ app.post("/registerUser", async (req, res) => {
       environment: process.env.NODE_ENV,
     });
     
-    Logger.dbg("/registerUser - User retrieved",user);
+    Logger.dbg("/registerUser - User retrieved",user,["code","mail"]);
     
     const session = await Session.findOne({
       name: user.subject,
       environment: process.env.NODE_ENV,
     });
     
-    Logger.dbg("/registerUser - Session retrieved",session);
+    Logger.dbg("/registerUser - Session retrieved",session,["name","pairingMode","tokenPairing","blindParticipant"]);
 
     if (session && session.tokens.indexOf(req.body.tokenId) > -1) {
       user.token = req.body.tokenId;

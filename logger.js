@@ -2,9 +2,20 @@ require("dotenv").config();
 const db = require("./db.js");
 const Log = require("./models/Log.js");
 
+function replacer(key, value) {
+  const originalObject = this[key];
+  if(originalObject instanceof Map) {
+    return {
+      dataType: 'Map',
+      value: Array.from(originalObject.entries()), 
+    };
+  } else {
+    return value;
+  }
+}
+
 class Logger {
   static log(category, userId, payload, exercise, test) {
-    console.log(payload);
     let log = Log({
       environment: process.env.NODE_ENV,
       category: category,
@@ -16,15 +27,28 @@ class Logger {
     log.save((err) => {
       if (err) {
         console.log("There has been an error logging to Mongo: " + err);
+      }else{
+        this.dbg("Saving Log - "+category+" - "+userId+": ",payload);
       }
     });
   }
 
-  static dbg(msg, obj) {
-    if(obj)
-      console.log("DEBUG - "+msg+" <"+JSON.stringify(obj)+">");
-    else
+  static dbg(msg, obj, fields) {
+    if(obj){
+      if(fields && Array.isArray(fields)){
+        var logObj = {};
+        for (const field in obj) {
+          if(fields.includes(field))
+            logObj[field] = obj[field];
+        }       
+        console.log("DEBUG - "+msg+" <"+JSON.stringify(logObj,replacer).slice(0, -1)+",...}>"); 
+      }else{
+        console.log("DEBUG - "+msg+" <"+JSON.stringify(obj,replacer)+">");
+      }
+
+    } else{
       console.log("DEBUG - "+msg);
+    }
 
   }
 

@@ -480,6 +480,11 @@ module.exports = {
         }
       });
 
+      socket.on("requestToJoinAgain", (pack) => {
+        console.log("Asking " + pack + " to rejoin.");
+        io.to(pack).emit("clientJoinAgain");
+      });
+
       socket.on("clientReady", async (pack) => {
         Logger.dbg("EVENT clientReady",pack);
 

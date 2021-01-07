@@ -29,6 +29,7 @@ router.get("/participants/:sessionName", (req, res) => {
                 firstName: user.firstName,
                 mail: user.mail,
                 room: user.room != undefined ? user.room : "",
+                socketId: user.socketId,
                 status: isConnected,
               });
             });

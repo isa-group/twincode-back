@@ -63,18 +63,17 @@ router.post("/verify", async (req, res) => {
     code: req.body.user,
     environment: process.env.NODE_ENV,
   });
-
-  console.log("Verifying...");
-
+  Logger.dbg("/verify",req.body);
+  
   if (user) {
     console.log("User " + user.token);
     let session = await Session.findOne({
       name: user.subject,
       environment: process.env.NODE_ENV,
     });
-    console.log(
-      "Trying with " + session.testCounter + " " + session.exerciseCounter
-    );
+
+    Logger.dbg("/verify - Trying to validate " + session.testCounter + " " + session.exerciseCounter);
+
     const test = await Test.findOne({
       orderNumber: session.testCounter,
       environment: process.env.NODE_ENV,
@@ -84,16 +83,25 @@ router.post("/verify", async (req, res) => {
     const exercise = test.exercises[session.exerciseCounter - 1];
 
     if (exercise) {
-      console.log("Validating exercise " + exercise.description);
+      Logger.dbg("/verify - Validate exercise:\n  " + exercise.description.substring(0,Math.min(80,exercise.description.length))+"...");
+
       const solutions = exercise.solutions;
 
       let isCorrect = true;
 
       for (var i = 0; i < solutions.length; i++) {
-        isCorrect =
-          isCorrect &&
-          JSON.stringify(solutions[i]) ===
-            JSON.stringify(req.body.solutions[i]);
+        
+        let correctSolution = JSON.stringify(solutions[i]) === JSON.stringify(req.body.solutions[i]);
+
+        isCorrect = isCorrect && correctSolution;
+  
+        Logger.dbg("/verify - "
+                   +"("+i+")" 
+                   + " Submitted Solution: <"+req.body.solutions[i]+">,"
+                   + " Expected Solution: <"+solutions[i]+">,"
+                   + " Correct Solution: "+  correctSolution+ ","
+                   + " Global verification: "+  isCorrect);
+                   
       }
 
       Logger.log(

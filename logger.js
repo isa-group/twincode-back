@@ -28,7 +28,8 @@ class Logger {
       if (err) {
         console.log("There has been an error logging to Mongo: " + err);
       }else{
-        this.dbg("Saving Log - "+category+" - "+userId+": ",payload);
+        if(category != "Code")
+          this.dbg("Saving Log - "+category+" - "+userId+": ",payload);
       }
     });
   }

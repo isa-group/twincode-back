@@ -12,6 +12,7 @@ let sessions = new Map();
 let tokens = new Map();
 let connectedUsers = new Map();
 let userToSocketID = new Map();
+let lastSessionEvent = new Map();
 
 function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
@@ -206,7 +207,13 @@ async function exerciseTimeUp(id, description) {
   }
 }
 
+
+
 async function executeSession(sessionName, io) {
+
+  lastSessionEvent.set(sessionName,[]);
+  Logger.dbg("executeSession - Cleared last event of session "+sessionName);
+
   Logger.dbg("executeSession - Starting "+ sessionName);
   const session = await Session.findOne({
     name: sessionName,
@@ -229,12 +236,18 @@ async function executeSession(sessionName, io) {
 
   Logger.dbg("executeSession - testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
 
-  io.to(sessionName).emit("loadTest", {
-    data: {
-      testDescription: tests[0].description,
-      peerChange: tests[0].peerChange,
-    },
-  });
+  var event = ["loadTest", {
+        data: {
+          testDescription: tests[0].description,
+          peerChange: tests[0].peerChange,
+        }
+      }];
+
+  io.to(sessionName).emit(event[0],event[1]);
+
+  lastSessionEvent.set(sessionName,event);
+  Logger.dbg("executeSession - lastSessionEvent saved",event[0]);
+        
   const interval = setInterval(function () {
     
     if (session.testCounter == numTests) {
@@ -242,6 +255,9 @@ async function executeSession(sessionName, io) {
       Logger.dbg("executeSession - emitting 'finish' event in session "+session.name+" #############################");
       
       io.to(sessionName).emit("finish");
+      lastSessionEvent.set(sessionName,["finish"]);
+      Logger.dbg("executeSession - lastSessionEvent saved",event);
+        
       clearInterval(interval);
     } else if (timer > 0) {
       io.to(sessionName).emit("countDown", {
@@ -255,12 +271,19 @@ async function executeSession(sessionName, io) {
       session.exerciseCounter = -1;
     } else if (session.exerciseCounter === -1) {
       console.log("Loading test");
-      io.to(sessionName).emit("loadTest", {
+
+      var event = ["loadTest", {
         data: {
           testDescription: tests[session.testCounter].description,
           peerChange: tests[session.testCounter].peerChange,
         },
-      });
+      }];
+      io.to(sessionName).emit(event[0],event[1]);
+
+      lastSessionEvent.set(sessionName,event);
+      Logger.dbg("executeSession - lastSessionEvent saved",event[0]);
+        
+
       timer = tests[session.testCounter].time;
       session.exerciseCounter = 0;
       Logger.dbg("executeSession - testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
@@ -271,14 +294,19 @@ async function executeSession(sessionName, io) {
         tests[session.testCounter].exercises[session.exerciseCounter];
       if (exercise) {
         console.log("   "+exercise.description.substring(0,Math.min(80,exercise.description.length))+"...");
-        io.to(sessionName).emit("newExercise", {
+
+        var event = ["newExercise", {
           data: {
             maxTime: exercise.time,
             exerciseDescription: exercise.description,
             exerciseType: exercise.type,
             inputs: exercise.inputs,
           },
-        });
+        }];
+        io.to(sessionName).emit(event[0],event[1]);
+        lastSessionEvent.set(sessionName,event);
+        Logger.dbg("executeSession - lastSessionEvent saved",event[0]);
+
         sessions.set(session.name, {
           session: session,
           exerciseType: exercise.type,
@@ -286,7 +314,7 @@ async function executeSession(sessionName, io) {
         timer = exercise.time;
       }
       session.exerciseCounter++;
-      Logger.dbg("executeSession - testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
+      Logger.dbg(" testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
 
       session.save();
       Logger.dbg("executeSession - session saved ");
@@ -402,8 +430,10 @@ async function notifyParticipants(sessionName, io) {
         Logger.dbg("notifyParticipants - UNEXPECTED ERROR - USER NOT FOUND for "+myCode+" in DB");
         return;
       }
+      
       user.room = myRoom;
       user.save();
+
       Logger.dbg("notifyParticipants - Saving room in DB for "+myCode,user.room);
 
       // DBG-VERBOSE: Logger.dbg("notifyParticipants - Searching pair of "+myCode+" in room"+myRoom);  
@@ -547,6 +577,7 @@ module.exports = {
 
                 Logger.dbg("EVENT clientReady - connectedUsers: ",connectedUsers);
 
+
                 if (session.blindParticipant) {
                   user.blind = true;
                 }
@@ -571,29 +602,84 @@ module.exports = {
           environment: process.env.NODE_ENV,
         });
         if (user) {
+          Logger.dbg("EVENT clientReconnection - user found",user,["code","socketId"]);
+
           userToSocketID.set(user.code, socket.id);
           user.socketId = socket.id;
           socket.join(user.subject);
           await user.save();
+          
+          Logger.dbg("EVENT clientReconnection - socketId updated",user,["code","socketId"]);
+          
+          // RECOVER LAST EVENT OF USER SESSION
+          let lastEvent = lastSessionEvent.get(user.subject);
+
+          if(lastEvent && lastEvent.length){
+            Logger.dbg("EVENT clientReconnection - Last Recovered Event",lastEvent[0]);
+            if(lastEvent.length == 1){
+              Logger.dbg("EVENT clientReconnection - Submitted last event without data",lastEvent[0]);
+              io.to(socket.id).emit(lastEvent[0]);
+            }else{
+              Logger.dbg("EVENT clientReconnection - Submitted last event with data",lastEvent[0]);
+
+              // SEND LAST EVENT OF THE SESSION TO RECONNECTED USER
+              io.to(socket.id).emit(lastEvent[0],lastEvent[1]);
+
+              // FIND PEER SOCKET 
+              const peer = await User.findOne({
+                room: user.room,
+                subject: user.subject,
+                environment: process.env.NODE_ENV,
+                code: { $ne : user.code}
+              });
+
+              if(peer){
+                Logger.dbg("EVENT clientReconnection - Peer found for "+user.code,peer,["code"]);
+                io.to(peer.socketId).emit("requestBulkCodeEvent",user.socketId);
+                Logger.dbg("EVENT clientReconnection - Submitted requestBulkCodeEvent to peer",peer,["code","socketId"]);
+              }else{
+                Logger.dbg("EVENT clientReconnection - PEER NOT FOUND with query ",{
+                  room: user.room,
+                  subject: user.subject,
+                  environment: process.env.NODE_ENV,
+                  code: { $ne : user.code}
+                });
+              }
+
+            }  
+          }else{
+            Logger.dbg("EVENT clientReconnection : LAST EVENT NOT FOUND for session "+user.subject,lastEvent);
+          }
+          
         }else{
-          Logger.dbg("EVENT clientReconnection : USER NOT FOUND");
+          Logger.dbg("EVENT clientReconnection : USER NOT FOUND",pack);
         }
         tokens.set(pack, user.subject);
+
+      });
+
+      socket.on("bulkCode", async (pack) => {
+        Logger.dbg("EVENT bulkCode ",pack);
+        io.to(pack.data.peerSocketId).emit("bulkCodeUpdate",pack.data.code);
+        Logger.dbg("EVENT clientReconnection - Submitted bulkCodeUpdate to peer "+pack.data.peerSocketId,pack.data.code);
       });
 
       socket.on("cursorActivity", (data) => {
-        Logger.dbg("EVENT cursorActivity");
+        // Too expensive dbg:
+        // Logger.dbg("EVENT cursorActivity");
         io.to(connectedUsers.get(socket.id)).emit("cursorActivity", data);
       });
 
       socket.on("updateCode", (pack) => {
-        Logger.dbg("EVENT updateCode");
+        
+        // Too expensive dbg:
+        // Logger.dbg("EVENT updateCode",pack);
+
         const sessionInMemory = sessions.get(tokens.get(pack.token));
         if (sessionInMemory != null) {
           if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
-            console.log(
-              "-----> " + userToSocketID.get(connectedUsers.get(pack.token))
-            );
+            // Too expensive dbg:
+            //    Logger.dbg("EVENT updateCode --> " + userToSocketID.get(connectedUsers.get(pack.token)));
             io.to(userToSocketID.get(connectedUsers.get(pack.token))).emit(
               "refreshCode",
               pack.data

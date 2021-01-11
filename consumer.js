@@ -630,26 +630,39 @@ module.exports = {
               // SEND LAST EVENT OF THE SESSION TO RECONNECTED USER
               io.to(socket.id).emit(lastEvent[0],lastEvent[1]);
 
-              // FIND PEER SOCKET 
-              const peer = await User.findOne({
-                room: user.room,
-                subject: user.subject,
-                environment: process.env.NODE_ENV,
-                code: { $ne : user.code}
-              });
+              if(lastEvent[0] == "newExercise" && lastEvent[1]){
+                Logger.dbg("EVENT clientReconnection - Session in the middle of an exercise.");
 
-              if(peer){
-                Logger.dbg("EVENT clientReconnection - Peer found for "+user.code,peer,["code"]);
-                io.to(peer.socketId).emit("requestBulkCodeEvent",user.socketId);
-                Logger.dbg("EVENT clientReconnection - Submitted requestBulkCodeEvent to peer",peer,["code","socketId"]);
+                if (lastEvent[1].data && lastEvent[1].data.exerciseType == "PAIR"){
+                  Logger.dbg("EVENT clientReconnection - Session in the middle of an exercise to be done in PAIRs...");
+
+                  // FIND PEER SOCKET 
+                  const peer = await User.findOne({
+                    room: user.room,
+                    subject: user.subject,
+                    environment: process.env.NODE_ENV,
+                    code: { $ne : user.code}
+                  });
+
+                  if(peer){
+                    Logger.dbg("EVENT clientReconnection - Peer found for "+user.code,peer,["code"]);
+                    io.to(peer.socketId).emit("requestBulkCodeEvent",user.socketId);
+                    Logger.dbg("EVENT clientReconnection - Submitted requestBulkCodeEvent to peer",peer,["code","socketId"]);
+                  }else{
+                    Logger.dbg("EVENT clientReconnection - PEER NOT FOUND with query ",{
+                      room: user.room,
+                      subject: user.subject,
+                      environment: process.env.NODE_ENV,
+                      code: { $ne : user.code}
+                    });
+                  }
+    
+                  
+                }
               }else{
-                Logger.dbg("EVENT clientReconnection - PEER NOT FOUND with query ",{
-                  room: user.room,
-                  subject: user.subject,
-                  environment: process.env.NODE_ENV,
-                  code: { $ne : user.code}
-                });
+                Logger.dbg("EVENT clientReconnection - Last event wasn't an exercise",lastEvent[0]);
               }
+                
 
             }  
           }else{

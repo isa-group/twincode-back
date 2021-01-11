@@ -6,6 +6,7 @@ const Logger = require("../logger.js");
 const User = require("../models/User.js");
 const Room = require("../models/Room.js");
 const Session = require("../models/Session.js");
+const escomplex = require('escomplex');
 
 router.get("/test", async (req, res) => {
   const user = await User.findOne({
@@ -111,7 +112,41 @@ router.post("/verify", async (req, res) => {
         session.exerciseCounter,
         session.testCounter
       );
-      res.send({ result: isCorrect });
+
+      
+      if(isCorrect && req.body.source){
+        var twccScore = 10000;
+
+        try{
+          twccResult = escomplex.analyse(req.body.source);
+
+          if(twccResult.functions.length > 0){
+            twccResult.functions.forEach((f)=>{
+              if(f.name=="main"){
+                twccScore = Math.floor(f.cyclomatic*f.halstead.difficulty);
+              }
+            });   
+          } 
+  
+        }catch(e){
+          Logger.dbg("/verify - ERROR obtaining TWCC",e);
+        }
+
+        Logger.dbg("/verify - "+((isCorrect)?("CORRECT , score: "+twccScore):"wrong"));
+        
+        Logger.log(
+          "VerifyQuality",
+          user.code,
+          twccScore,
+          session.exerciseCounter,
+          session.testCounter
+        );
+
+        res.send({ result: isCorrect, twcc: twccScore });        
+      }else{
+        res.send({ result: isCorrect });
+      }
+
     } else {
       res.sendStatus(404);
     }

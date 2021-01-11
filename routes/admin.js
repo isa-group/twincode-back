@@ -4,11 +4,10 @@ const router = express.Router();
 const Test = require("../models/Test.js");
 const Logger = require("../logger.js");
 const User = require("../models/User.js");
-const Room = require("../models/Room.js");
 const Session = require("../models/Session.js");
 const Log = require("../models/Log.js");
-const Consumer = require("../consumer.js");
 const consumer = require("../consumer.js");
+
 
 router.get("/sessions", async (req, res) => {
   const adminSecret = req.headers.authorization;

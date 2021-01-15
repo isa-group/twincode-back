@@ -84,7 +84,11 @@ async function pairing(session, io) {
           user.room = 0;
           pairedUser.room = 0;
         }
+
+        Logger.dbg("Pairing - Saving user",user,["code","firstName","gender","room","blind"]);
         await user.save();
+
+        Logger.dbg("Pairing - Saving pairedUser",pairedUser,["code","firstName","gender","room","blind"]);
         await pairedUser.save();
 
         Logger.dbg("Pairing - Saved ",[user,pairedUser]);
@@ -117,7 +121,10 @@ async function pairing(session, io) {
             user.room = 0;
             anyOtherUser.room = 0;
           }
+
+          Logger.dbg("Pairing - Saving user",user,["code","firstName","gender","room","blind"]);
           await user.save();
+          Logger.dbg("Pairing - Saving anyOtherUser",anyOtherUser,["code","firstName","gender","room","blind"]);
           await anyOtherUser.save();
           connectedUsers.set(user.code, anyOtherUser.code);
           connectedUsers.set(anyOtherUser.code, user.code);
@@ -135,6 +142,7 @@ async function pairing(session, io) {
             user.room = 0;
           }
 
+          Logger.dbg("Pairing - Saving user",user,["code","firstName","gender","room","blind"]);
           await user.save();
 
           io.to(user.socketId).emit("sessionStart", {
@@ -383,21 +391,22 @@ async function notifyParticipants(sessionName, io) {
     Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
 
     for(i=0;i<roomCount;i++){
-      peer1 = participants[i*2];
-      peer2 = participants[(i*2)+1];
+      let peer1 = participants[i*2];
+      let peer2 = participants[(i*2)+1];
       peer1.room = i+initialRoom;
       peer2.room = i+initialRoom;
       
       peer1.blind = session.blindParticipant;
       peer2.blind = false;
+      Logger.dbg("notifyParticipants - Pair created in room <"+peer1.room+">:\n"+
+                  "    -"+ peer1.code+", "+peer1.firstName+", "+peer1.firstName+", "+peer1.gender+", "+peer1.blind+"\n"+
+                  "    -"+ peer2.code+", "+peer2.firstName+", "+peer2.firstName+", "+peer2.gender+", "+peer2.blind);
     }
-    
-   
+       
   }else{
     Logger.dbg("notifyParticipants - AUTO pairing");
   } 
   
-
   participants.forEach((p)=>{
     Logger.dbg("notifyParticipants - connected participants: ",p,["code","mail","room","blind"]);
   });
@@ -419,6 +428,7 @@ async function notifyParticipants(sessionName, io) {
 
       myRoom = participant.room; 
       myCode = participant.code;
+      myBlind = participant.blind;
 
       var user = await User.findOne({
         subject: sessionName,
@@ -431,7 +441,10 @@ async function notifyParticipants(sessionName, io) {
         return;
       }
       
+      user.blind = myBlind;
       user.room = myRoom;
+      
+      Logger.dbg("notifyParticipants - Saving user",user,["code","firstName","gender","room","blind"]);
       user.save();
 
       Logger.dbg("notifyParticipants - Saving room in DB for "+myCode,user.room);
@@ -532,7 +545,8 @@ module.exports = {
         });
         if (session && session.active) {
           userToSocketID.set(user.code, socket.id);
-          user.socketId = socket.id; // TODO: Will be placed outside this function at some point
+          user.socketId = socket.id; // TODO: Will be placed outside this function at some pointç
+          Logger.dbg("EVENT clientReady - Saving user",user,["code","firstName","gender","room","blind"]);
           await user.save();
 
           Logger.dbg("EVENT clientReady ------- Starting " + session.pairingMode+" pairing in session <"+session.name +"> for User "+user.code+"------------------------------");
@@ -594,7 +608,7 @@ module.exports = {
               user.room = 0;
               Logger.dbg("EVENT clientReady - First PEER - Assigned Room 0 ");
             }
-            Logger.dbg("EVENT clientReady - FINISH",user,["code"]);
+            Logger.dbg("EVENT clientReady - FINISH - Saving user",user,["code","firstName","gender","room","blind"]);
             user.save();
           }
         }
@@ -612,6 +626,8 @@ module.exports = {
           userToSocketID.set(user.code, socket.id);
           user.socketId = socket.id;
           socket.join(user.subject);
+
+          Logger.dbg("EVENT clientReconnection - Saving user",user,["code","firstName","gender","room","blind"]);
           await user.save();
           
           Logger.dbg("EVENT clientReconnection - socketId updated",user,["code","socketId"]);

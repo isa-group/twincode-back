@@ -392,22 +392,21 @@ async function notifyParticipants(sessionName, io) {
 
     var femaleList = []
     var maleList = []
-    for (const participant in participants) {
-      console.log(participant.firstName + " PARTICIPANTE");
-      if (participant.gender == "Male") {
-        maleList.push(participant);
+    for(j=0;j<participants.length;j++) {
+      if (participants[j].gender == "Male") {
+        maleList.push(participants[j]);
       }
-      else if (participant.gender == "Female") {
-        femaleList.push(participant);
+      else if (participants[j].gender == "Female") {
+        femaleList.push(participants[j]);
       }
     }
 
     participantNumber = 0;
 
     for(i=0;i<roomCount;i++){
-      let peer1 = maleList[i*2];
-      let peer2 = femaleList[i*2];
-      //console.log(peer1 + " PARTICIPANTE");
+      let peer1 = femaleList[i];
+      let peer2 = maleList[i];
+      
       peer1.room = i+initialRoom;
       peer2.room = i+initialRoom;
       

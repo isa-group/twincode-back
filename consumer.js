@@ -390,14 +390,34 @@ async function notifyParticipants(sessionName, io) {
 
     Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
 
+    var femaleList = []
+    var maleList = []
+    for(j=0;j<participants.length;j++) {
+      if (participants[j].gender == "Male") {
+        maleList.push(participants[j]);
+      }
+      else if (participants[j].gender == "Female") {
+        femaleList.push(participants[j]);
+      }
+    }
+
+    participantNumber = 0;
+
     for(i=0;i<roomCount;i++){
-      let peer1 = participants[i*2];
-      let peer2 = participants[(i*2)+1];
+      let peer1 = femaleList[i];
+      let peer2 = maleList[i];
+      
       peer1.room = i+initialRoom;
       peer2.room = i+initialRoom;
       
-      peer1.blind = session.blindParticipant;
-      peer2.blind = false;
+      if (i%2==0) {
+        peer1.blind = session.blindParticipant;
+        peer2.blind = false;
+      }
+      else {
+        peer1.blind = false;
+        peer2.blind = session.blindParticipant;
+      }
       Logger.dbg("notifyParticipants - Pair created in room <"+peer1.room+">:\n"+
                   "    -"+ peer1.code+", "+peer1.firstName+", "+peer1.firstName+", "+peer1.gender+", "+peer1.blind+"\n"+
                   "    -"+ peer2.code+", "+peer2.firstName+", "+peer2.firstName+", "+peer2.gender+", "+peer2.blind);

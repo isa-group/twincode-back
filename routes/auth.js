@@ -30,6 +30,23 @@ router.post("/login", (req, res) => {
 
 router.post("/signup", async (req, res) => {
   const code = Math.floor(Math.random() * 1000000 + 1);
+  /*
+  //code = 350526; Example of an already created user code
+  try {
+    const userFound = await User.findOne({
+      code: code,
+      environment: process.env.NODE_ENV,
+    }).then(async(response) => { 
+      console.log(response);
+    });
+   
+    while (userFound!=null) {
+      code = Math.floor(Math.random() * 1000000 + 1);
+    }
+  } catch (error) { 
+    ;
+  }
+  */
 
   const newUser = new User(req.body);
   newUser.code = code;

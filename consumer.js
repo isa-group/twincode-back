@@ -401,11 +401,40 @@ async function notifyParticipants(sessionName, io) {
       }
     }
 
-    participantNumber = 0;
+    var firstList = []
+    var secondList = []
+
+    if (femaleList.length != maleList.length) {
+      if (femaleList.length < maleList.length) {
+        const sizeDifference = maleList.length - femaleList.length;
+        firstList = femaleList;
+        secondList = maleList.slice(0, maleList.length - sizeDifference);
+        for(let j=maleList.length - sizeDifference;j<maleList.length;j++) {
+          if(j%2==0) {
+            firstList.push(maleList[j]);
+          }
+          else {
+            secondList.push(maleList[j]);
+          }
+        }
+      } else {
+        const sizeDifference = femaleList.length - maleList.length;
+        firstList = maleList;
+        secondList = femaleList.slice(0, femaleList.length - sizeDifference);
+        for(let j=femaleList.length - sizeDifference;j<femaleList.length;j++) {
+          if(j%2==0) {
+            firstList.push(femaleList[j]);
+          }
+          else {
+            secondList.push(femaleList[j]);
+          }
+        }
+      }
+    }
 
     for(i=0;i<roomCount;i++){
-      let peer1 = femaleList[i];
-      let peer2 = maleList[i];
+      let peer1 = firstList[i];
+      let peer2 = secondList[i];
       
       peer1.room = i+initialRoom;
       peer2.room = i+initialRoom;

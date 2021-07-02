@@ -28,28 +28,27 @@ router.post("/login", (req, res) => {
   );
 });
 
-router.post("/signup", async (req, res) => {
-  const code = Math.floor(Math.random() * 1000000 + 1);
-  /*
-  //code = 350526; Example of an already created user code
-  try {
-    const userFound = await User.findOne({
-      code: code,
-      environment: process.env.NODE_ENV,
-    }).then(async(response) => { 
-      console.log(response);
-    });
-   
-    while (userFound!=null) {
-      code = Math.floor(Math.random() * 1000000 + 1);
-    }
-  } catch (error) { 
-    ;
-  }
-  */
+async function findOneUser(newCode,repeated) {
+  await User.findOne({ code: newCode, environment: process.env.NODE_ENV },
+    (err, user) => {
+      if (user!=null) {
+        newCode = Math.floor(Math.random() * 1000000 + 1); 
+      } else {
+        repeated = false;
+      }
+  });
+  return [newCode, repeated];
+};
 
+router.post("/signup", async (req, res) => {
+  resultFindUser = await findOneUser(Math.floor(Math.random() * 1000000 + 1), true);
+  while (resultFindUser[1]) {
+    resultFindUser = await findOneUser(resultFindUser[0], true);
+  }
+
+  const newCode = resultFindUser[0];
   const newUser = new User(req.body);
-  newUser.code = code;
+  newUser.code = newCode;
 
   const session = await Session.findOne({
     name: req.body.subject,

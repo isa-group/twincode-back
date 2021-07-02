@@ -41,7 +41,7 @@ async function findOneUser(newCode,repeated) {
 };
 
 router.post("/signup", async (req, res) => {
-  resultFindUser = await findOneUser(Math.floor(Math.random() * 1000000 + 1), true);
+  let resultFindUser = await findOneUser(Math.floor(Math.random() * 1000000 + 1), true);
   while (resultFindUser[1]) {
     resultFindUser = await findOneUser(resultFindUser[0], true);
   }

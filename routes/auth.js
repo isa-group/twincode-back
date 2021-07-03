@@ -29,7 +29,7 @@ router.post("/login", (req, res) => {
 });
 
 router.post("/signup", async (req, res) => {
-  var code = 726705;
+  var code = Math.floor(Math.random() * 1000000 + 1);
   var codeList = await User.find().then((res) => {
     var listAux = []
     for(r=0;r<res.length;r++) {
@@ -38,20 +38,21 @@ router.post("/signup", async (req, res) => {
     return listAux;
   });
 
-  // No está cambiando las variables revisar eso
   var repeated = false;
-  while(inLoop) {
+  while(true) {
     for(c=0;c<codeList.length;c++) {
       if (codeList[c] == code.toString()) {
         repeated = true;
+        break;
       }
     }
+    
     if(repeated) {
       code = Math.floor(Math.random() * 1000000 + 1);
+      repeated = false;
     } else {
       break;
     }
-    console.log(code);
   }
 
   const newUser = new User(req.body);

@@ -38,9 +38,9 @@ router.post("/signup", async (req, res) => {
     return listAux;
   });
 
+  // No está cambiando las variables revisar eso
   var repeated = false;
-  while(true) {
-    console.log(codeList); // Comprobar resto
+  while(inLoop) {
     for(c=0;c<codeList.length;c++) {
       if (codeList[c] == code.toString()) {
         repeated = true;
@@ -51,6 +51,7 @@ router.post("/signup", async (req, res) => {
     } else {
       break;
     }
+    console.log(code);
   }
 
   const newUser = new User(req.body);

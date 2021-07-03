@@ -390,24 +390,24 @@ async function notifyParticipants(sessionName, io) {
 
     Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
 
-    var femaleList = []
+    var nonMaleList = []
     var maleList = []
     for(j=0;j<participants.length;j++) {
       if (participants[j].gender == "Male") {
         maleList.push(participants[j]);
       }
-      else if (participants[j].gender == "Female") {
-        femaleList.push(participants[j]);
+      else {
+        nonMaleList.push(participants[j]);
       }
     }
 
     var firstList = []
     var secondList = []
 
-    if (femaleList.length != maleList.length) {
-      if (femaleList.length < maleList.length) {
-        const sizeDifference = maleList.length - femaleList.length;
-        firstList = femaleList;
+    if (nonMaleList.length != maleList.length) {
+      if (nonMaleList.length < maleList.length) {
+        const sizeDifference = maleList.length - nonMaleList.length;
+        firstList = nonMaleList;
         secondList = maleList.slice(0, maleList.length - sizeDifference);
         for(let j=maleList.length - sizeDifference;j<maleList.length;j++) {
           if(j%2==0) {
@@ -418,15 +418,15 @@ async function notifyParticipants(sessionName, io) {
           }
         }
       } else {
-        const sizeDifference = femaleList.length - maleList.length;
+        const sizeDifference = nonMaleList.length - maleList.length;
         firstList = maleList;
-        secondList = femaleList.slice(0, femaleList.length - sizeDifference);
-        for(let j=femaleList.length - sizeDifference;j<femaleList.length;j++) {
+        secondList = nonMaleList.slice(0, nonMaleList.length - sizeDifference);
+        for(let j=nonMaleList.length - sizeDifference;j<nonMaleList.length;j++) {
           if(j%2==0) {
-            firstList.push(femaleList[j]);
+            firstList.push(nonMaleList[j]);
           }
           else {
-            secondList.push(femaleList[j]);
+            secondList.push(nonMaleList[j]);
           }
         }
       }

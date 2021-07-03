@@ -28,27 +28,33 @@ router.post("/login", (req, res) => {
   );
 });
 
-async function findOneUser(newCode,repeated) {
-  await User.findOne({ code: newCode, environment: process.env.NODE_ENV },
-    (err, user) => {
-      if (user!=null) {
-        newCode = Math.floor(Math.random() * 1000000 + 1); 
-      } else {
-        repeated = false;
-      }
-  });
-  return [newCode, repeated];
-};
-
 router.post("/signup", async (req, res) => {
-  let resultFindUser = await findOneUser(Math.floor(Math.random() * 1000000 + 1), true);
-  while (resultFindUser[1]) {
-    resultFindUser = await findOneUser(resultFindUser[0], true);
+  var code = 726705;
+  var codeList = await User.find().then((res) => {
+    var listAux = []
+    for(r=0;r<res.length;r++) {
+      listAux.push(res[r].code);
+    }
+    return listAux;
+  });
+
+  var repeated = false;
+  while(true) {
+    console.log(codeList); // Comprobar resto
+    for(c=0;c<codeList.length;c++) {
+      if (codeList[c] == code.toString()) {
+        repeated = true;
+      }
+    }
+    if(repeated) {
+      code = Math.floor(Math.random() * 1000000 + 1);
+    } else {
+      break;
+    }
   }
 
-  const newCode = resultFindUser[0];
   const newUser = new User(req.body);
-  newUser.code = newCode;
+  newUser.code = code;
 
   const session = await Session.findOne({
     name: req.body.subject,

@@ -54,6 +54,7 @@ router.post("/signup", async (req, res) => {
       break;
     }
   }
+  
 
   const newUser = new User(req.body);
   newUser.code = code;

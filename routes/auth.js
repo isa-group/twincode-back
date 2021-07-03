@@ -29,24 +29,32 @@ router.post("/login", (req, res) => {
 });
 
 router.post("/signup", async (req, res) => {
-  const code = Math.floor(Math.random() * 1000000 + 1);
-  /*
-  //code = 350526; Example of an already created user code
-  try {
-    const userFound = await User.findOne({
-      code: code,
-      environment: process.env.NODE_ENV,
-    }).then(async(response) => { 
-      console.log(response);
-    });
-   
-    while (userFound!=null) {
-      code = Math.floor(Math.random() * 1000000 + 1);
+  var code = Math.floor(Math.random() * 1000000 + 1);
+  var codeList = await User.find().then((res) => {
+    var listAux = []
+    for(r=0;r<res.length;r++) {
+      listAux.push(res[r].code);
     }
-  } catch (error) { 
-    ;
+    return listAux;
+  });
+
+  var repeated = false;
+  while(true) {
+    for(c=0;c<codeList.length;c++) {
+      if (codeList[c] == code.toString()) {
+        repeated = true;
+        break;
+      }
+    }
+    
+    if(repeated) {
+      code = Math.floor(Math.random() * 1000000 + 1);
+      repeated = false;
+    } else {
+      break;
+    }
   }
-  */
+  
 
   const newUser = new User(req.body);
   newUser.code = code;

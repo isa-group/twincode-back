@@ -432,6 +432,8 @@ async function notifyParticipants(sessionName, io) {
       }
     }
 
+    participantNumber = 0;
+
     for(i=0;i<roomCount;i++){
       let peer1 = firstList[i];
       let peer2 = secondList[i];

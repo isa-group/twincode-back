@@ -391,15 +391,64 @@ async function notifyParticipants(sessionName, io) {
     var initialRoom = 100;
 
     Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
+    var nonMaleList = []
+    var maleList = []
+    for(j=0;j<participants.length;j++) {
+      if (participants[j].gender == "Male") {
+        maleList.push(participants[j]);
+      }
+      else {
+        nonMaleList.push(participants[j]);
+      }
+    }
+
+    var firstList = []
+    var secondList = []
+
+    if (nonMaleList.length != maleList.length) {
+      if (nonMaleList.length < maleList.length) {
+        const sizeDifference = maleList.length - nonMaleList.length;
+        firstList = nonMaleList;
+        secondList = maleList.slice(0, maleList.length - sizeDifference);
+        for(let j=maleList.length - sizeDifference;j<maleList.length;j++) {
+          if(j%2==0) {
+            firstList.push(maleList[j]);
+          }
+          else {
+            secondList.push(maleList[j]);
+          }
+        }
+      } else {
+        const sizeDifference = nonMaleList.length - maleList.length;
+        firstList = maleList;
+        secondList = nonMaleList.slice(0, nonMaleList.length - sizeDifference);
+        for(let j=nonMaleList.length - sizeDifference;j<nonMaleList.length;j++) {
+          if(j%2==0) {
+            firstList.push(nonMaleList[j]);
+          }
+          else {
+            secondList.push(nonMaleList[j]);
+          }
+        }
+      }
+    }
+
+    participantNumber = 0;
 
     for(i=0;i<roomCount;i++){
-      let peer1 = participants[i*2];
-      let peer2 = participants[(i*2)+1];
+      let peer1 = firstList[i];
+      let peer2 = secondList[i];
       peer1.room = i+initialRoom;
       peer2.room = i+initialRoom;
       
-      peer1.blind = session.blindParticipant;
-      peer2.blind = false;
+      if (i%2==0) {
+        peer1.blind = session.blindParticipant;
+        peer2.blind = false;
+      }
+      else {
+        peer1.blind = false;
+        peer2.blind = session.blindParticipant;
+      }
       Logger.dbg("notifyParticipants - Pair created in room <"+peer1.room+">:\n"+
                   "    -"+ peer1.code+", "+peer1.firstName+", "+peer1.firstName+", "+peer1.gender+", "+peer1.blind+"\n"+
                   "    -"+ peer2.code+", "+peer2.firstName+", "+peer2.firstName+", "+peer2.gender+", "+peer2.blind);

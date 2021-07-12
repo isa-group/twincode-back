@@ -2,12 +2,27 @@ require("dotenv").config();
 var express = require("express");
 const router = express.Router();
 const Test = require("../models/Test.js");
+// const Exercise = require("../models/Exercise.js")
 const Logger = require("../logger.js");
 const User = require("../models/User.js");
 const Session = require("../models/Session.js");
 const Log = require("../models/Log.js");
 const consumer = require("../consumer.js");
 
+/**
+ * SESSIONS
+ */
+
+router.post("/startSession/:sessionName", async (req, res) => {
+  const adminSecret = req.headers.authorization;
+
+  if (adminSecret === process.env.ADMIN_SECRET) {
+    consumer.startSession(req.params.sessionName, req.app._io);
+    res.send({ msg: "Session started" });
+  } else {
+    res.sendStatus(401);
+  }
+});
 
 router.get("/sessions", async (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -59,7 +74,7 @@ router.get("/sessions", async (req, res) => {
 
 router.get("/sessions/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
-
+  console.log("ENTORNO DE NODE: " + process.env.NODE_ENV);
   if (adminSecret === process.env.ADMIN_SECRET) {
     try {
       Session.findOne({
@@ -86,47 +101,6 @@ router.get("/sessions/:sessionName", (req, res) => {
   }
 });
 
-router.get("/tests/:sessionName", (req, res) => {
-  const adminSecret = req.headers.authorization;
-
-  if (adminSecret === process.env.ADMIN_SECRET) {
-    try {
-      Test.find(
-        {
-          environment: process.env.NODE_ENV,
-          session: req.params.sessionName,
-        },
-        { session: 0, environment: 0, _id: 0 },
-        { sort: { orderNumber: 1 } }
-      )
-        .then((tests) => {
-          if (tests.length > 0) {
-            /*let orderedUsers = [];
-            users.forEach((user) => {
-              orderedUsers.push({
-                code: user.code,
-                firstName: user.firstName,
-                mail: user.mail,
-              });
-            });
-            res.send(orderedUsers);*/
-            res.send(tests);
-          } else {
-            res.sendStatus(404);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-          res.sendStatus(500);
-        });
-    } catch (e) {
-      console.log(e);
-      res.sendStatus(500);
-    }
-  } else {
-    res.sendStatus(401);
-  }
-});
 
 router.get("/status/:sessionName", async (req, res) => {
   const retrievedSession = await Session.findOne({
@@ -218,43 +192,6 @@ router.post("/sessions", (req, res) => {
   }
 });
 
-router.post("/tests", (req, res) => {
-  const adminSecret = req.headers.authorization;
-
-  if (adminSecret === process.env.ADMIN_SECRET) {
-    try {
-      let newTest = new Test();
-      newTest.environment = process.env.NODE_ENV;
-      newTest.session = req.body.session;
-      newTest.name = req.body.name;
-      newTest.description = req.body.description;
-      newTest.orderNumber = req.body.orderNumber;
-      newTest.time = req.body.time;
-      newTest.peerChange = req.body.peerChange;
-      newTest.exercises = req.body.exercises;
-      newTest
-        .save()
-        .then((test) => {
-          res.send(test);
-        })
-        .catch((error) => {
-          let errorMsg = "Something bad happened...";
-          if (error.code === 11000) {
-            errorMsg = "You should choose another name that is not duplicated.";
-          } else if (error.message) {
-            errorMsg = error.message;
-          }
-          res.status(400).send({ errorMsg });
-        });
-    } catch (e) {
-      console.log(e);
-      res.sendStatus(500);
-    }
-  } else {
-    res.sendStatus(401);
-  }
-});
-
 router.post("/resetSession", async (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -279,50 +216,6 @@ router.post("/resetSession", async (req, res) => {
   }
 });
 
-router.post("/startSession/:sessionName", async (req, res) => {
-  const adminSecret = req.headers.authorization;
-
-  if (adminSecret === process.env.ADMIN_SECRET) {
-    consumer.startSession(req.params.sessionName, req.app._io);
-    res.send({ msg: "Session started" });
-  } else {
-    res.sendStatus(401);
-  }
-});
-
-router.put("/tests/:sessionName", (req, res) => {
-  const adminSecret = req.headers.authorization;
-
-  if (adminSecret === process.env.ADMIN_SECRET) {
-    try {
-      Test.findOneAndUpdate(
-        {
-          environment: process.env.NODE_ENV,
-          session: req.params.sessionName,
-          orderNumber: req.body.orderNumber,
-        },
-        req.body
-      )
-        .then((test) => {
-          res.send(test);
-        })
-        .catch((error) => {
-          let errorMsg = "Something bad happened...";
-          if (error.code === 11000) {
-            errorMsg = "You should choose another name that is not duplicated.";
-          } else if (error.message) {
-            errorMsg = error.message;
-          }
-          res.status(400).send({ errorMsg });
-        });
-    } catch (e) {
-      console.log(e);
-      res.sendStatus(500);
-    }
-  } else {
-    res.sendStatus(401);
-  }
-});
 
 router.put("/sessions/:sessionName/toggleActivation", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -418,6 +311,123 @@ router.put("/sessions/:sessionName", (req, res) => {
   }
 });
 
+/**
+ * TESTS
+ */
+
+router.post("/tests", (req, res) => {
+  const adminSecret = req.headers.authorization;
+
+  if (adminSecret === process.env.ADMIN_SECRET) {
+    try {
+      let newTest = new Test();
+      newTest.environment = process.env.NODE_ENV;
+      newTest.session = req.body.session;
+      newTest.name = req.body.name;
+      newTest.description = req.body.description;
+      newTest.orderNumber = req.body.orderNumber;
+      newTest.time = req.body.time;
+      newTest.peerChange = req.body.peerChange;
+      newTest.exercises = req.body.exercises;
+      newTest
+        .save()
+        .then((test) => {
+          res.send(test);
+        })
+        .catch((error) => {
+          let errorMsg = "Something bad happened...";
+          if (error.code === 11000) {
+            errorMsg = "You should choose another name that is not duplicated.";
+          } else if (error.message) {
+            errorMsg = error.message;
+          }
+          res.status(400).send({ errorMsg });
+        });
+    } catch (e) {
+      console.log(e);
+      res.sendStatus(500);
+    }
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+router.get("/tests/:sessionName", (req, res) => {
+  const adminSecret = req.headers.authorization;
+
+  if (adminSecret === process.env.ADMIN_SECRET) {
+    try {
+      Test.find(
+        {
+          environment: process.env.NODE_ENV,
+          session: req.params.sessionName,
+        },
+        { session: 0, environment: 0, _id: 0 },
+        { sort: { orderNumber: 1 } }
+      )
+        .then((tests) => {
+          if (tests.length > 0) {
+            /*let orderedUsers = [];
+            users.forEach((user) => {
+              orderedUsers.push({
+                code: user.code,
+                firstName: user.firstName,
+                mail: user.mail,
+              });
+            });
+            res.send(orderedUsers);*/
+            res.send(tests);
+          } else {
+            res.sendStatus(404);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+          res.sendStatus(500);
+        });
+    } catch (e) {
+      console.log(e);
+      res.sendStatus(500);
+    }
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+router.put("/tests/:sessionName", (req, res) => {
+  const adminSecret = req.headers.authorization;
+
+  if (adminSecret === process.env.ADMIN_SECRET) {
+    req.body.orderNumber = parseInt(req.body.orderNumber);
+    req.body.time = parseInt(req.body.time);
+    req.body.exercises.forEach(e => {
+      e.time = parseInt(e.time);
+    });
+
+    Test.findOneAndUpdate(
+      {
+        environment: process.env.NODE_ENV,
+        session: req.params.sessionName,
+        orderNumber: req.body.orderNumber,
+      },
+      req.body
+      , function (err, test) {
+        if (err) {
+          if (err.name == 'ValidationError') {
+            res.status(422).send(err);
+          }
+          else {
+            res.status(500).send(err);
+          }
+        }
+        else {
+          res.status(200).json(test);
+        }
+      });
+  }
+});
+
+
 router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -427,6 +437,78 @@ router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
         environment: process.env.NODE_ENV,
         session: req.params.sessionName,
         orderNumber: req.params.orderNumber,
+      })
+        .then((response) => {
+          res.send(response);
+        })
+        .catch((error) => {
+          let errorMsg = "Something bad happened...";
+          if (error.message) {
+            errorMsg = error.message;
+          }
+          res.status(400).send({ errorMsg });
+        });
+    } catch (e) {
+      console.log(e);
+      res.sendStatus(500);
+    }
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+router.get("/tests/:sessionName/:orderNumber", async (req, res) => {
+  const adminSecret = req.headers.authorization;
+
+  if (adminSecret === process.env.ADMIN_SECRET) {
+    consumer.startSession(req.params.sessionName, req.app._io);
+    res.send({ msg: "Session started" });
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+router.delete("/tests/exercise/:exercise", (req, res) => {
+  const adminSecret = req.headers.authorization;
+
+  if (adminSecret === process.env.ADMIN_SECRET) {
+    try {
+      Test.findOneAndRemove({
+        environment: process.env.NODE_ENV,
+        session: req.params.sessionName,
+        orderNumber: req.params.orderNumber,
+        exercise: req.params.exercise
+      })
+        .then((response) => {
+          res.status(200).send(response);
+        })
+        .catch((error) => {
+          let errorMsg = "Something bad happened...";
+          if (error.message) {
+            errorMsg = error.message;
+          }
+          res.status(400).send({ errorMsg });
+        });
+    } catch (e) {
+      console.log(e);
+      res.sendStatus(500);
+    }
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+router.delete("/tests/:sessionName/:orderNumber/:exercise/:validation", (req, res) => {
+  const adminSecret = req.headers.authorization;
+
+  if (adminSecret === process.env.ADMIN_SECRET) {
+    try {
+      Test.findOneAndRemove({
+        environment: process.env.NODE_ENV,
+        session: req.params.sessionName,
+        orderNumber: req.params.orderNumber,
+        exercise: req.params.exercise,
+        validation: req.params.validation
       })
         .then((response) => {
           res.send(response);
@@ -474,6 +556,30 @@ router.delete("/sessions/:sessionName", (req, res) => {
     res.sendStatus(401);
   }
 });
+
+/**
+ * EXERCISES
+ */
+
+router.get("/tests/:testName/exercise/:exerciseId", async (req, res) => {
+  await Test.findOne({
+    name: req.params.sessionName,
+    environment: process.env.NODE_ENV,
+  }, async function (err, exercise) {
+    if (err) {
+      if (err.name == 'ValidationError') {
+        res.status(422).send(err);
+      } else {
+        res.status(500).send(err);
+      }
+    } else {
+      Exercise.
+      res.status(200).json(exercise);
+    }
+  });
+});
+
+
 
 module.exports = router;
 

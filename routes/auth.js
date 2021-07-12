@@ -45,8 +45,9 @@ router.post("/signup", async (req, res) => {
         repeated = true;
         break;
       }
-    }
+    } 
     
+
     if(repeated) {
       code = Math.floor(Math.random() * 1000000 + 1);
       repeated = false;
@@ -54,7 +55,6 @@ router.post("/signup", async (req, res) => {
       break;
     }
   }
-  
 
   const newUser = new User(req.body);
   newUser.code = code;

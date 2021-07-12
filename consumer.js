@@ -254,18 +254,17 @@ async function executeSession(sessionName, io) {
   io.to(sessionName).emit(event[0],event[1]);
 
   lastSessionEvent.set(sessionName,event);
-  Logger.dbg("executeSession - lastSessionEvent saved",event[0]);
-        
+  Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
+  Logger.dbg("executeSession - session", session);
   const interval = setInterval(function () {
-    
+
     if (session.testCounter == numTests) {
       console.log("There are no more tests, the session <"+session.name+"> has finish!");
       Logger.dbg("executeSession - emitting 'finish' event in session "+session.name+" #############################");
       
       io.to(sessionName).emit("finish");
       lastSessionEvent.set(sessionName,["finish"]);
-      Logger.dbg("executeSession - lastSessionEvent saved",event);
-        
+      Logger.dbg("executeSession - lastSessionEvent saved",event);        
       clearInterval(interval);
     } else if (timer > 0) {
       io.to(sessionName).emit("countDown", {
@@ -308,12 +307,13 @@ async function executeSession(sessionName, io) {
             maxTime: exercise.time,
             exerciseDescription: exercise.description,
             exerciseType: exercise.type,
-            inputs: exercise.inputs,
+            validations: exercise.validations,
           },
         }];
         io.to(sessionName).emit(event[0],event[1]);
         lastSessionEvent.set(sessionName,event);
         Logger.dbg("executeSession - lastSessionEvent saved",event[0]);
+        Logger.dbg("executeSession - EVENT: ",event);
 
         sessions.set(session.name, {
           session: session,
@@ -321,9 +321,11 @@ async function executeSession(sessionName, io) {
         });
         timer = exercise.time;
       }
-      session.exerciseCounter++;
-      Logger.dbg(" testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
-
+      //TODO - Esto no tiene sentido porque cuando se ejecuta el primer ejercicio se debe esperar a que termine, no incrementar este número ya que hace que entre en el elif
+      if(timer == 0) { //Si hemos llegado al tiempo del ejercicio, pasamos al siguiente
+        session.exerciseCounter++;
+        Logger.dbg(" testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
+      }
       session.save();
       Logger.dbg("executeSession - session saved ");
     }
@@ -389,7 +391,6 @@ async function notifyParticipants(sessionName, io) {
     var initialRoom = 100;
 
     Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
-
     var nonMaleList = []
     var maleList = []
     for(j=0;j<participants.length;j++) {
@@ -437,7 +438,6 @@ async function notifyParticipants(sessionName, io) {
     for(i=0;i<roomCount;i++){
       let peer1 = firstList[i];
       let peer2 = secondList[i];
-      
       peer1.room = i+initialRoom;
       peer2.room = i+initialRoom;
       
@@ -792,7 +792,6 @@ module.exports = {
           Logger.dbg("EVENT msg - tokens.get(pack.token) ",tokens.get(pack.token));  
           return;
         }
-        
 
         if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
           io.sockets.emit("msg", pack);

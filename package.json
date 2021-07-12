@@ -28,6 +28,6 @@
     "url": "https://github.com/pafmon/flockjs"
   },
   "devDependencies": {
-    "nodemon": "^2.0.2"
+    "nodemon": "^2.0.7"
   }
 }

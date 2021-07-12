@@ -254,18 +254,17 @@ async function executeSession(sessionName, io) {
   io.to(sessionName).emit(event[0],event[1]);
 
   lastSessionEvent.set(sessionName,event);
-  Logger.dbg("executeSession - lastSessionEvent saved",event[0]);
-        
+  Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
+  Logger.dbg("executeSession - session", session);
   const interval = setInterval(function () {
-    
+
     if (session.testCounter == numTests) {
       console.log("There are no more tests, the session <"+session.name+"> has finish!");
       Logger.dbg("executeSession - emitting 'finish' event in session "+session.name+" #############################");
       
       io.to(sessionName).emit("finish");
       lastSessionEvent.set(sessionName,["finish"]);
-      Logger.dbg("executeSession - lastSessionEvent saved",event);
-        
+      Logger.dbg("executeSession - lastSessionEvent saved",event);        
       clearInterval(interval);
     } else if (timer > 0) {
       io.to(sessionName).emit("countDown", {
@@ -308,12 +307,13 @@ async function executeSession(sessionName, io) {
             maxTime: exercise.time,
             exerciseDescription: exercise.description,
             exerciseType: exercise.type,
-            inputs: exercise.inputs,
+            validations: exercise.validations,
           },
         }];
         io.to(sessionName).emit(event[0],event[1]);
         lastSessionEvent.set(sessionName,event);
         Logger.dbg("executeSession - lastSessionEvent saved",event[0]);
+        Logger.dbg("executeSession - EVENT: ",event);
 
         sessions.set(session.name, {
           session: session,
@@ -321,9 +321,11 @@ async function executeSession(sessionName, io) {
         });
         timer = exercise.time;
       }
-      session.exerciseCounter++;
-      Logger.dbg(" testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
-
+      //TODO - Esto no tiene sentido porque cuando se ejecuta el primer ejercicio se debe esperar a que termine, no incrementar este número ya que hace que entre en el elif
+      if(timer == 0) { //Si hemos llegado al tiempo del ejercicio, pasamos al siguiente
+        session.exerciseCounter++;
+        Logger.dbg(" testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
+      }
       session.save();
       Logger.dbg("executeSession - session saved ");
     }
@@ -390,65 +392,14 @@ async function notifyParticipants(sessionName, io) {
 
     Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
 
-    var nonMaleList = []
-    var maleList = []
-    for(j=0;j<participants.length;j++) {
-      if (participants[j].gender == "Male") {
-        maleList.push(participants[j]);
-      }
-      else {
-        nonMaleList.push(participants[j]);
-      }
-    }
-
-    var firstList = []
-    var secondList = []
-
-    if (nonMaleList.length != maleList.length) {
-      if (nonMaleList.length < maleList.length) {
-        const sizeDifference = maleList.length - nonMaleList.length;
-        firstList = nonMaleList;
-        secondList = maleList.slice(0, maleList.length - sizeDifference);
-        for(let j=maleList.length - sizeDifference;j<maleList.length;j++) {
-          if(j%2==0) {
-            firstList.push(maleList[j]);
-          }
-          else {
-            secondList.push(maleList[j]);
-          }
-        }
-      } else {
-        const sizeDifference = nonMaleList.length - maleList.length;
-        firstList = maleList;
-        secondList = nonMaleList.slice(0, nonMaleList.length - sizeDifference);
-        for(let j=nonMaleList.length - sizeDifference;j<nonMaleList.length;j++) {
-          if(j%2==0) {
-            firstList.push(nonMaleList[j]);
-          }
-          else {
-            secondList.push(nonMaleList[j]);
-          }
-        }
-      }
-    }
-
-    participantNumber = 0;
-
     for(i=0;i<roomCount;i++){
-      let peer1 = firstList[i];
-      let peer2 = secondList[i];
-      
+      let peer1 = participants[i*2];
+      let peer2 = participants[(i*2)+1];
       peer1.room = i+initialRoom;
       peer2.room = i+initialRoom;
       
-      if (i%2==0) {
-        peer1.blind = session.blindParticipant;
-        peer2.blind = false;
-      }
-      else {
-        peer1.blind = false;
-        peer2.blind = session.blindParticipant;
-      }
+      peer1.blind = session.blindParticipant;
+      peer2.blind = false;
       Logger.dbg("notifyParticipants - Pair created in room <"+peer1.room+">:\n"+
                   "    -"+ peer1.code+", "+peer1.firstName+", "+peer1.firstName+", "+peer1.gender+", "+peer1.blind+"\n"+
                   "    -"+ peer2.code+", "+peer2.firstName+", "+peer2.firstName+", "+peer2.gender+", "+peer2.blind);
@@ -792,7 +743,6 @@ module.exports = {
           Logger.dbg("EVENT msg - tokens.get(pack.token) ",tokens.get(pack.token));  
           return;
         }
-        
 
         if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
           io.sockets.emit("msg", pack);

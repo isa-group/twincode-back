@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha",
     "start": "nodemon index.js"
   },
   "author": "",
@@ -17,6 +17,7 @@
     "escomplex": "^2.0.0-alpha",
     "esprima": "^4.0.1",
     "express": "^4.16.2",
+    "mocha": "^9.0.2",
     "mongoose": "^5.9.7",
     "nodemailer": "^6.4.6",
     "papaparse": "^5.2.0",

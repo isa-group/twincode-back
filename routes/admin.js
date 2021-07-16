@@ -281,7 +281,7 @@ router.put("/sessions/:sessionName", (req, res) => {
           session.blindParticipant = req.body.blindParticipant;
 
           console.log("Session updated: " + JSON.stringify(session, null, 2));
-
+          
           session
             .save()
             .then((ret) => {

@@ -573,7 +573,8 @@ router.get("/tests/:testName/exercise/:exerciseId", async (req, res) => {
         res.status(500).send(err);
       }
     } else {
-      Exercise.
+      // TODO mirar esto, preguntar a Rodrigo
+      //Exercise.
       res.status(200).json(exercise);
     }
   });

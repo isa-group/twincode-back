@@ -188,7 +188,7 @@ var localHostURL = "http://localhost:3000";
           .post('/sessions')
           .set('Authorization', '300OT0n3l4d45')
           .send({
-            name: "Test Session",
+            name: "Test sessions",
             tokenPairing: false,
             tokens: ["uno"]
           })
@@ -201,7 +201,7 @@ var localHostURL = "http://localhost:3000";
           session: "Test sessions",
           name: "Testing test",
           description: "Description test",
-          orderNumber: 50,
+          orderNumber: 1,
           time: 50,
           peerChange: true,
           exercises: []
@@ -214,30 +214,163 @@ var localHostURL = "http://localhost:3000";
       });
 
 
-      // TODO test delete correctly
-      /*
-      it('Deleting a test must be 200', (done) => {
+      it('Get all tests in a session must be 200', (done) => {
         chai.request(localHostURL)
-        .delete('/sessions/Test Session/1')
+        .get('/tests/Test sessions')
+        .set('Authorization', '300OT0n3l4d45')
+        .send()
+        .end( function(err,res){
+          expect(res).to.have.status(200);
+          done();
+        });
+      });
+
+
+      it('Get a test in a session must be 200', (done) => {
+        chai.request(localHostURL)
+        .get('/tests/Test sessions/1')
+        .set('Authorization', '300OT0n3l4d45')
+        .send()
+        .end( function(err,res){
+          console.log(res.body)
+          expect(res).to.have.status(200);
+          done();
+        });
+      });
+
+
+      it('Editing a test must be 200', (done) => {
+        chai.request(localHostURL)
+        .put('/tests/Test Session')
         .send({
-          name: "Test Session"
+          "orderNumber": 1,
+          "time": 120,
+          "exercises": []
         })
         .set('Authorization', '300OT0n3l4d45')
         .end( function(err,res){
           expect(res).to.have.status(200);
+          done();
         });
+      });
 
+
+      it('Deleting a test must be 200', (done) => {
         chai.request(localHostURL)
-        .delete('/sessions/Test Session')
+        .delete('/tests/Test sessions/1')
         .send({
-          name: "Test Session"
+          name: "Test sessions"
         })
         .set('Authorization', '300OT0n3l4d45')
         .end( function(err,res){
+          expect(res).to.have.status(200);
+          done();
+        });
+
+      
+        chai.request(localHostURL)
+        .delete('/sessions/Test sessions')
+        .send({
+          name: "Test sessions"
+        })
+        .set('Authorization', '300OT0n3l4d45')
+        .end( function(err,res){
+        });
+      
+      });
+
+
+    });
+
+
+
+    // ADMIN --> EXERCISES
+    describe('./admin.js --> Exercises', function(){
+
+
+      it('Creating a test must be 200', (done) => {
+        chai.request(localHostURL)
+          .post('/sessions')
+          .set('Authorization', '300OT0n3l4d45')
+          .send({
+            name: "Test sessions",
+            tokenPairing: false,
+            tokens: ["uno"]
+          })
+          .end( function(err,res){
+          });
+
+        chai.request(localHostURL)
+        .post('/tests')
+        .send({
+          session: "Test sessions",
+          name: "Testing test",
+          description: "Description test",
+          orderNumber: 1,
+          time: 50,
+          peerChange: true,
+          exercises: [{
+            "name": "Exercise 1",
+            "description": "This is a testing exercise",
+            "validations": [{
+              "input": 1,
+              "solution": 2
+            },{
+              "input": 10,
+              "solution": 101
+            },{
+              "input": 5,
+              "solution": 26
+            },{
+              "input": 73,
+              "solution": 5330
+            }]
+          }]
+        })
+        .set('Authorization', '300OT0n3l4d45')
+        .end( function(err,res){
+          expect(res).to.have.status(200);
+          done();
+        });
+      });
+
+
+      /*
+      it('Getting an exercise from a test must be 200', (done) => {
+        chai.request(localHostURL)
+        .get('/tests/Testing test/exercise/0')
+        .send()
+        .set('Authorization', '300OT0n3l4d45')
+        .end( function(err,res){
+          expect(res).to.have.status(200);
           done();
         });
       });
       */
+
+      it('Deleting a test must be 200', (done) => {
+        chai.request(localHostURL)
+        .delete('/tests/Test sessions/1')
+        .send({
+          name: "Test sessions"
+        })
+        .set('Authorization', '300OT0n3l4d45')
+        .end( function(err,res){
+          expect(res).to.have.status(200);
+          done();
+        });
+
+      
+        chai.request(localHostURL)
+        .delete('/sessions/Test sessions')
+        .send({
+          name: "Test sessions"
+        })
+        .set('Authorization', '300OT0n3l4d45')
+        .end( function(err,res){
+        });
+      
+      });
 
 
     });

@@ -5,6 +5,7 @@ const User = require("../models/User.js");
 const nodemailer = require("nodemailer");
 const Logger = require("../logger.js");
 const Session = require("../models/Session.js");
+const { response } = require("express");
 
 router.post("/login", (req, res) => {
   let responseBody = {
@@ -29,6 +30,7 @@ router.post("/login", (req, res) => {
 });
 
 router.post("/signup", async (req, res) => {
+  console.log(req.body);
   var code = Math.floor(Math.random() * 1000000 + 1);
   var codeList = await User.find().then((res) => {
     var listAux = []
@@ -103,6 +105,7 @@ router.post("/signup", async (req, res) => {
 
       Logger.monitorLog("Message sent: "+ info.messageId);
       res.send(bodyResponse);
+      res.sendStatus(200);
     } catch (e) {
       Logger.monitorLog(e);
       if (e.name == "ValidationError") {

@@ -390,34 +390,6 @@ describe('./admin.js', function() {
 
 }); 
 
-// PARTICIPANS
-describe('./participants.js', function() {
-
-
-  // PARTICIPANS --> PARTICIPANS
-  describe('Participants', function(){
-
-    /*
-    it('Deleting a test must be 200', (done) => {
-      chai.request(localHostURL)
-      .delete('/tests/Test sessions/1')
-      .send({
-        name: "Test sessions"
-      })
-      .set('Authorization', '300OT0n3l4d45')
-      .end( function(err,res){
-        expect(res).to.have.status(200);
-        done();
-      });
-    
-    });
-    */
-
-  });
-
-
-
-}); 
 
 
 // AUTH
@@ -442,7 +414,7 @@ describe('./auth.js', function() {
       });
     });
 
-    // TODO lo inserta en mongo pero devuelve error 500
+    // TODO lo inserta en mongo pero devuelve error 500 (falla la funcion de auth.js no el test parece por el envio del correco electronico)
     it('Singing up must be 200', (done) => {
       chai.request(localHostURL)
       .post('/signup')
@@ -460,9 +432,53 @@ describe('./auth.js', function() {
         knownLanguages: 'python'
       })
       .end( function(err,res){
+        //console.log(res.body.error);
         expect(res).to.have.status(200);
         done();
       });
+    });
+    
+    
+
+  });
+
+
+
+}); 
+
+
+// PARTICIPANS
+describe('./participants.js', function() {
+
+
+  // PARTICIPANS --> PARTICIPANS
+  describe('Participants', function(){
+
+
+    it('Getting all participants of a session must be 200', (done) => {
+      chai.request(localHostURL)
+      .get('/participants/Session1')
+      .send()
+      .set('Authorization', '300OT0n3l4d45')
+      .end( function(err,res){
+        expect(res).to.have.status(200);
+        done();
+      });
+    
+    });
+
+    
+    it('Deleting a test must be 200', (done) => {
+      chai.request(localHostURL)
+      .delete('/participants/Session1/dbrincau@us.es')
+      .send()
+      .set('Authorization', '300OT0n3l4d45')
+      .end( function(err,res){
+        expect(res.text).to.eql("Participant dbrincau@us.es successfully deleted!");
+        expect(res).to.have.status(200);
+        done();
+      });
+    
     });
     
 
@@ -472,3 +488,36 @@ describe('./auth.js', function() {
 
 }); 
 
+
+
+
+// TESTS
+describe('./tests.js', function() {
+
+
+  // TESTS --> TESTS
+  describe('Tests', function(){
+
+    /*
+    it('Getting all tests must be 200', (done) => {
+      chai.request(localHostURL)
+      .get('/test')
+      .send({
+        "code": "952555"
+      })
+      .set('Authorization', '300OT0n3l4d45')
+      .end( function(err,res){
+        console.log(res);
+        expect(res).to.have.status(200);
+        done();
+      });
+    
+    });
+    */
+
+
+  });
+
+
+
+}); 

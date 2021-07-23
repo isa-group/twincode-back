@@ -5,7 +5,6 @@ const User = require("../models/User.js");
 const nodemailer = require("nodemailer");
 const Logger = require("../logger.js");
 const Session = require("../models/Session.js");
-const { response } = require("express");
 
 router.post("/login", (req, res) => {
   let responseBody = {
@@ -30,15 +29,15 @@ router.post("/login", (req, res) => {
 });
 
 router.post("/signup", async (req, res) => {
-  console.log(req.body);
   var code = Math.floor(Math.random() * 1000000 + 1);
-  var codeList = await User.find().then((res) => {
+  var codeList = await User.find().then((result) => {
     var listAux = []
-    for(r=0;r<res.length;r++) {
-      listAux.push(res[r].code);
+    for(r=0;r<result.length;r++) {
+      listAux.push(result[r].code);
     }
     return listAux;
   });
+
 
   var repeated = false;
   while(true) {
@@ -47,9 +46,8 @@ router.post("/signup", async (req, res) => {
         repeated = true;
         break;
       }
-    } 
+    }
     
-
     if(repeated) {
       code = Math.floor(Math.random() * 1000000 + 1);
       repeated = false;
@@ -57,6 +55,7 @@ router.post("/signup", async (req, res) => {
       break;
     }
   }
+  
 
   const newUser = new User(req.body);
   newUser.code = code;
@@ -116,6 +115,7 @@ router.post("/signup", async (req, res) => {
           message: "User already registered on the session.",
         });
       } else {
+        res.send({"error": e})
         res.sendStatus(500);
       }
     }

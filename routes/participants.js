@@ -9,22 +9,15 @@ router.get("/participants/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
 
   if (adminSecret === process.env.ADMIN_SECRET) {
-    User.find(
-      {
-        environment: process.env.NODE_ENV,
-        subject: req.params.sessionName,
-      },
-      { code: 1, firstName: 1, mail: 1, room: 1, socketId: 1, _id: 0 }
-      , function (err, users) {
-        if (err) {
-          if (err.name == 'ValidationError') {
-            res.status(422).send(err);
-          }
-          else {
-            res.status(500).send(err);
-          }
-        }
-        else {
+    try {
+      User.find(
+        {
+          environment: process.env.NODE_ENV,
+          subject: req.params.sessionName,
+        },
+        { code: 1, firstName: 1, mail: 1, room: 1, socketId: 1, _id: 0 }
+      )
+        .then((users) => {
           if (users.length > 0) {
             let orderedUsers = [];
             users.forEach((user) => {
@@ -40,12 +33,21 @@ router.get("/participants/:sessionName", (req, res) => {
                 status: isConnected,
               });
             });
-            res.status(200).send(orderedUsers);
-          }else{
-            res.status(204).send("No users found");
+            res.send(orderedUsers);
+          } else {
+            res.sendStatus(404);
           }
-        }
-      })
+        })
+        .catch((error) => {
+          console.log(error);
+          res.sendStatus(500);
+        });
+    } catch (e) {
+      console.log(e);
+      res.sendStatus(500);
+    }
+  } else {
+    res.sendStatus(401);
   }
 });
 

@@ -14,5 +14,3 @@ npm start
 ```
 
 Then, if running in localhost, you start a new room: `http://localhost:8080/`
-
-TEST

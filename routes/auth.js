@@ -30,14 +30,13 @@ router.post("/login", (req, res) => {
 
 router.post("/signup", async (req, res) => {
   var code = Math.floor(Math.random() * 1000000 + 1);
-  var codeList = await User.find().then((result) => {
+  var codeList = await User.find().then((res) => {
     var listAux = []
-    for(r=0;r<result.length;r++) {
-      listAux.push(result[r].code);
+    for(r=0;r<res.length;r++) {
+      listAux.push(res[r].code);
     }
     return listAux;
   });
-
 
   var repeated = false;
   while(true) {

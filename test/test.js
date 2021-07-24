@@ -212,7 +212,7 @@ describe('./admin.js', function() {
         session: "Test sessions",
         name: "Testing test",
         description: "Description test",
-        orderNumber: 1,
+        orderNumber: 0,
         time: 50,
         peerChange: true,
         exercises: []
@@ -231,19 +231,6 @@ describe('./admin.js', function() {
       .set('Authorization', '300OT0n3l4d45')
       .send()
       .end( function(err,res){
-        expect(res).to.have.status(200);
-        done();
-      });
-    });
-
-
-    it('Get a test in a session must be 200', (done) => {
-      chai.request(localHostURL)
-      .get('/tests/Test sessions/1')
-      .set('Authorization', '300OT0n3l4d45')
-      .send()
-      .end( function(err,res){
-        console.log(res.body)
         expect(res).to.have.status(200);
         done();
       });
@@ -323,34 +310,10 @@ describe('./admin.js', function() {
         exercises: [{
           "name": "Exercise 1",
           "description": "This is a testing exercise",
-          "validations": [{
-            "input": 1,
-            "solution": 2
-          },{
-            "input": 10,
-            "solution": 101
-          },{
-            "input": 5,
-            "solution": 26
-          },{
-            "input": 73,
-            "solution": 5330
-          }]
-        }]
-      })
-      .set('Authorization', '300OT0n3l4d45')
-      .end( function(err,res){
-        expect(res).to.have.status(200);
-        done();
-      });
-    });
-
-
-    
-    it('Getting an exercise from a test must be 200', (done) => {
-      chai.request(localHostURL)
-      .get('/tests/Testing test/exercise/0')
-      .send()
+          "inputs": [1, 10, 5, 73],
+          "solutions": [2, 101, 26, 5330]
+      }]
+    })
       .set('Authorization', '300OT0n3l4d45')
       .end( function(err,res){
         expect(res).to.have.status(200);

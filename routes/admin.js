@@ -430,6 +430,7 @@ router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
       })
         .then((response) => {
           res.send(response);
+          res.sendStatus(200);
         })
         .catch((error) => {
           let errorMsg = "Something bad happened...";

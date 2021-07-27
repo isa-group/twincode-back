@@ -639,7 +639,7 @@ module.exports = {
         });
         if (session && session.active) {
           userToSocketID.set(user.code, socket.id);
-          user.socketId = socket.id; // TODO: Will be placed outside this function at some pointç
+          user.socketId = socket.id; // TODO: Will be placed outside this function at some point
           Logger.dbg("EVENT clientReady - Saving user",user,["code","firstName","gender","room","blind"]);
           await user.save();
 

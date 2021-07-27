@@ -8,7 +8,6 @@ const axios = require("axios");
 chai.use(chaiHttp);
 var localHostURL = "http://localhost:3000";
 
-// TODO Comprobar rutas del back-end
 
 console.log('Testing back-end routes: ');
 // ADMIN

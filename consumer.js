@@ -389,49 +389,6 @@ async function notifyParticipants(sessionName, io) {
     var initialRoom = 100;
 
     Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
-    var nonMaleList = []
-    var maleList = []
-    for(j=0;j<participants.length;j++) {
-      if (participants[j].gender == "Male") {
-        maleList.push(participants[j]);
-      }
-      else {
-        nonMaleList.push(participants[j]);
-      }
-    }
-
-    var firstList = []
-    var secondList = []
-
-    if (nonMaleList.length != maleList.length) {
-      if (nonMaleList.length < maleList.length) {
-        const sizeDifference = maleList.length - nonMaleList.length;
-        firstList = nonMaleList;
-        secondList = maleList.slice(0, maleList.length - sizeDifference);
-        for(let j=maleList.length - sizeDifference;j<maleList.length;j++) {
-          if(j%2==0) {
-            firstList.push(maleList[j]);
-          }
-          else {
-            secondList.push(maleList[j]);
-          }
-        }
-      } else {
-        const sizeDifference = nonMaleList.length - maleList.length;
-        firstList = maleList;
-        secondList = nonMaleList.slice(0, nonMaleList.length - sizeDifference);
-        for(let j=nonMaleList.length - sizeDifference;j<nonMaleList.length;j++) {
-          if(j%2==0) {
-            firstList.push(nonMaleList[j]);
-          }
-          else {
-            secondList.push(nonMaleList[j]);
-          }
-        }
-      }
-    }
-
-    participantNumber = 0;
 
     var nonMaleList = []
     var maleList = []
@@ -477,6 +434,7 @@ async function notifyParticipants(sessionName, io) {
 
     participantNumber = 0;
 
+    console.log("LISTAS \n" + firstList + "\n" + secondList);
     for(i=0;i<roomCount;i++){
       let peer1 = firstList[i];
       let peer2 = secondList[i];

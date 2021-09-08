@@ -402,7 +402,7 @@ async function notifyParticipants(sessionName, io) {
 
     var firstList = []
     var secondList = []
-    /*
+    
     if (nonMaleList.length != maleList.length) {
       if (nonMaleList.length < maleList.length) {
         const sizeDifference = maleList.length - nonMaleList.length;
@@ -430,7 +430,7 @@ async function notifyParticipants(sessionName, io) {
         }
       }
     }
-    */
+    /*
     if(maleList.length > nonMaleList.length) {
       var diff = nonMaleList.length + ((maleList.length - nonMaleList.length) / 2);
       firstList = maleList.slice(0,diff);
@@ -445,6 +445,7 @@ async function notifyParticipants(sessionName, io) {
       firstList = maleList;
       secondList = nonMaleList;
     }
+    */
     participantNumber = 0;
 
     for(i=0;i<roomCount;i++){

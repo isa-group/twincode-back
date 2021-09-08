@@ -376,6 +376,7 @@ async function notifyParticipants(sessionName, io) {
  
     var participantCount = participants.length;
     var roomCount = Math.floor(participantCount / 2);
+    
 
     if((participantCount % 2) == 0)
       Logger.dbg("notifyParticipants - the participant count is even, PERFECT PAIRING! :-)");
@@ -393,10 +394,10 @@ async function notifyParticipants(sessionName, io) {
     var maleList = []
     for(j=0;j<participants.length;j++) {
       if (participants[j].gender == "Male") {
-        maleList[maleList.length]=participants[j];
+        maleList.push(participants[j]);
       }
       else {
-        nonMaleList[nonMaleList.length]=participants[j];
+        nonMaleList.push(participants[j]);
       }
     }
 
@@ -448,6 +449,7 @@ async function notifyParticipants(sessionName, io) {
     */
     participantNumber = 0;
 
+    console.log("LISTAS \n" + firstList + "\n" + secondList);
     for(i=0;i<roomCount;i++){
       let peer1 = firstList[i];
       let peer2 = secondList[i];

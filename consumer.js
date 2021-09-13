@@ -394,17 +394,17 @@ async function notifyParticipants(sessionName, io) {
     var maleList = []
     for(j=0;j<participants.length;j++) {
       if (participants[j].gender == "Male") {
-        maleList.push(participants[j]);
+        maleList[maleList.length]=participants[j];
       }
       else {
-        nonMaleList.push(participants[j]);
+        nonMaleList[nonMaleList.length]=participants[j];
       }
     }
 
     var firstList = []
     var secondList = []
     
-    /*
+    
     if (nonMaleList.length != maleList.length) {
       if (nonMaleList.length < maleList.length) {
         const sizeDifference = maleList.length - nonMaleList.length;
@@ -432,7 +432,7 @@ async function notifyParticipants(sessionName, io) {
         }
       }
     }
-    */
+    /*
     if(maleList.length > nonMaleList.length) {
       var diff = nonMaleList.length + ((maleList.length - nonMaleList.length) / 2);
       firstList = maleList.slice(0,diff);
@@ -447,9 +447,9 @@ async function notifyParticipants(sessionName, io) {
       firstList = maleList;
       secondList = nonMaleList;
     }
+    */
     participantNumber = 0;
 
-    console.log("LISTAS \n" + firstList + "\n" + secondList);
     for(i=0;i<roomCount;i++){
       let peer1 = firstList[i];
       let peer2 = secondList[i];
@@ -517,6 +517,7 @@ async function notifyParticipants(sessionName, io) {
       Logger.dbg("notifyParticipants - Saving room in DB for "+myCode,user.room);
 
       // DBG-VERBOSE: Logger.dbg("notifyParticipants - Searching pair of "+myCode+" in room"+myRoom);  
+
 
       const pair = participants.filter((p)=>{
         return (p.room == myRoom) && (p.code != myCode);

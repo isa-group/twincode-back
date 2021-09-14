@@ -13,8 +13,10 @@ var app = express();
 app._io = null;
 app._consumer = null;
 
+console.log("Setup CORS header...");
 app.use(cors());
 app.options("*", cors());
+console.log("OK");
 
 app.use(bodyParser.json());
 app.use(cookieParser());

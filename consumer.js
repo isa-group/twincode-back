@@ -298,6 +298,7 @@ async function executeSession(sessionName, io) {
 
     } else {
       console.log("Starting new exercise:");
+      let testLanguage = tests[session.testCounter].language;
       let exercise =
         tests[session.testCounter].exercises[session.exerciseCounter];
       if (exercise) {
@@ -309,6 +310,8 @@ async function executeSession(sessionName, io) {
             exerciseDescription: exercise.description,
             exerciseType: exercise.type,
             inputs: exercise.inputs,
+            solutions: exercise.solutions,
+            testLanguage: testLanguage,
           },
         }];
         io.to(sessionName).emit(event[0],event[1]);

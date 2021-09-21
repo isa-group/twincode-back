@@ -496,7 +496,12 @@ async function notifyParticipants(sessionName, io) {
       
       Logger.dbg("notifyParticipants - Found pair of "+myCode+" in room"+myRoom,pair,["code","mail"]);
 
-
+      var newGender = "";
+      if (Math.random() < 0.5) {
+        newGender = "Female";
+      } else {
+        newGender = "Male";
+      }
       Logger.dbg("notifyParticipants - Session <"+sessionName+"> - Emitting 'sessionStart' event to <"+participant.code+"> in room <"+sessionName + participant.room+">");
       io.to(participant.socketId).emit("sessionStart", {
         room: sessionName + participant.room,
@@ -504,7 +509,7 @@ async function notifyParticipants(sessionName, io) {
           code: participant.code,
           blind: participant.blind,
         },
-        pairedTo: pair.gender,
+        pairedTo: newGender,
       });
 
     }else{

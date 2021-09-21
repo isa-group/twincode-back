@@ -404,70 +404,31 @@ async function notifyParticipants(sessionName, io) {
       }
     }
 
-    var firstList = []
-    var secondList = []
+    var controlList = []
+    var expertimentList = []
     
+    for (var i = 0; i < nonMaleList.length; i++) {
+      if (i%2==0) expertimentList.push(nonMaleList[i]);
+      else controlList.push(nonMaleList[i]);
+    }
     
-    if (nonMaleList.length != maleList.length) {
-      if (nonMaleList.length < maleList.length) {
-        const sizeDifference = maleList.length - nonMaleList.length;
-        firstList = nonMaleList;
-        secondList = maleList.slice(0, maleList.length - sizeDifference);
-        for(let j=maleList.length - sizeDifference;j<maleList.length;j++) {
-          if(j%2==0) {
-            firstList.push(maleList[j]);
-          }
-          else {
-            secondList.push(maleList[j]);
-          }
-        }
-      } else {
-        const sizeDifference = nonMaleList.length - maleList.length;
-        firstList = maleList;
-        secondList = nonMaleList.slice(0, nonMaleList.length - sizeDifference);
-        for(let j=nonMaleList.length - sizeDifference;j<nonMaleList.length;j++) {
-          if(j%2==0) {
-            firstList.push(nonMaleList[j]);
-          }
-          else {
-            secondList.push(nonMaleList[j]);
-          }
-        }
-      }
+    for (var i = 0; i < maleList.length; i++) {
+      if (i%2==0) controlList.push(maleList[i]);
+      else expertimentList.push(maleList[i]);
     }
-    /*
-    if(maleList.length > nonMaleList.length) {
-      var diff = nonMaleList.length + ((maleList.length - nonMaleList.length) / 2);
-      firstList = maleList.slice(0,diff);
-      var auxLs = maleList.slice(diff,maleList.length);
-      secondList = nonMaleList + auxLs;
-    } else if (maleList.length < nonMaleList.length) {
-      var diff = maleList.length + ((nonMaleList.length - maleList.length) / 2);
-      firstList = nonMaleList.slice(0,diff);
-      var auxLs = nonMaleList.slice(diff,nonMaleList.length);
-      secondList = maleList + auxLs;
-    } else {
-      firstList = maleList;
-      secondList = nonMaleList;
-    }
-    */
+    
     participantNumber = 0;
 
     for(i=0;i<roomCount;i++){
-      let peer1 = firstList[i];
-      let peer2 = secondList[i];
+      let peer1 = controlList[i];
+      let peer2 = expertimentList[i];
       
       peer1.room = i+initialRoom;
       peer2.room = i+initialRoom;
       
-      if (i%2==0) {
-        peer1.blind = session.blindParticipant;
-        peer2.blind = false;
-      }
-      else {
-        peer1.blind = false;
-        peer2.blind = session.blindParticipant;
-      }
+      peer1.blind = Session.blindParticipant;
+      peer2.blind = false;
+
       Logger.dbg("notifyParticipants - Pair created in room <"+peer1.room+">:\n"+
                   "    -"+ peer1.code+", "+peer1.firstName+", "+peer1.firstName+", "+peer1.gender+", "+peer1.blind+"\n"+
                   "    -"+ peer2.code+", "+peer2.firstName+", "+peer2.firstName+", "+peer2.gender+", "+peer2.blind);

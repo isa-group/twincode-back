@@ -404,31 +404,47 @@ async function notifyParticipants(sessionName, io) {
       }
     }
 
-    var controlList = []
-    var expertimentList = []
-    
-    for (var i = 0; i < nonMaleList.length; i++) {
-      if (i%2==0) expertimentList.push(nonMaleList[i]);
-      else controlList.push(nonMaleList[i]);
+    l = nonMaleList.concat(maleList);
+
+    console.log(l);
+
+
+    var controlList = [];
+    var expertimentList = [];
+
+    for (ui = 0; ui < l.length; ui++) {
+      if (ui%2==0) expertimentList[expertimentList.length] = l[ui];
+      else controlList[controlList.length] = l[ui];
     }
-    
-    for (var i = 0; i < maleList.length; i++) {
-      if (i%2==0) controlList.push(maleList[i]);
-      else expertimentList.push(maleList[i]);
-    }
-    
+
+    console.log(controlList);
+    console.log(expertimentList);
+
+    console.log(controlList + "\n" + expertimentList);
     participantNumber = 0;
 
     for(i=0;i<roomCount;i++){
       let peer1 = controlList[i];
       let peer2 = expertimentList[i];
+
+      console.log("\n\n\n\n\n\n\n\n\n\n\nPEER\n\n\n\n\n\n\n\n");
+      console.log(peer1);
+      console.log("\n\n\n\n\n\n\n\n\n\n");
+      console.log(peer2);
+      console.log("\n\n\n\n\n\n\n\n\n\n");
+
       
       peer1.room = i+initialRoom;
       peer2.room = i+initialRoom;
       
-      peer1.blind = Session.blindParticipant;
-      peer2.blind = false;
-
+      if (i%2==0) {
+        peer1.blind = session.blindParticipant;
+        peer2.blind = false;
+      }
+      else {
+        peer1.blind = false;
+        peer2.blind = session.blindParticipant;
+      }
       Logger.dbg("notifyParticipants - Pair created in room <"+peer1.room+">:\n"+
                   "    -"+ peer1.code+", "+peer1.firstName+", "+peer1.firstName+", "+peer1.gender+", "+peer1.blind+"\n"+
                   "    -"+ peer2.code+", "+peer2.firstName+", "+peer2.firstName+", "+peer2.gender+", "+peer2.blind);
@@ -496,12 +512,7 @@ async function notifyParticipants(sessionName, io) {
       
       Logger.dbg("notifyParticipants - Found pair of "+myCode+" in room"+myRoom,pair,["code","mail"]);
 
-      var newGender = "";
-      if (Math.random() < 0.5) {
-        newGender = "Female";
-      } else {
-        newGender = "Male";
-      }
+      var newGender = Math.random() > 0.5 ? "Female" : "Male"; // If number greater than 0.5, gender = , else gender = Male
       Logger.dbg("notifyParticipants - Session <"+sessionName+"> - Emitting 'sessionStart' event to <"+participant.code+"> in room <"+sessionName + participant.room+">");
       io.to(participant.socketId).emit("sessionStart", {
         room: sessionName + participant.room,

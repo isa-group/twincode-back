@@ -214,7 +214,8 @@ describe('./admin.js', function() {
         orderNumber: 0,
         time: 50,
         peerChange: true,
-        exercises: []
+        exercises: [],
+        language: "Javascript"
       })
       .set('Authorization', '300OT0n3l4d45')
       .end( function(err,res){
@@ -311,7 +312,8 @@ describe('./admin.js', function() {
           "description": "This is a testing exercise",
           "inputs": [1, 10, 5, 73],
           "solutions": [2, 101, 26, 5330]
-      }]
+      }],
+      language: "Javascript"
     })
       .set('Authorization', '300OT0n3l4d45')
       .end( function(err,res){

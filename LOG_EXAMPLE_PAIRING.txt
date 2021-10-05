@@ -1,0 +1,383 @@
+DEBUG - Saving Log - Monitor - Server:  <"Listening on port 3000">
+DEBUG - NEW CONNECTION Zlm9P1tmT0RDOxO8AAAA
+DEBUG - EVENT adminConnected <"Session1">
+Admin watching Session1
+DEBUG - Saving Log - NewConn - Zlm9P1tmT0RDOxO8AAAA:  <"New user with socket id Zlm9P1tmT0RDOxO8AAAA has entered">
+Session Session1 reset completed
+ENTORNO DE NODE: local
+DEBUG - NEW CONNECTION xKl-VrtFmWURBYbtAAAB
+ENTORNO DE NODE: local
+DEBUG - EVENT adminConnected <"Session1">
+Admin watching Session1
+DEBUG - Saving Log - NewConn - xKl-VrtFmWURBYbtAAAB:  <"New user with socket id xKl-VrtFmWURBYbtAAAB has entered">
+DEBUG - NEW CONNECTION GxBPyVy5Bsuos1neAAAC
+DEBUG - Saving Log - NewConn - GxBPyVy5Bsuos1neAAAC:  <"New user with socket id GxBPyVy5Bsuos1neAAAC has entered">
+DEBUG - /joinSession <{"code":"952555"}>
+DEBUG - /joinSession - Active - 952555
+DEBUG - /registerUser <"952555">
+DEBUG - /registerUser - User retrieved <{"code":"952555","mail":"1newtest@gmail.com",...}>
+DEBUG - /registerUser - Session retrieved <{"name":"Session1","tokenPairing":true,"pairingMode":"MANUAL","blindParticipant":true,...}>
+DEBUG - /registerUser - 200 <"952555">
+DEBUG - EVENT clientReady <"952555">
+DEBUG - EVENT clientConnected <"952555">
+DEBUG - EVENT clientReady - User Retrival [952555] -  <{"code":"952555","mail":"1newtest@gmail.com",...}>
+DEBUG - EVENT clientReady - Saving user <{"code":"952555","firstName":"test1","gender":"Male",...}>
+DEBUG - EVENT clientReady ------- Starting MANUAL pairing in session <Session1> for User 952555------------------------------
+DEBUG - EVENT clientReady - MANUAL Pairing [952555] - Last User: 
+DEBUG - EVENT clientReady - lastUserJoined Length:
+DEBUG - EVENT clientReady - First PEER - Assigned Room 0
+DEBUG - EVENT clientReady - FINISH - Saving user <{"code":"952555","firstName":"test1","gender":"Male","room":0,...}>
+DEBUG - NEW CONNECTION ypV9_QkSH_y-QrE3AAAD
+DEBUG - Saving Log - NewConn - ypV9_QkSH_y-QrE3AAAD:  <"New user with socket id ypV9_QkSH_y-QrE3AAAD has entered">
+DEBUG - /joinSession <{"code":"785347"}>
+DEBUG - /joinSession - Active - 785347
+DEBUG - /registerUser <"785347">
+DEBUG - /registerUser - User retrieved <{"code":"785347","mail":"3newtest@gamil.com",...}>
+DEBUG - /registerUser - Session retrieved <{"name":"Session1","tokenPairing":true,"pairingMode":"MANUAL","blindParticipant":true,...}>
+DEBUG - /registerUser - 200 <"785347">
+DEBUG - EVENT clientReady <"785347">
+DEBUG - EVENT clientConnected <"785347">
+DEBUG - EVENT clientReady - User Retrival [785347] -  <{"code":"785347","mail":"3newtest@gamil.com",...}>
+DEBUG - EVENT clientReady - Saving user <{"code":"785347","firstName":"test3","gender":"Female",...}>
+DEBUG - EVENT clientReady ------- Starting MANUAL pairing in session <Session1> for User 785347------------------------------
+DEBUG - EVENT clientReady - MANUAL Pairing [785347] - Last User:  <{"code":"952555",...}>
+DEBUG - EVENT clientReady - lastUserJoined Length: <1>
+DEBUG - EVENT clientReady - lastUserPairJoined Length:  <1>
+DEBUG - EVENT clientReady - Peer Assigned:  <{"code":"952555","mail":"1newtest@gmail.com",...}>
+DEBUG - EVENT clientReady - Room Assigned: 0
+DEBUG - EVENT clientReady - connectedUsers:  <{"dataType":"Map","value":[["785347","952555"],["952555","785347"]]}>
+DEBUG - EVENT clientReady - FINISH - Saving user <{"code":"785347","firstName":"test3","gender":"Female","room":0,"blind":true,...}>
+DEBUG - startSession Session1
+DEBUG - notifyParticipants - Number of potential participants: 17
+DEBUG - notifyParticipants - Including connected participant <"1newtest@gmail.com">
+DEBUG - notifyParticipants - Including connected participant <"3newtest@gamil.com">
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"726705n@gmail.com">
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"antohertest@gmail.com">        
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"ben10@gmail.com">
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"ejemplo2@gmail.com">
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"lastesttest@gmail.com">        
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"madre@gmail.com">
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"pruebaenesima@gmail.com">      
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"sbo2@gmail.com">
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"tessi00@gmail.com">
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"test2@gmail.com">
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"test3@gmail.com">
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"test4@gmail.com">
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"test@gmail.com">
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"testing1more@gamil.com">       
+DEBUG - notifyParticipants - Skipping NOT CONNECTED participant <"testtesttesting@gmail.com">    
+DEBUG - notifyParticipants - MANUAL pairing
+DEBUG - notifyParticipants - the participant count is even, PERFECT PAIRING! :-)
+DEBUG - notifyParticipants - Re-assigning rooms to avoid race conditions!
+[
+  {
+    environment: 'local',
+    _id: 60def10cf23abc2f1f4a3a8b,
+    firstName: 'test3',
+    surname: 'more',
+    mail: '3newtest@gamil.com',
+    academicMail: '',
+    gender: 'Female',
+    jsexp: '5',
+    birthDate: 2000-09-02T00:00:00.000Z,
+    subject: 'Session1',
+    beganStudying: 2018,
+    numberOfSubjects: 9,
+    knownLanguages: 'js',
+    signedUpOn: 2021-07-02T10:57:16.487Z,
+    code: '785347',
+    __v: 0,
+    token: '',
+    socketId: 'ypV9_QkSH_y-QrE3AAAD',
+    blind: true,
+    room: 0
+  },
+  {
+    environment: 'local',
+    _id: 60def0b503a0e42dcdd3cc0e,
+    firstName: 'test1',
+    surname: 'more',
+    mail: '1newtest@gmail.com',
+    academicMail: '',
+    gender: 'Male',
+    jsexp: '5',
+    birthDate: 2000-08-24T00:00:00.000Z,
+    subject: 'Session1',
+    beganStudying: 2018,
+    numberOfSubjects: 9,
+    knownLanguages: 'js',
+    signedUpOn: 2021-07-02T10:55:49.696Z,
+    code: '952555',
+    __v: 0,
+    token: '',
+    socketId: 'GxBPyVy5Bsuos1neAAAC',
+    room: 0
+  }
+]
+[
+  {
+    environment: 'local',
+    _id: 60def0b503a0e42dcdd3cc0e,
+    firstName: 'test1',
+    surname: 'more',
+    mail: '1newtest@gmail.com',
+    academicMail: '',
+    gender: 'Male',
+    jsexp: '5',
+    birthDate: 2000-08-24T00:00:00.000Z,
+    subject: 'Session1',
+    beganStudying: 2018,
+    numberOfSubjects: 9,
+    knownLanguages: 'js',
+    signedUpOn: 2021-07-02T10:55:49.696Z,
+    code: '952555',
+    __v: 0,
+    token: '',
+    socketId: 'GxBPyVy5Bsuos1neAAAC',
+    room: 0
+  }
+]
+[
+  {
+    environment: 'local',
+    _id: 60def10cf23abc2f1f4a3a8b,
+    firstName: 'test3',
+    surname: 'more',
+    mail: '3newtest@gamil.com',
+    academicMail: '',
+    gender: 'Female',
+    jsexp: '5',
+    birthDate: 2000-09-02T00:00:00.000Z,
+    subject: 'Session1',
+    beganStudying: 2018,
+    numberOfSubjects: 9,
+    knownLanguages: 'js',
+    signedUpOn: 2021-07-02T10:57:16.487Z,
+    code: '785347',
+    __v: 0,
+    token: '',
+    socketId: 'ypV9_QkSH_y-QrE3AAAD',
+    blind: true,
+    room: 0
+  }
+]
+{
+  environment: 'local',
+  _id: 60def0b503a0e42dcdd3cc0e,
+  firstName: 'test1',
+  surname: 'more',
+  mail: '1newtest@gmail.com',
+  academicMail: '',
+  gender: 'Male',
+  jsexp: '5',
+  birthDate: 2000-08-24T00:00:00.000Z,
+  subject: 'Session1',
+  beganStudying: 2018,
+  numberOfSubjects: 9,
+  knownLanguages: 'js',
+  signedUpOn: 2021-07-02T10:55:49.696Z,
+  code: '952555',
+  __v: 0,
+  token: '',
+  socketId: 'GxBPyVy5Bsuos1neAAAC',
+  room: 0
+}
+{
+  environment: 'local',
+  _id: 60def10cf23abc2f1f4a3a8b,
+  firstName: 'test3',
+  surname: 'more',
+  mail: '3newtest@gamil.com',
+  academicMail: '',
+  gender: 'Female',
+  jsexp: '5',
+  birthDate: 2000-09-02T00:00:00.000Z,
+  subject: 'Session1',
+  beganStudying: 2018,
+  numberOfSubjects: 9,
+  knownLanguages: 'js',
+  signedUpOn: 2021-07-02T10:57:16.487Z,
+  code: '785347',
+  __v: 0,
+  token: '',
+  socketId: 'ypV9_QkSH_y-QrE3AAAD',
+  blind: true,
+  room: 0
+}
+
+
+
+
+
+
+
+
+
+
+
+PEER
+
+
+
+
+
+
+
+
+{
+  environment: 'local',
+  _id: 60def0b503a0e42dcdd3cc0e,
+  firstName: 'test1',
+  surname: 'more',
+  mail: '1newtest@gmail.com',
+  academicMail: '',
+  gender: 'Male',
+  jsexp: '5',
+  birthDate: 2000-08-24T00:00:00.000Z,
+  subject: 'Session1',
+  beganStudying: 2018,
+  numberOfSubjects: 9,
+  knownLanguages: 'js',
+  signedUpOn: 2021-07-02T10:55:49.696Z,
+  code: '952555',
+  __v: 0,
+  token: '',
+  socketId: 'GxBPyVy5Bsuos1neAAAC',
+  room: 0
+}
+
+
+
+
+
+
+
+
+
+
+
+{
+  environment: 'local',
+  _id: 60def10cf23abc2f1f4a3a8b,
+  firstName: 'test3',
+  surname: 'more',
+  mail: '3newtest@gamil.com',
+  academicMail: '',
+  gender: 'Female',
+  jsexp: '5',
+  birthDate: 2000-09-02T00:00:00.000Z,
+  subject: 'Session1',
+  beganStudying: 2018,
+  numberOfSubjects: 9,
+  knownLanguages: 'js',
+  signedUpOn: 2021-07-02T10:57:16.487Z,
+  code: '785347',
+  __v: 0,
+  token: '',
+  socketId: 'ypV9_QkSH_y-QrE3AAAD',
+  blind: true,
+  room: 0
+}
+
+
+
+
+
+
+
+
+
+
+
+DEBUG - notifyParticipants - Pair created in room <100>:
+    -952555, test1, test1, Male, true
+    -785347, test3, test3, Female, false
+DEBUG - notifyParticipants - connected participants:  <{"code":"952555","mail":"1newtest@gmail.com","room":100,"blind":true,...}>
+DEBUG - notifyParticipants - connected participants:  <{"code":"785347","mail":"3newtest@gamil.com","room":100,"blind":false,...}>
+DEBUG - notifyParticipants - connectedUsers cleared <{"dataType":"Map","value":[]}>
+DEBUG - notifyParticipants - Saving user <{"code":"952555","firstName":"test1","gender":"Male","room":100,"blind":true,...}>
+DEBUG - notifyParticipants - Saving room in DB for 952555 <100>
+DEBUG - notifyParticipants - Found pair of 952555 in room100 <{"code":"785347","mail":"3newtest@gamil.com",...}>
+DEBUG - notifyParticipants - Session <Session1> - Emitting 'sessionStart' event to <952555> in room <Session1100>
+DEBUG - notifyParticipants - Saving user <{"code":"785347","firstName":"test3","gender":"Female","room":100,"blind":false,...}>
+DEBUG - notifyParticipants - Saving room in DB for 785347 <100>
+DEBUG - notifyParticipants - Found pair of 785347 in room100 <{"code":"952555","mail":"1newtest@gmail.com",...}>
+DEBUG - notifyParticipants - Session <Session1> - Emitting 'sessionStart' event to <785347> in room <Session1100>
+DEBUG - notifyParticipants - connectedUsers after notification <{"dataType":"Map","value":[["952555","785347"],["785347","952555"]]}>
+DEBUG - NEW CONNECTION VjMGZLmALiK1uxVvAAAE
+DEBUG - EVENT clientReconnection  <"952555">
+DEBUG - EVENT clientReconnection  <"952555">
+DEBUG - EVENT clientReconnection  <"952555">
+DEBUG - NEW CONNECTION a4RrZZWEM-8u5ou8AAAF
+DEBUG - Saving Log - NewConn - VjMGZLmALiK1uxVvAAAE:  <"New user with socket id VjMGZLmALiK1uxVvAAAE has entered">
+DEBUG - EVENT clientReconnection  <"785347">
+DEBUG - EVENT clientReconnection  <"785347">
+DEBUG - EVENT clientReconnection - user found <{"code":"952555","socketId":"GxBPyVy5Bsuos1neAAAC",...}>
+DEBUG - EVENT clientReconnection - Saving user <{"code":"952555","firstName":"test1","gender":"Male","room":100,"blind":true,...}>
+DEBUG - EVENT clientReconnection - user found <{"code":"952555","socketId":"GxBPyVy5Bsuos1neAAAC",...}>
+DEBUG - EVENT clientReconnection - Saving user <{"code":"952555","firstName":"test1","gender":"Male","room":100,"blind":true,...}>
+DEBUG - EVENT clientReconnection - user found <{"code":"952555","socketId":"GxBPyVy5Bsuos1neAAAC",...}>
+DEBUG - EVENT clientReconnection - Saving user <{"code":"952555","firstName":"test1","gender":"Male","room":100,"blind":true,...}>
+DEBUG - Saving Log - NewConn - a4RrZZWEM-8u5ou8AAAF:  <"New user with socket id a4RrZZWEM-8u5ou8AAAF has entered">
+DEBUG - EVENT clientReconnection - user found <{"code":"785347","socketId":"ypV9_QkSH_y-QrE3AAAD",...}>
+DEBUG - EVENT clientReconnection - Saving user <{"code":"785347","firstName":"test3","gender":"Female","room":100,"blind":false,...}>
+DEBUG - EVENT clientReconnection - user found <{"code":"785347","socketId":"ypV9_QkSH_y-QrE3AAAD",...}>
+DEBUG - EVENT clientReconnection - Saving user <{"code":"785347","firstName":"test3","gender":"Female","room":100,"blind":false,...}>
+DEBUG - EVENT clientReconnection - socketId updated <{"code":"952555","socketId":"VjMGZLmALiK1uxVvAAAE",...}>
+DEBUG - EVENT clientReconnection : LAST EVENT NOT FOUND for session Session1
+DEBUG - EVENT clientReconnection - socketId updated <{"code":"952555","socketId":"VjMGZLmALiK1uxVvAAAE",...}>
+DEBUG - EVENT clientReconnection : LAST EVENT NOT FOUND for session Session1
+DEBUG - EVENT clientReconnection - socketId updated <{"code":"952555","socketId":"VjMGZLmALiK1uxVvAAAE",...}>
+DEBUG - EVENT clientReconnection : LAST EVENT NOT FOUND for session Session1
+DEBUG - EVENT clientReconnection - socketId updated <{"code":"785347","socketId":"a4RrZZWEM-8u5ou8AAAF",...}>
+DEBUG - EVENT clientReconnection : LAST EVENT NOT FOUND for session Session1
+DEBUG - EVENT clientReconnection - socketId updated <{"code":"785347","socketId":"a4RrZZWEM-8u5ou8AAAF",...}>
+DEBUG - EVENT clientReconnection : LAST EVENT NOT FOUND for session Session1
+DEBUG - EVENT clientReconnection  <"785347">
+DEBUG - EVENT clientReconnection - user found <{"code":"785347","socketId":"a4RrZZWEM-8u5ou8AAAF",...}>
+DEBUG - EVENT clientReconnection - Saving user <{"code":"785347","firstName":"test3","gender":"Female","room":100,"blind":false,...}>
+DEBUG - EVENT clientReconnection - socketId updated <{"code":"785347","socketId":"a4RrZZWEM-8u5ou8AAAF",...}>
+DEBUG - EVENT clientReconnection : LAST EVENT NOT FOUND for session Session1
+DEBUG - executeSession - Cleared last event of session Session1
+DEBUG - executeSession - Starting Session1
+DEBUG - executeSession - Running  <{"name":"Session1","tokenPairing":true,"pairingMode":"MANUAL","blindParticipant":true,...}>
+DEBUG - executeSession - testCounter: 0 of 1 , exerciseCounter: -1 of 2
+DEBUG - executeSession - lastSessionEvent saved <"loadTest">
+ENTORNO DE NODE: local
+Loading test
+DEBUG - executeSession - lastSessionEvent saved <"loadTest">
+DEBUG - executeSession - testCounter: 0 of 1 , exerciseCounter: 0 of 2
+10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+Starting new exercise:
+   Este es el primer ejercicio (en pareja)...
+DEBUG - executeSession - lastSessionEvent saved <"newExercise">
+DEBUG -  testCounter: 0 of 1 , exerciseCounter: 1 of 2
+DEBUG - executeSession - session saved
+720
+719
+718
+717
+716
+715
+714
+713
+712
+711
+710
+709
+708
+707
+706
+705
+704
+DEBUG - executeSession - clearInterval
+Session Session1 reset completed

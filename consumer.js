@@ -14,18 +14,20 @@ let connectedUsers = new Map();
 let userToSocketID = new Map();
 let lastSessionEvent = new Map();
 
+
+//A function to parse an entrance into a json
 function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
 }
 
 
-
+//A simple wait function to wait a specified period of ms
 async function wait(ms) {
   await setTimeout(() => { }, ms);
 }
 
 
-
+//A function to test if user has finished or to bring him/her a new exercise
 async function exerciseTimeUp(id, description) {
   console.log("Friend ", id, " is out of time!");
   const user = await User.findOne({
@@ -45,25 +47,29 @@ async function exerciseTimeUp(id, description) {
         session: user.subject,
       });
 
+      //Until here, the function looks for an user, coinciding with id. Looks for his/her room and the test in which he/she is
       const exercise = test.exercises[room.lastExercise];
 
+      //Tries a new exercise, if there's no more on the test, tries a new test
       if (exercise) {
+        //If there is 1 more exercise on the test, user picks it
         if (test.exercises[room.lastExercise + 1]) {
           console.log("They are going to the next exercise");
           room.lastExercise += 1;
           await room.save();
-        } else {
+        } else { //if not, picks another test
           const nextTest = await Test.findOne({
             orderNumber: room.currentTest + 1,
             environment: process.env.NODE_ENV,
             session: user.subject,
           });
+          //If there is a new test, it starts in the first exercise 
           if (nextTest) {
             console.log("They got a new test (Prueba)");
             room.lastExercise = 0;
             room.test += 1;
             await room.save();
-          } else {
+          } else { //If there isn't, it indicates the room has finished
             console.log("They finished");
             room.finished = true;
             await room.save();

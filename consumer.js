@@ -14,18 +14,20 @@ let connectedUsers = new Map();
 let userToSocketID = new Map();
 let lastSessionEvent = new Map();
 
+
+//A function to parse an entrance into a json
 function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
 }
 
 
-
+//A simple wait function to wait a specified period of ms
 async function wait(ms) {
   await setTimeout(() => { }, ms);
 }
 
 
-
+//A function to test if user has finished or to bring him/her a new exercise
 async function exerciseTimeUp(id, description) {
   console.log("Friend ", id, " is out of time!");
   const user = await User.findOne({
@@ -45,25 +47,29 @@ async function exerciseTimeUp(id, description) {
         session: user.subject,
       });
 
+      //Until here, the function looks for an user, coinciding with id. Looks for his/her room and the test in which he/she is
       const exercise = test.exercises[room.lastExercise];
 
+      //Tries a new exercise, if there's no more on the test, tries a new test
       if (exercise) {
+        //If there is 1 more exercise on the test, user picks it
         if (test.exercises[room.lastExercise + 1]) {
           console.log("They are going to the next exercise");
           room.lastExercise += 1;
           await room.save();
-        } else {
+        } else { //if not, picks another test
           const nextTest = await Test.findOne({
             orderNumber: room.currentTest + 1,
             environment: process.env.NODE_ENV,
             session: user.subject,
           });
+          //If there is a new test, it starts in the first exercise 
           if (nextTest) {
             console.log("They got a new test (Prueba)");
             room.lastExercise = 0;
             room.test += 1;
             await room.save();
-          } else {
+          } else { //If there isn't, it indicates the room has finished
             console.log("They finished");
             room.finished = true;
             await room.save();
@@ -75,9 +81,9 @@ async function exerciseTimeUp(id, description) {
 }
 
 
-
+//Executing a new session and testing the following exercise it has to be launched
 async function executeSession(sessionName, io) {
-
+  //Pick up a session by its name, and puts in true the "running" attribute
   lastSessionEvent.set(sessionName, []);
   Logger.dbg("executeSession - Cleared last event of session " + sessionName);
 
@@ -88,21 +94,21 @@ async function executeSession(sessionName, io) {
   });
 
   session.running = true;
-  session.save();
+  session.save(); //Saves it on database
   Logger.dbg("executeSession - Running ", session, ["name", "pairingMode", "tokenPairing", "blindParticipant"]);
-
+  //Pick all tests
   const tests = await Test.find({
     session: session.name,
     environment: process.env.NODE_ENV,
   }).sort({ orderNumber: 1 });
-
+  //Number of tests in a session
   const numTests = tests.length;
-
+  //testCounter = session attribute that shows the order of the tests (actual test)
   let timer = 0;
   let maxExercises = tests[session.testCounter].exercises.length;
 
   Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
-
+  //Here it is loaded the test
   var event = ["loadTest", {
     data: {
       testDescription: tests[0].description,
@@ -115,8 +121,9 @@ async function executeSession(sessionName, io) {
   lastSessionEvent.set(sessionName, event);
   Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
 
+  //Start of the tests, following a time line
   const interval = setInterval(function () {
-
+    //If this session quantity of tests is the same test than loaded
     if (session.testCounter == numTests) {
       console.log("There are no more tests, the session <" + session.name + "> has finish!");
       Logger.dbg("executeSession - emitting 'finish' event in session " + session.name + " #############################");
@@ -126,17 +133,17 @@ async function executeSession(sessionName, io) {
       Logger.dbg("executeSession - lastSessionEvent saved", event);
 
       clearInterval(interval);
-    } else if (timer > 0) {
+    } else if (timer > 0) { //If timer hasn't finished counting, it goes down
       io.to(sessionName).emit("countDown", {
         data: timer,
       });
       console.log(timer);
       timer--;
-    } else if (session.exerciseCounter == maxExercises) {
+    } else if (session.exerciseCounter == maxExercises) { //If timer goes to 0, and exercise in a test is the same as actual exercise, it goes to the next test
       console.log("Going to the next test!");
       session.testCounter++;
       session.exerciseCounter = -1;
-    } else if (session.exerciseCounter === -1) {
+    } else if (session.exerciseCounter === -1) { //If exercises have been finished, it pass to a new test
       console.log("Loading test");
 
       var event = ["loadTest", {
@@ -151,11 +158,11 @@ async function executeSession(sessionName, io) {
       Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
 
 
-      timer = tests[session.testCounter].time;
+      timer = tests[session.testCounter].time; //Resets the timer
       session.exerciseCounter = 0;
       Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
 
-    } else {
+    } else { //If nothing before happens, it means that there are more exercises to do, and then in goes to the next one
       console.log("Starting new exercise:");
       let testLanguage = tests[session.testCounter].language;
       let exercise =
@@ -183,14 +190,14 @@ async function executeSession(sessionName, io) {
         });
         timer = exercise.time;
       }
-      session.exerciseCounter++;
+      session.exerciseCounter++; //After that, it increments the counter to test in the before code if thera are more or not
       Logger.dbg(" testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
 
       session.save();
       Logger.dbg("executeSession - session saved ");
     }
 
-
+    //If the session is not running, it's beacuse it has not been active or it has finished, so it clears all before
     Session.findOne({
       name: sessionName,
       environment: process.env.NODE_ENV,
@@ -204,9 +211,9 @@ async function executeSession(sessionName, io) {
 }
 
 
-
+//This is the "pairing method" and where the rooms are given and configured, and the first test started
 async function notifyParticipants(sessionName, io) {
-  const potentialParticipants = await User.find({
+  const potentialParticipants = await User.find({ //It picks all the registered users in the session
     environment: process.env.NODE_ENV,
     subject: sessionName,
   })
@@ -223,7 +230,9 @@ async function notifyParticipants(sessionName, io) {
     }
   });
 
-  if (participants.length < 2) {
+  //If participant is logged (so this function is executed after pressing the "Start sessiobn" button), he/she is introduced to "participants" list
+
+  if (participants.length < 2) { //There must be at least 2 participants to start the session
     Logger.dbg("notifyParticipants - UNEXPECTED ERROR - THERE ARE NOT CONNECTED PARTICIPANTS:" + JSON.stringify(potentialParticipants, null, 2));
     return;
   }
@@ -241,7 +250,7 @@ async function notifyParticipants(sessionName, io) {
   var participantCount = participants.length;
   var roomCount = Math.floor(participantCount / 2);
 
-
+  //If there are an odd number of participants, one of them randomly will be disconnected
   if ((participantCount % 2) == 0)
     Logger.dbg("notifyParticipants - the participant count is even, PERFECT PAIRING! :-)");
   else {
@@ -250,10 +259,11 @@ async function notifyParticipants(sessionName, io) {
     Logger.dbg("   -> One participant will be excluded: ", excluded, ["code", "mail"]);
   }
 
-  var initialRoom = 100;
+  var initialRoom = 100; //First room (So in pairing, ther can be as minimum, 200 participants, that will be in pairs from room 0 to room 99 before they are well paired)
 
   Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
 
+  //Here starts the pairing method
   var nonMaleList = []
   var maleList = []
   for (j = 0; j < participants.length; j++) {
@@ -265,11 +275,13 @@ async function notifyParticipants(sessionName, io) {
     }
   }
 
+  //Before, we have divide all the participants into Male or Non male (Female, non-binary, etc)
   l = nonMaleList.concat(maleList);
 
   console.log(l);
 
 
+  //Half of male will be on conrtol list, and the other half, on experiment. It happens the same with non-male group
   var controlList = [];
   var expertimentList = [];
 
@@ -285,6 +297,7 @@ async function notifyParticipants(sessionName, io) {
   participantNumber = 0;
 
   for (i = 0; i < roomCount; i++) {
+    //Now we put together 1 participant of each group (control and experiment)
     let peer1 = controlList[i];
     let peer2 = expertimentList[i];
 
@@ -298,14 +311,10 @@ async function notifyParticipants(sessionName, io) {
     peer1.room = i + initialRoom;
     peer2.room = i + initialRoom;
 
-    if (i % 2 == 0) {
-      peer1.blind = session.blindParticipant;
-      peer2.blind = false;
-    }
-    else {
-      peer1.blind = false;
-      peer2.blind = session.blindParticipant;
-    }
+    //The control group will see avatar if wanted, and experiment will never see avatar
+    peer1.blind = session.blindParticipant;
+    peer2.blind = false;
+    
     Logger.dbg("notifyParticipants - Pair created in room <" + peer1.room + ">:\n" +
       "    -" + peer1.code + ", " + peer1.firstName + ", " + peer1.firstName + ", " + peer1.gender + ", " + peer1.blind + "\n" +
       "    -" + peer2.code + ", " + peer2.firstName + ", " + peer2.firstName + ", " + peer2.gender + ", " + peer2.blind);
@@ -322,7 +331,7 @@ async function notifyParticipants(sessionName, io) {
   Logger.dbg("notifyParticipants - connectedUsers cleared", connectedUsers);
 
 
-  for (const participant of participants) {
+  for (const participant of participants) { //To each participant
 
     /** VERBOSE DEBUG ******************************************************************
     Logger.dbg("notifyParticipants - excluded: ",excluded,["code"]);
@@ -331,7 +340,7 @@ async function notifyParticipants(sessionName, io) {
     ************************************************************************************/
 
     if (excluded.code != participant.code) {
-
+      //If this participant is not the one excluded, It saves all the before changes on the database from here to the next comment * 
       myRoom = participant.room;
       myCode = participant.code;
       myBlind = participant.blind;
@@ -352,6 +361,7 @@ async function notifyParticipants(sessionName, io) {
 
       Logger.dbg("notifyParticipants - Saving user", user, ["code", "firstName", "gender", "room", "blind"]);
       user.save();
+      // Until here, all the changes have been saved on database *
 
       Logger.dbg("notifyParticipants - Saving room in DB for " + myCode, user.room);
 
@@ -379,7 +389,7 @@ async function notifyParticipants(sessionName, io) {
           code: participant.code,
           blind: participant.blind,
         },
-        pairedTo: newGender,
+        pairedTo: newGender, //Random first other pair gender (fake to do experiments)
       });
 
     } else {
@@ -392,18 +402,24 @@ async function notifyParticipants(sessionName, io) {
 }
 
 
-
+/*  
+  This is the main function, the one that calls the others
+  It contains some "properties" / functions, that are called in other scripts
+  It's a kind of Object converter. It's like self. functions of the Consumer.js object
+*/ 
 module.exports = {
+  //This starts the session calling notifyParticipants to pair them and give them a room
   startSession: function (sessionName, io) {
 
     Logger.dbg("startSession " + sessionName);
-
+    //Room giving
     notifyParticipants(sessionName, io);
-
+    //Wait 5000 ms, 5s, and then, execute the session
     setTimeout(() => {
       executeSession(sessionName, io);
     }, 5000);
   },
+  //On this funcition, the server test some things with socket.on(), like if admin is connected and do some actions as disconnect
   start: function (io) {
     function connection(socket) {
       Logger.dbg("NEW CONNECTION " + socket.id);
@@ -771,6 +787,8 @@ module.exports = {
           io.to(user.subject).emit("clientDisconnected", user.code);
         }
       });
+
+
       // In case of a failure in the connection.
       io.to(socket.id).emit("reconnect");
     }

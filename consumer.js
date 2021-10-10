@@ -408,16 +408,18 @@ async function notifyParticipants(sessionName, io) {
   It's a kind of Object converter. It's like self. functions of the Consumer.js object
 */ 
 module.exports = {
+  //This starts the session calling notifyParticipants to pair them and give them a room
   startSession: function (sessionName, io) {
 
     Logger.dbg("startSession " + sessionName);
-
+    //Room giving
     notifyParticipants(sessionName, io);
-
+    //Wait 5000 ms, 5s, and then, execute the session
     setTimeout(() => {
       executeSession(sessionName, io);
     }, 5000);
   },
+  //On this funcition, the server test some things with socket.on(), like if admin is connected and do some actions as disconnect
   start: function (io) {
     function connection(socket) {
       Logger.dbg("NEW CONNECTION " + socket.id);
@@ -785,6 +787,8 @@ module.exports = {
           io.to(user.subject).emit("clientDisconnected", user.code);
         }
       });
+
+
       // In case of a failure in the connection.
       io.to(socket.id).emit("reconnect");
     }

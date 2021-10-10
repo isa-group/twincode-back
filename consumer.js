@@ -402,7 +402,11 @@ async function notifyParticipants(sessionName, io) {
 }
 
 
-//This is the main function, the one that calls the others
+/*  
+  This is the main function, the one that calls the others
+  It contains some "properties" / functions, that are called in other scripts
+  It's a kind of Object converter. It's like self. functions of the Consumer.js object
+*/ 
 module.exports = {
   startSession: function (sessionName, io) {
 

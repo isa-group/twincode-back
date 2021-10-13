@@ -29,7 +29,7 @@ async function wait(ms) {
 
 //A function to test if user has finished or to bring him/her a new exercise
 async function exerciseTimeUp(id, description) {
-  console.log("Friend ", id, " is out of time!");
+  Logger.dbg("Friend " + id + " is out of time!");
   const user = await User.findOne({
     socketId: id,
     environment: process.env.NODE_ENV,
@@ -54,7 +54,7 @@ async function exerciseTimeUp(id, description) {
       if (exercise) {
         //If there is 1 more exercise on the test, user picks it
         if (test.exercises[room.lastExercise + 1]) {
-          console.log("They are going to the next exercise");
+          Logger.dbg("They are going to the next exercise");
           room.lastExercise += 1;
           await room.save();
         } else { //if not, picks another test
@@ -65,12 +65,12 @@ async function exerciseTimeUp(id, description) {
           });
           //If there is a new test, it starts in the first exercise 
           if (nextTest) {
-            console.log("They got a new test (Prueba)");
+            Logger.dbg("They got a new test (Prueba)");
             room.lastExercise = 0;
             room.test += 1;
             await room.save();
           } else { //If there isn't, it indicates the room has finished
-            console.log("They finished");
+            Logger.dbg("They finished");
             room.finished = true;
             await room.save();
           }
@@ -125,7 +125,7 @@ async function executeSession(sessionName, io) {
   const interval = setInterval(function () {
     //If this session quantity of tests is the same test than loaded
     if (session.testCounter == numTests) {
-      console.log("There are no more tests, the session <" + session.name + "> has finish!");
+      Logger.dbg("There are no more tests, the session <" + session.name + "> has finish!");
       Logger.dbg("executeSession - emitting 'finish' event in session " + session.name + " #############################");
 
       io.to(sessionName).emit("finish");
@@ -137,14 +137,14 @@ async function executeSession(sessionName, io) {
       io.to(sessionName).emit("countDown", {
         data: timer,
       });
-      console.log(timer);
+      Logger.dbg(timer);
       timer--;
     } else if (session.exerciseCounter == maxExercises) { //If timer goes to 0, and exercise in a test is the same as actual exercise, it goes to the next test
-      console.log("Going to the next test!");
+      Logger.dbg("Going to the next test!");
       session.testCounter++;
       session.exerciseCounter = -1;
     } else if (session.exerciseCounter === -1) { //If exercises have been finished, it pass to a new test
-      console.log("Loading test");
+      Logger.dbg("Loading test");
 
       var event = ["loadTest", {
         data: {
@@ -163,12 +163,12 @@ async function executeSession(sessionName, io) {
       Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
 
     } else { //If nothing before happens, it means that there are more exercises to do, and then in goes to the next one
-      console.log("Starting new exercise:");
+      Logger.dbg("Starting new exercise:");
       let testLanguage = tests[session.testCounter].language;
       let exercise =
         tests[session.testCounter].exercises[session.exerciseCounter];
       if (exercise) {
-        console.log("   " + exercise.description.substring(0, Math.min(80, exercise.description.length)) + "...");
+        Logger.dbg("   " + exercise.description.substring(0, Math.min(80, exercise.description.length)) + "...");
 
         var event = ["newExercise", {
           data: {
@@ -278,8 +278,6 @@ async function notifyParticipants(sessionName, io) {
   //Before, we have divide all the participants into Male or Non male (Female, non-binary, etc)
   l = nonMaleList.concat(maleList);
 
-  console.log(l);
-
 
   //Half of male will be on conrtol list, and the other half, on experiment. It happens the same with non-male group
   var controlList = [];
@@ -290,22 +288,12 @@ async function notifyParticipants(sessionName, io) {
     else controlList[controlList.length] = l[ui];
   }
 
-  console.log(controlList);
-  console.log(expertimentList);
-
-  console.log(controlList + "\n" + expertimentList);
   participantNumber = 0;
 
   for (i = 0; i < roomCount; i++) {
     //Now we put together 1 participant of each group (control and experiment)
     let peer1 = controlList[i];
     let peer2 = expertimentList[i];
-
-    console.log("\n\n\n\n\n\n\n\n\n\n\nPEER\n\n\n\n\n\n\n\n");
-    console.log(peer1);
-    console.log("\n\n\n\n\n\n\n\n\n\n");
-    console.log(peer2);
-    console.log("\n\n\n\n\n\n\n\n\n\n");
 
 
     peer1.room = i + initialRoom;
@@ -432,7 +420,7 @@ module.exports = {
 
       socket.on("adminConnected", (session) => {
         Logger.dbg("EVENT adminConnected", session);
-        console.log("Admin watching " + session);
+        Logger.dbg("Admin watching " + session);
         socket.join(session);
       });
 
@@ -449,7 +437,7 @@ module.exports = {
       });
 
       socket.on("requestToJoinAgain", (pack) => {
-        console.log("Asking " + pack + " to rejoin.");
+        Logger.dbg("Asking " + pack + " to rejoin.");
         io.to(pack).emit("clientJoinAgain");
       });
 
@@ -582,7 +570,6 @@ module.exports = {
                     });
                   }
 
-
                 }
               } else {
                 Logger.dbg("EVENT clientReconnection - Last event wasn't an exercise", lastEvent[0]);
@@ -685,7 +672,7 @@ module.exports = {
 
       socket.on("registry", async (pack) => {
         Logger.dbg("EVENT registry", pack);
-        console.log("Registry event for: " + socket.id + "," + pack.uid);
+        Logger.dbg("Registry event for: " + socket.id + "," + pack.uid);
 
         uids.set(socket.id, pack.uid);
 
@@ -738,8 +725,8 @@ module.exports = {
           environment: process.env.NODE_ENV,
         });
 
-        console.log("###################################################");
-        console.log("User to enter in room: " + JSON.stringify(user, null, 2));
+        Logger.dbg("###################################################");
+        Logger.dbg("User to enter in room: " + JSON.stringify(user, null, 2));
 
         room.session = rooms.set(pack.rid, room);
 

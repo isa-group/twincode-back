@@ -10,6 +10,7 @@ const TestSchema = new Schema({
   activeSince: { type: Date },
   orderNumber: { type: Number },
   time: { type: Number },
+  testTime: { type: Number, required: true, default: 300 },
   language: { type: String, required: true },
   peerChange: { type: Boolean },
 });

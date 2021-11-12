@@ -26,6 +26,9 @@ async function wait(ms) {
   await setTimeout(() => { }, ms);
 }
 
+function randomNumber(min, max) {
+  return Math.floor(Math.random() * (max - min));
+}
 
 //A function to test if user has finished or to bring him/her a new exercise
 async function exerciseTimeUp(id, description) {
@@ -121,6 +124,33 @@ async function executeSession(sessionName, io) {
   lastSessionEvent.set(sessionName, event);
   Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
 
+
+
+  
+  const potentialParticipants = await User.find({ //It picks all the registered users in the session
+    environment: process.env.NODE_ENV,
+    subject: sessionName,
+  })
+
+  var participants = [];
+  Logger.dbg("notifyParticipants - Number of potential participants: " + potentialParticipants.length);
+  potentialParticipants.forEach((p) => {
+    //Filter out the one not connected : they don't have the property socketId! 
+    if (p.socketId) {
+      Logger.dbg("notifyParticipants - Including connected participant", p.mail);
+      participants.push(p);
+    } else {
+      Logger.dbg("notifyParticipants - Skipping NOT CONNECTED participant", p.mail);
+    }
+  });
+
+  participants.sort(function(a, b) {
+    return a.room - b.room;
+  });
+  
+  
+  
+  
   //Start of the tests, following a time line
   const interval = setInterval(function () {
     //If this session quantity of tests is the same test than loaded
@@ -163,38 +193,90 @@ async function executeSession(sessionName, io) {
       Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
 
     } else { //If nothing before happens, it means that there are more exercises to do, and then in goes to the next one
-      Logger.dbg("Starting new exercise:");
-      let testLanguage = tests[session.testCounter].language;
-      let exercise =
-        tests[session.testCounter].exercises[session.exerciseCounter];
-      if (exercise) {
-        Logger.dbg("   " + exercise.description.substring(0, Math.min(80, exercise.description.length)) + "...");
+      if (session.isStandard) {
+        Logger.dbg("Starting new exercise:");
+        let testLanguage = tests[session.testCounter].language;
+        let listExercises = tests[session.testCounter].exercises;
+        
+        Logger.dbg("EVENT - Send a random exercise to each pair");
+        for (let p = 0; p < participants.length; p++) {
+          var participant1 = participants[p];
+          var participant2 = participants[p+1];
+  
+          var num2Send = randomNumber(0, listExercises.length);
+  
+          var exercise = listExercises[num2Send];
+  
+          io.to(participant1.socketId).emit("newExercise", {
+            data: {
+              maxTime: exercise.time,
+              exerciseDescription: exercise.description,
+              exerciseType: exercise.type,
+              inputs: exercise.inputs,
+              solutions: exercise.solutions,
+              testLanguage: testLanguage,
+            }
+          });
+          io.to(participant2.socketId).emit("newExercise", {
+            data: {
+              maxTime: exercise.time,
+              exerciseDescription: exercise.description,
+              exerciseType: exercise.type,
+              inputs: exercise.inputs,
+              solutions: exercise.solutions,
+              testLanguage: testLanguage,
+            }
+          });
+          p++;
+        }
 
-        var event = ["newExercise", {
-          data: {
-            maxTime: exercise.time,
-            exerciseDescription: exercise.description,
-            exerciseType: exercise.type,
-            inputs: exercise.inputs,
-            solutions: exercise.solutions,
-            testLanguage: testLanguage,
-          },
-        }];
-        io.to(sessionName).emit(event[0], event[1]);
         lastSessionEvent.set(sessionName, event);
-        Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
-
+        Logger.dbg("executeSession - lastSessionEvent saved", "newExercise");
+  
         sessions.set(session.name, {
           session: session,
           exerciseType: exercise.type,
         });
         timer = exercise.time;
+  
+  
+  
+        session.exerciseCounter++; //After that, it increments the counter to test in the before code if thera are more or not
+        Logger.dbg(" testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
+  
+        session.save();
+        Logger.dbg("executeSession - session saved ");
+      } else {
+        console.log("Starting new exercise:");
+        let exercise =
+          tests[session.testCounter].exercises[session.exerciseCounter];
+        if (exercise) {
+          console.log("   "+exercise.description.substring(0,Math.min(80,exercise.description.length))+"...");
+  
+          var event = ["newExercise", {
+            data: {
+              maxTime: exercise.time,
+              exerciseDescription: exercise.description,
+              exerciseType: exercise.type,
+              inputs: exercise.inputs,
+            },
+          }];
+          io.to(sessionName).emit(event[0],event[1]);
+          lastSessionEvent.set(sessionName,event);
+          Logger.dbg("executeSession - lastSessionEvent saved",event[0]);
+  
+          sessions.set(session.name, {
+            session: session,
+            exerciseType: exercise.type,
+          });
+          timer = exercise.time;
+        }
+        session.exerciseCounter++;
+        Logger.dbg(" testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
+  
+        session.save();
+        Logger.dbg("executeSession - session saved ");
       }
-      session.exerciseCounter++; //After that, it increments the counter to test in the before code if thera are more or not
-      Logger.dbg(" testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
-
-      session.save();
-      Logger.dbg("executeSession - session saved ");
     }
 
     //If the session is not running, it's beacuse it has not been active or it has finished, so it clears all before

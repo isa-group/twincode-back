@@ -14,6 +14,7 @@ const SessionSchema = new Schema({
   registrationText: { type: String },
   finishMessage: { type: String },
   blindParticipant: { type: Boolean, default: true },
+  isStandard: { type: Boolean, default: false },
 });
 
 SessionSchema.index(

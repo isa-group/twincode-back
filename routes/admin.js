@@ -208,6 +208,7 @@ router.post("/sessions", (req, res) => {
       newSession.name = req.body.name;
       newSession.tokens = req.body.tokens;
       newSession.tokenPairing = req.body.tokenPairing;
+      newSession.isStandard = req.body.isStandard || false;
       newSession.finishMessage =
         req.body.finishMessage ||
         "Thank you for participating in this session. We hope that you find it interesting. For further questions about the session, reach out to the organizers via email.";

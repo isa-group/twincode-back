@@ -268,9 +268,7 @@ async function executeSession(sessionName, io) {
             session: session,
             exerciseType: exercise.type,
           });
-          timer = exercise.time;
-    
-    
+          timer = timer == 0 ? tests[session.testCounter].testTime : timer;
     
           session.exerciseCounter++; //After that, it increments the counter to test in the before code if thera are more or not
           Logger.dbg(" testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);

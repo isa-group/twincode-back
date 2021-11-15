@@ -122,39 +122,28 @@ async function executeSession(sessionName, io) {
   io.to(sessionName).emit(event[0], event[1]);
 
   lastSessionEvent.set(sessionName, event);
-  Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
-
-
-
-  
-  const potentialParticipants = await User.find({ //It picks all the registered users in the session
-    environment: process.env.NODE_ENV,
-    subject: sessionName,
-  })
-
-  var participants = [];
-  Logger.dbg("notifyParticipants - Number of potential participants: " + potentialParticipants.length);
-  potentialParticipants.forEach((p) => {
-    //Filter out the one not connected : they don't have the property socketId! 
-    if (p.socketId) {
-      Logger.dbg("notifyParticipants - Including connected participant", p.mail);
-      participants.push(p);
-    } else {
-      Logger.dbg("notifyParticipants - Skipping NOT CONNECTED participant", p.mail);
-    }
-  });
-
-  participants.sort(function(a, b) {
-    return a.room - b.room;
-  });
-  
-  
-  
+  Logger.dbg("executeSession - lastSessionEvent saved", event[0])  
   
   //Start of the tests, following a time line
-  const interval = setInterval(function () {
+  const interval = setInterval(async function () {  
     //If this session quantity of tests is the same test than loaded
     if (session.isStandard) {
+      const potentialParticipants = await User.find({ //It picks all the registered users in the session
+        environment: process.env.NODE_ENV,
+        subject: sessionName,
+      })
+  
+      var participants = [];
+      potentialParticipants.forEach((p) => {
+        //Filter out the one not connected : they don't have the property socketId! 
+        if (p.socketId) {
+          participants.push(p);
+        }
+      });
+  
+      participants.sort(function(a, b) {
+        return a.room - b.room;
+      });
 
       for (let p = 0; p < participants.length; p++) {
         var participant1 = participants[p];
@@ -221,6 +210,7 @@ async function executeSession(sessionName, io) {
           data: {
             testDescription: tests[session.testCounter].description,
             peerChange: tests[session.testCounter].peerChange,
+            isStandard: true,
           },
         }];
         io.to(sessionName).emit(event[0], event[1]);
@@ -346,6 +336,7 @@ async function executeSession(sessionName, io) {
           data: {
             testDescription: tests[session.testCounter].description,
             peerChange: tests[session.testCounter].peerChange,
+            isStandard: false,
           },
         }];
         io.to(sessionName).emit(event[0], event[1]);

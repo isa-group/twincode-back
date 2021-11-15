@@ -407,6 +407,7 @@ router.put("/sessions/:sessionName", (req, res) => {
           session.tokens = req.body.tokens;
           session.tokenPairing = req.body.tokenPairing;
           session.blindParticipant = req.body.blindParticipant;
+          session.isStandard = req.body.isStandard;
 
           console.log("Session updated: " + JSON.stringify(session, null, 2));
 

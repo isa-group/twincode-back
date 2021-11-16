@@ -164,6 +164,7 @@ async function executeSession(sessionName, io) {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
         
+        
         if (participant1.nextExercise || participant2.nextExercise) {
         
           Logger.dbg("Starting new exercise:");
@@ -191,26 +192,30 @@ async function executeSession(sessionName, io) {
 
           var exercise = listExercises[num2Send];
 
-          io.to(participant1.socketId).emit("newExercise", {
-            data: {
-              maxTime: exercise.time,
-              exerciseDescription: exercise.description,
-              exerciseType: exercise.type,
-              inputs: exercise.inputs,
-              solutions: exercise.solutions,
-              testLanguage: testLanguage,
-            }
-          });
-          io.to(participant2.socketId).emit("newExercise", {
-            data: {
-              maxTime: exercise.time,
-              exerciseDescription: exercise.description,
-              exerciseType: exercise.type,
-              inputs: exercise.inputs,
-              solutions: exercise.solutions,
-              testLanguage: testLanguage,
-            }
-          });
+          if (exercise.type == "PAIR" || participant1.nextExercise) {
+            io.to(participant1.socketId).emit("newExercise", {
+              data: {
+                maxTime: exercise.time,
+                exerciseDescription: exercise.description,
+                exerciseType: exercise.type,
+                inputs: exercise.inputs,
+                solutions: exercise.solutions,
+                testLanguage: testLanguage,
+              }
+            });
+          }
+          if (exercise.type == "PAIR" || participant2.nextExercise) {
+            io.to(participant2.socketId).emit("newExercise", {
+              data: {
+                maxTime: exercise.time,
+                exerciseDescription: exercise.description,
+                exerciseType: exercise.type,
+                inputs: exercise.inputs,
+                solutions: exercise.solutions,
+                testLanguage: testLanguage,
+              }
+            });
+          }
 
           if (listExercises[num2Send].type == "PAIR") {
             participant1.visitedPExercises.push(num2Send);

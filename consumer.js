@@ -172,7 +172,7 @@ async function executeSession(sessionName, io) {
           } else {
             var testNumber = 0;
           }
-          
+
           let testLanguage = tests[testNumber].language;
           let listExercises = tests[testNumber].exercises;
           
@@ -343,7 +343,7 @@ async function executeSession(sessionName, io) {
   
         sessions.set(session.name, {
           session: session,
-          exerciseType: exercise.type,
+          exerciseType: listExercises[0].type,
         });
 
         timer = timer == 0 ? tests[testNumber].testTime : timer;
@@ -360,7 +360,7 @@ async function executeSession(sessionName, io) {
         
         Logger.dbg("Loading test");
                 
-        if (session.testCounter != 2) {
+        if (session.testCounter < 2) {
           var testNumber = session.testCounter;
         } else {
           var testNumber = 0;

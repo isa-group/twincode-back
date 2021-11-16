@@ -131,7 +131,7 @@ async function executeSession(sessionName, io) {
       const potentialParticipants = await User.find({ //It picks all the registered users in the session
         environment: process.env.NODE_ENV,
         subject: sessionName,
-      })
+      });
   
       var participants = [];
       potentialParticipants.forEach((p) => {
@@ -191,7 +191,7 @@ async function executeSession(sessionName, io) {
         } 
         p++;
       }
-      if (session.testCounter == numTests) {
+      if (session.testCounter == 3) {
         Logger.dbg("There are no more tests, the session <" + session.name + "> has finish!");
         Logger.dbg("executeSession - emitting 'finish' event in session " + session.name + " #############################");
   
@@ -216,22 +216,27 @@ async function executeSession(sessionName, io) {
         Logger.dbg("Going to the next test!");
         session.testCounter++;
         session.exerciseCounter = -1;
-
-        for (let p = 0; p < participants.length; p++) {
-          var participantF = participants[p];
-          participantF.visitedExercises = [];
-          participantF.save();
-        }
       } else if (session.exerciseCounter === -1) { //If exercises have been finished, it pass to a new test
         Logger.dbg("Loading test");
-  
-        var event = ["loadTest", {
-          data: {
-            testDescription: tests[session.testCounter].description,
-            peerChange: tests[session.testCounter].peerChange,
-            isStandard: true,
-          },
-        }];
+        
+        if (session.testCounter != 2) {
+          var event = ["loadTest", {
+            data: {
+              testDescription: tests[session.testCounter].description,
+              peerChange: tests[session.testCounter].peerChange,
+              isStandard: true,
+            },
+          }];
+        } else {
+          var event = ["loadTest", {
+            data: {
+              testDescription: tests[0].description,
+              peerChange: tests[0].peerChange,
+              isStandard: true,
+            },
+          }];
+        }
+        
         io.to(sessionName).emit(event[0], event[1]);
   
         lastSessionEvent.set(sessionName, event);

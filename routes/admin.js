@@ -291,9 +291,11 @@ router.post("/resetSession", async (req, res) => {
     const users = await User.collection.updateMany(
       { subject: req.body.session, environment: process.env.NODE_ENV },
       { $unset: { token: true, socketId: true, room: true, blind: true } },
+      { $set: { nextExercise: false, visitedPExercises: [], visitedIExercises: [] } },
       { multi: true, safe: true }
     );
     res.send(users);
+
     console.log("Session " + req.body.session + " reset completed");
   } else {
     res.sendStatus(401);

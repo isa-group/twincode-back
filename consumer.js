@@ -124,6 +124,21 @@ async function executeSession(sessionName, io) {
   lastSessionEvent.set(sessionName, event);
   Logger.dbg("executeSession - lastSessionEvent saved", event[0])  
   
+  
+  const potentialParticipants = await User.find({ //It picks all the registered users in the session
+    environment: process.env.NODE_ENV,
+    subject: sessionName,
+  });
+
+  potentialParticipants.forEach((p) => {
+    var participantF = p;
+    participantF.visitedPExercises = [];
+    participantF.visitedIExercises = [];
+    participantF.nextExercise = false;
+    participantF.save();
+    
+  });
+  
   //Start of the tests, following a time line
   const interval = setInterval(async function () {  
     //If this session quantity of tests is the same test than loaded
@@ -149,16 +164,29 @@ async function executeSession(sessionName, io) {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
         
-        if ((participant1.nextExercise || participant2.nextExercise) && participant1.visitedExercises.length < maxExercises) {
+        if (participant1.nextExercise || participant2.nextExercise) {
         
           Logger.dbg("Starting new exercise:");
-          let testLanguage = tests[session.testCounter].language;
-          let listExercises = tests[session.testCounter].exercises;
+          if (session.testCounter != 2) {
+            var testNumber = session.testCounter;
+          } else {
+            var testNumber = 0;
+          }
+          
+          let testLanguage = tests[testNumber].language;
+          let listExercises = tests[testNumber].exercises;
           
           Logger.dbg("EVENT - Send a random exercise to each pair");
           var num2Send = randomNumber(0, listExercises.length);
-          while(participant1.visitedExercises.includes(num2Send)) {
-            num2Send = randomNumber(0, listExercises.length);
+
+          if (listExercises[num2Send].type == "PAIR" && participant1.visitedPExercises.length < listExercises.length) {
+            while(participant1.visitedPExercises.includes(num2Send)) {
+              num2Send = randomNumber(0, listExercises.length);
+            }
+          } else if (listExercises[num2Send].type == "INDIVIDUAL" && participant1.visitedIExercises.length < listExercises.length) {
+            while(participant1.visitedIExercises.includes(num2Send)) {
+              num2Send = randomNumber(0, listExercises.length);
+            }
           }
 
           var exercise = listExercises[num2Send];
@@ -184,13 +212,22 @@ async function executeSession(sessionName, io) {
             }
           });
 
-          participant1.visitedExercises.push(num2Send);
-          participant1.save();
-          participant2.visitedExercises.push(num2Send);
-          participant2.save();
+          if (listExercises[num2Send].type == "PAIR") {
+            participant1.visitedPExercises.push(num2Send);
+            participant1.save();
+            participant2.visitedPExercises.push(num2Send);
+            participant2.save();
+          } else {
+            participant1.visitedIExercises.push(num2Send);
+            participant1.save();
+            participant2.visitedIExercises.push(num2Send);
+            participant2.save();
+          }
         } 
         p++;
       }
+
+      
       if (session.testCounter == 3) {
         Logger.dbg("There are no more tests, the session <" + session.name + "> has finish!");
         Logger.dbg("executeSession - emitting 'finish' event in session " + session.name + " #############################");
@@ -203,7 +240,9 @@ async function executeSession(sessionName, io) {
 
         for (let p = 0; p < participants.length; p++) {
           var participantF = participants[p];
-          participantF.visitedExercises = [];
+          participantF.visitedPExercises = [];
+          participantF.visitedIExercises = [];
+          participantF.nextExercise = false;
           participantF.save();
         }
       } else if (timer > 0) { //If timer hasn't finished counting, it goes down
@@ -218,24 +257,19 @@ async function executeSession(sessionName, io) {
         session.exerciseCounter = -1;
       } else if (session.exerciseCounter === -1) { //If exercises have been finished, it pass to a new test
         Logger.dbg("Loading test");
-        
         if (session.testCounter != 2) {
-          var event = ["loadTest", {
-            data: {
-              testDescription: tests[session.testCounter].description,
-              peerChange: tests[session.testCounter].peerChange,
-              isStandard: true,
-            },
-          }];
+          var testNumber = session.testCounter;
         } else {
-          var event = ["loadTest", {
-            data: {
-              testDescription: tests[0].description,
-              peerChange: tests[0].peerChange,
-              isStandard: true,
-            },
-          }];
+          var testNumber = 0;
         }
+        
+        var event = ["loadTest", {
+          data: {
+            testDescription: tests[testNumber].description,
+            peerChange: tests[testNumber].peerChange,
+            isStandard: true,
+          },
+        }];
         
         io.to(sessionName).emit(event[0], event[1]);
   
@@ -243,14 +277,20 @@ async function executeSession(sessionName, io) {
         Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
   
   
-        timer = tests[session.testCounter].time; //Resets the timer
+        timer = tests[testNumber].time; //Resets the timer
         session.exerciseCounter = 0;
         Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
   
-      } else { //If nothing before happens, it means that there are more exercises to do, and then in goes to the next one
+      } else if (session.exerciseCounter == 0) { //If nothing before happens, it means that there are more exercises to do, and then in goes to the next one
+        if (session.testCounter != 2) {
+          var testNumber = session.testCounter;
+        } else {
+          var testNumber = 0;
+        }
+
         Logger.dbg("Starting new exercise:");
-        let testLanguage = tests[session.testCounter].language;
-        let listExercises = tests[session.testCounter].exercises;
+        let testLanguage = tests[testNumber].language;
+        let listExercises = tests[testNumber].exercises;
         
         Logger.dbg("EVENT - Send a random exercise to each pair");
         for (let p = 0; p < participants.length; p++) {
@@ -283,10 +323,17 @@ async function executeSession(sessionName, io) {
           });
           
 
-        participant1.visitedExercises.push(num2Send);
-        participant1.save();
-        participant2.visitedExercises.push(num2Send);
-        participant2.save();
+        if (exercise.type == "PAIR") {
+          participant1.visitedPExercises.push(num2Send);
+          participant1.save();
+          participant2.visitedPExercises.push(num2Send);
+          participant2.save();
+        } else {
+          participant1.visitedIExercises.push(num2Send);
+          participant1.save();
+          participant2.visitedIExercises.push(num2Send);
+          participant2.save();
+        }
 
           p++;
         }
@@ -298,14 +345,47 @@ async function executeSession(sessionName, io) {
           session: session,
           exerciseType: exercise.type,
         });
-        timer = timer == 0 ? tests[session.testCounter].testTime : timer;
+
+        timer = timer == 0 ? tests[testNumber].testTime : timer;
   
         session.exerciseCounter++; //After that, it increments the counter to test in the before code if thera are more or not
         Logger.dbg(" testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
   
         session.save();
         Logger.dbg("executeSession - session saved ");
+      } else {
+        Logger.dbg("Going to the next test!");
+        session.testCounter++;
+        session.exerciseCounter = -1;
+        
+        Logger.dbg("Loading test");
+                
+        if (session.testCounter != 2) {
+          var testNumber = session.testCounter;
+        } else {
+          var testNumber = 0;
+        }
+        
+        var event = ["loadTest", {
+          data: {
+            testDescription: tests[testNumber].description,
+            peerChange: tests[testNumber].peerChange,
+            isStandard: true,
+          },
+        }];
+        
+        io.to(sessionName).emit(event[0], event[1]);
+  
+        lastSessionEvent.set(sessionName, event);
+        Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
+  
+  
+        timer = tests[testNumber].time; //Resets the timer
+        session.exerciseCounter = 0;
+        Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
+  
       }
+
     } else {
       if (session.testCounter == numTests) {
         Logger.dbg("There are no more tests, the session <" + session.name + "> has finish!");

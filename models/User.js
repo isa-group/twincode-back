@@ -23,8 +23,9 @@ const UserSchema = new Schema({
   lastExercise: { type: Number },
   currentTest: { type: Number },
   blind: { type: Boolean },
-  visitedExercises: { type: Array, required: true, default: [] },
-  nextExercise: { type: Boolean, required: true, default: false }
+  visitedPExercises: { type: Array, required: true, default: [] },
+  visitedIExercises: { type: Array, required: true, default: [] },
+  nextExercise: { type: Boolean, required: true, default: true }
 });
 
 UserSchema.index(

@@ -20,7 +20,6 @@ function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
 }
 
-
 //A simple wait function to wait a specified period of ms
 async function wait(ms) {
   await setTimeout(() => { }, ms);
@@ -211,6 +210,13 @@ async function executeSession(sessionName, io) {
                 }
               });
             }
+          } else {
+            participant1.nextExercise = false;
+            io.to(participant1.socketId).emit("customAlert", {
+              data: {
+                message: "There are no more exercises left on this test"
+              }
+            });
           }
           if ((exercise.type == "PAIR" && participant2.visitedPExercises.length < listExercises.length) || (exercise.type == "INDIVIDUAL" && participant2.visitedIExercises.length < listExercises.length)) {
             if (exercise.type == "PAIR" || participant2.nextExercise) {
@@ -231,6 +237,13 @@ async function executeSession(sessionName, io) {
                 }
               });
             }
+          } else {
+            participant2.nextExercise = false;
+            io.to(participant2.socketId).emit("customAlert", {
+              data: {
+                message: "There are no more exercises left on this test"
+              }
+            });
           }
           /*
           else {
@@ -832,8 +845,8 @@ module.exports = {
             user.nextExercise = false;
           } else {
             user.nextExercise = true;
-          }
-
+          }       
+          
           await user.save();
           Logger.dbg(`EVENT changeExercise - user(${pack.code}).nextExercise (post) : <${user.nextExercise}> `,user,["mail"]);
 

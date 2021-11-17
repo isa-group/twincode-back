@@ -204,6 +204,12 @@ async function executeSession(sessionName, io) {
                   testLanguage: testLanguage,
                 }
               });
+              
+              io.to(participant1.socketId).emit("customAlert", {
+                data: {
+                  message: "New exercise beggins"
+                }
+              });
             }
           }
           if ((exercise.type == "PAIR" && participant2.visitedPExercises.length < listExercises.length) || (exercise.type == "INDIVIDUAL" && participant2.visitedIExercises.length < listExercises.length)) {
@@ -218,8 +224,25 @@ async function executeSession(sessionName, io) {
                   testLanguage: testLanguage,
                 }
               });
+              
+              io.to(participant2.socketId).emit("customAlert", {
+                data: {
+                  message: "New exercise beggins"
+                }
+              });
             }
           }
+          /*
+          else {
+            io.to(participant1.socketId).emit("customAlert", {
+              data: {
+                message: "There are no more exercises left"
+              }
+            });
+          }
+          */
+
+
           if (listExercises[num2Send].type == "PAIR") {
             participant1.visitedPExercises.push(num2Send);
             participant1.save();
@@ -287,7 +310,6 @@ async function executeSession(sessionName, io) {
         lastSessionEvent.set(sessionName, event);
         Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
   
-  
         timer = tests[testNumber].time; //Resets the timer
         session.exerciseCounter = 0;
         Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
@@ -330,6 +352,17 @@ async function executeSession(sessionName, io) {
               inputs: exercise.inputs,
               solutions: exercise.solutions,
               testLanguage: testLanguage,
+            }
+          });
+
+          io.to(participant1.socketId).emit("customAlert", {
+            data: {
+              message: "New exercise beggins"
+            }
+          });
+          io.to(participant2.socketId).emit("customAlert", {
+            data: {
+              message: "New exercise beggins"
             }
           });
           

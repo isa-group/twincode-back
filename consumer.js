@@ -196,7 +196,7 @@ async function executeSession(sessionName, io) {
             if (exercise.type == "PAIR" || participant1.nextExercise) {
               io.to(participant1.socketId).emit("newExercise", {
                 data: {
-                  maxTime: exercise.time,
+                  maxTime: tests[testNumber].testTime,
                   exerciseDescription: exercise.description,
                   exerciseType: exercise.type,
                   inputs: exercise.inputs,
@@ -210,7 +210,7 @@ async function executeSession(sessionName, io) {
             if (exercise.type == "PAIR" || participant2.nextExercise) {
               io.to(participant2.socketId).emit("newExercise", {
                 data: {
-                  maxTime: exercise.time,
+                  maxTime: tests[testNumber].testTime,
                   exerciseDescription: exercise.description,
                   exerciseType: exercise.type,
                   inputs: exercise.inputs,
@@ -314,7 +314,7 @@ async function executeSession(sessionName, io) {
   
           io.to(participant1.socketId).emit("newExercise", {
             data: {
-              maxTime: exercise.time,
+              maxTime: tests[testNumber].testTime,
               exerciseDescription: exercise.description,
               exerciseType: exercise.type,
               inputs: exercise.inputs,
@@ -324,7 +324,7 @@ async function executeSession(sessionName, io) {
           });
           io.to(participant2.socketId).emit("newExercise", {
             data: {
-              maxTime: exercise.time,
+              maxTime: tests[testNumber].testTime,
               exerciseDescription: exercise.description,
               exerciseType: exercise.type,
               inputs: exercise.inputs,

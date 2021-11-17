@@ -231,7 +231,6 @@ async function executeSession(sessionName, io) {
         } 
         p++;
       }
-
       
       if (session.testCounter == 3) {
         Logger.dbg("There are no more tests, the session <" + session.name + "> has finish!");
@@ -781,18 +780,23 @@ module.exports = {
       });
 
       socket.on("changeExercise", async (pack) => {
-        Logger.dbg("EVENT - User in socket " + socket.id + " changedExercise");
+        Logger.dbg("EVENT changeExercise - User in socket " + socket.id, pack);
         const user = await User.findOne({
           code: pack.code,
           environment: process.env.NODE_ENV,
         });
         if (user) {
+          Logger.dbg(`EVENT changeExercise - user(${pack.code}).nextExercise (pre) : <${user.nextExercise}> `,user,["mail"]);
+
           if (pack.exercisedCharged) {
             user.nextExercise = false;
           } else {
             user.nextExercise = true;
           }
+
           await user.save();
+          Logger.dbg(`EVENT changeExercise - user(${pack.code}).nextExercise (post) : <${user.nextExercise}> `,user,["mail"]);
+
         }
       })
 

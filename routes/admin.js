@@ -208,6 +208,7 @@ router.post("/sessions", (req, res) => {
       newSession.name = req.body.name;
       newSession.tokens = req.body.tokens;
       newSession.tokenPairing = req.body.tokenPairing;
+      newSession.isStandard = req.body.isStandard || false;
       newSession.finishMessage =
         req.body.finishMessage ||
         "Thank you for participating in this session. We hope that you find it interesting. For further questions about the session, reach out to the organizers via email.";
@@ -290,9 +291,11 @@ router.post("/resetSession", async (req, res) => {
     const users = await User.collection.updateMany(
       { subject: req.body.session, environment: process.env.NODE_ENV },
       { $unset: { token: true, socketId: true, room: true, blind: true } },
+      { $set: { nextExercise: false, visitedPExercises: [], visitedIExercises: [] } },
       { multi: true, safe: true }
     );
     res.send(users);
+
     console.log("Session " + req.body.session + " reset completed");
   } else {
     res.sendStatus(401);
@@ -406,6 +409,7 @@ router.put("/sessions/:sessionName", (req, res) => {
           session.tokens = req.body.tokens;
           session.tokenPairing = req.body.tokenPairing;
           session.blindParticipant = req.body.blindParticipant;
+          session.isStandard = req.body.isStandard;
 
           console.log("Session updated: " + JSON.stringify(session, null, 2));
 

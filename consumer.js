@@ -192,41 +192,48 @@ async function executeSession(sessionName, io) {
 
           var exercise = listExercises[num2Send];
 
-          if (exercise.type == "PAIR" || participant1.nextExercise) {
-            io.to(participant1.socketId).emit("newExercise", {
-              data: {
-                maxTime: exercise.time,
-                exerciseDescription: exercise.description,
-                exerciseType: exercise.type,
-                inputs: exercise.inputs,
-                solutions: exercise.solutions,
-                testLanguage: testLanguage,
-              }
-            });
+          if ((exercise.type == "PAIR" && participant1.visitedPExercises.length < listExercises.length) || (exercise.type == "INDIVIDUAL" && participant1.visitedIExercises.length < listExercises.length)) {
+            if (exercise.type == "PAIR" || participant1.nextExercise) {
+              io.to(participant1.socketId).emit("newExercise", {
+                data: {
+                  maxTime: exercise.time,
+                  exerciseDescription: exercise.description,
+                  exerciseType: exercise.type,
+                  inputs: exercise.inputs,
+                  solutions: exercise.solutions,
+                  testLanguage: testLanguage,
+                }
+              });
+            }
           }
-          if (exercise.type == "PAIR" || participant2.nextExercise) {
-            io.to(participant2.socketId).emit("newExercise", {
-              data: {
-                maxTime: exercise.time,
-                exerciseDescription: exercise.description,
-                exerciseType: exercise.type,
-                inputs: exercise.inputs,
-                solutions: exercise.solutions,
-                testLanguage: testLanguage,
-              }
-            });
+          if ((exercise.type == "PAIR" && participant2.visitedPExercises.length < listExercises.length) || (exercise.type == "INDIVIDUAL" && participant2.visitedIExercises.length < listExercises.length)) {
+            if (exercise.type == "PAIR" || participant2.nextExercise) {
+              io.to(participant2.socketId).emit("newExercise", {
+                data: {
+                  maxTime: exercise.time,
+                  exerciseDescription: exercise.description,
+                  exerciseType: exercise.type,
+                  inputs: exercise.inputs,
+                  solutions: exercise.solutions,
+                  testLanguage: testLanguage,
+                }
+              });
+            }
           }
-
           if (listExercises[num2Send].type == "PAIR") {
             participant1.visitedPExercises.push(num2Send);
             participant1.save();
             participant2.visitedPExercises.push(num2Send);
             participant2.save();
           } else {
-            participant1.visitedIExercises.push(num2Send);
-            participant1.save();
-            participant2.visitedIExercises.push(num2Send);
-            participant2.save();
+            if (participant1.nextExercise) {
+              participant1.visitedIExercises.push(num2Send);
+              participant1.save();
+            }
+            if (participant2.nextExercise) {
+              participant2.visitedIExercises.push(num2Send);
+              participant2.save();
+            }
           }
         } 
         p++;

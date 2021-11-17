@@ -192,30 +192,56 @@ async function executeSession(sessionName, io) {
 
           var exercise = listExercises[num2Send];
 
-          if (exercise.type == "PAIR" || participant1.nextExercise) {
-            io.to(participant1.socketId).emit("newExercise", {
+          if ((exercise.type == "PAIR" && participant1.visitedPExercises.length < listExercises.length) || (exercise.type == "INDIVIDUAL" && participant1.visitedIExercises.length < listExercises.length)) {
+            if (exercise.type == "PAIR" || participant1.nextExercise) {
+              io.to(participant1.socketId).emit("newExercise", {
+                data: {
+                  maxTime: tests[testNumber].testTime,
+                  exerciseDescription: exercise.description,
+                  exerciseType: exercise.type,
+                  inputs: exercise.inputs,
+                  solutions: exercise.solutions,
+                  testLanguage: testLanguage,
+                }
+              });
+              
+              io.to(participant1.socketId).emit("customAlert", {
+                data: {
+                  message: "New exercise beggins"
+                }
+              });
+            }
+          }
+          if ((exercise.type == "PAIR" && participant2.visitedPExercises.length < listExercises.length) || (exercise.type == "INDIVIDUAL" && participant2.visitedIExercises.length < listExercises.length)) {
+            if (exercise.type == "PAIR" || participant2.nextExercise) {
+              io.to(participant2.socketId).emit("newExercise", {
+                data: {
+                  maxTime: tests[testNumber].testTime,
+                  exerciseDescription: exercise.description,
+                  exerciseType: exercise.type,
+                  inputs: exercise.inputs,
+                  solutions: exercise.solutions,
+                  testLanguage: testLanguage,
+                }
+              });
+              
+              io.to(participant2.socketId).emit("customAlert", {
+                data: {
+                  message: "New exercise beggins"
+                }
+              });
+            }
+          }
+          /*
+          else {
+            io.to(participant1.socketId).emit("customAlert", {
               data: {
-                maxTime: exercise.time,
-                exerciseDescription: exercise.description,
-                exerciseType: exercise.type,
-                inputs: exercise.inputs,
-                solutions: exercise.solutions,
-                testLanguage: testLanguage,
+                message: "There are no more exercises left"
               }
             });
           }
-          if (exercise.type == "PAIR" || participant2.nextExercise) {
-            io.to(participant2.socketId).emit("newExercise", {
-              data: {
-                maxTime: exercise.time,
-                exerciseDescription: exercise.description,
-                exerciseType: exercise.type,
-                inputs: exercise.inputs,
-                solutions: exercise.solutions,
-                testLanguage: testLanguage,
-              }
-            });
-          }
+          */
+
 
           if (listExercises[num2Send].type == "PAIR") {
             participant1.visitedPExercises.push(num2Send);
@@ -223,10 +249,14 @@ async function executeSession(sessionName, io) {
             participant2.visitedPExercises.push(num2Send);
             participant2.save();
           } else {
-            participant1.visitedIExercises.push(num2Send);
-            participant1.save();
-            participant2.visitedIExercises.push(num2Send);
-            participant2.save();
+            if (participant1.nextExercise) {
+              participant1.visitedIExercises.push(num2Send);
+              participant1.save();
+            }
+            if (participant2.nextExercise) {
+              participant2.visitedIExercises.push(num2Send);
+              participant2.save();
+            }
           }
         } 
         p++;
@@ -280,7 +310,6 @@ async function executeSession(sessionName, io) {
         lastSessionEvent.set(sessionName, event);
         Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
   
-  
         timer = tests[testNumber].time; //Resets the timer
         session.exerciseCounter = 0;
         Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
@@ -307,7 +336,7 @@ async function executeSession(sessionName, io) {
   
           io.to(participant1.socketId).emit("newExercise", {
             data: {
-              maxTime: exercise.time,
+              maxTime: tests[testNumber].testTime,
               exerciseDescription: exercise.description,
               exerciseType: exercise.type,
               inputs: exercise.inputs,
@@ -317,12 +346,23 @@ async function executeSession(sessionName, io) {
           });
           io.to(participant2.socketId).emit("newExercise", {
             data: {
-              maxTime: exercise.time,
+              maxTime: tests[testNumber].testTime,
               exerciseDescription: exercise.description,
               exerciseType: exercise.type,
               inputs: exercise.inputs,
               solutions: exercise.solutions,
               testLanguage: testLanguage,
+            }
+          });
+
+          io.to(participant1.socketId).emit("customAlert", {
+            data: {
+              message: "New exercise beggins"
+            }
+          });
+          io.to(participant2.socketId).emit("customAlert", {
+            data: {
+              message: "New exercise beggins"
             }
           });
           

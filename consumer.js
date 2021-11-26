@@ -14,161 +14,24 @@ let connectedUsers = new Map();
 let userToSocketID = new Map();
 let lastSessionEvent = new Map();
 
+
+//A function to parse an entrance into a json
 function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
 }
 
+//A simple wait function to wait a specified period of ms
 async function wait(ms) {
-  await setTimeout(() => {}, ms);
+  await setTimeout(() => { }, ms);
 }
 
-async function pairing(session, io) {
-  /*****************************************
-   * FUNCTION  USED IN "AUTO" PAIRING
-   * For "MANUAL" Pairing: -> "ClientReady" Event Listener
-   ****************************************/
-
-  console.log("Starting the pairing of", session.name);
-  Logger.dbg("Pairing - Starting the pairing of "+ session.name);
-  let usersWaitingForRoom = await User.find({
-    subject: session.name,
-    token: { $exists: true },
-    room: { $exists: false },
-    environment: process.env.NODE_ENV,
-  });
-
-  for (const userTaken of usersWaitingForRoom) {
-    const numberOfMaxRoomArray = await User.aggregate([
-      {
-        $match: {
-          subject: session.name,
-          environment: process.env.NODE_ENV,
-        },
-      },
-      { $group: { _id: null, max: { $max: "$room" } } },
-    ]);
-
-    // Number of the last room that was assigned
-    const numberOfMaxRoom = numberOfMaxRoomArray[0];
-
-    Logger.dbg("Pairing - Number of the last room that was assigned "+ numberOfMaxRoom);
-
-    // Update the user (Workaround)
-    const user = await User.findById(userTaken.id);
-
-    Logger.dbg("Pairing - User to be updated: ",user);
-
-    // If the user is not assigned to a room yet
-    if (typeof user.room === "undefined") {
-
-      
-      // Take a user to pair with
-      const pairedUser = await User.findOne({
-        subject: session.name,
-        gender: { $nin: [user.gender] },
-        token: session.tokenPairing
-          ? { $nin: [user.token], $exists: true }
-          : { $exists: true },
-        room: { $exists: false },
-        environment: process.env.NODE_ENV,
-      });
-
-      Logger.dbg("Pairing - User.room undefined, paired user: ",pairedUser);
-
-      if (pairedUser) {
-        console.log("We found a great user to pair with!");
-        if (numberOfMaxRoom.max != null) {
-          user.room = numberOfMaxRoom.max + 1;
-          pairedUser.room = numberOfMaxRoom.max + 1;
-        } else {
-          user.room = 0;
-          pairedUser.room = 0;
-        }
-
-        Logger.dbg("Pairing - Saving user",user,["code","firstName","gender","room","blind"]);
-        await user.save();
-
-        Logger.dbg("Pairing - Saving pairedUser",pairedUser,["code","firstName","gender","room","blind"]);
-        await pairedUser.save();
-
-        Logger.dbg("Pairing - Saved ",[user,pairedUser]);
-
-        io.to(user.socketId).emit("sessionStart", {
-          room: session.name + user.room,
-        });
-        io.to(pairedUser.socketId).emit("sessionStart", {
-          room: session.name + pairedUser.room,
-        });
-
-        connectedUsers.set(user.code, pairedUser.code);
-        connectedUsers.set(pairedUser.code, user.code);
-      } else {
-        const anyOtherUser = await User.findOne({
-          subject: session.name,
-          code: { $nin: [user.code] },
-          token: session.tokenPairing
-            ? { $nin: [user.token], $exists: true }
-            : { $exists: true },
-          room: { $exists: false },
-          environment: process.env.NODE_ENV,
-        });
-
-        if (anyOtherUser) {
-          if (numberOfMaxRoom.max != null) {
-            user.room = numberOfMaxRoom.max + 1;
-            anyOtherUser.room = numberOfMaxRoom.max + 1;
-          } else {
-            user.room = 0;
-            anyOtherUser.room = 0;
-          }
-
-          Logger.dbg("Pairing - Saving user",user,["code","firstName","gender","room","blind"]);
-          await user.save();
-          Logger.dbg("Pairing - Saving anyOtherUser",anyOtherUser,["code","firstName","gender","room","blind"]);
-          await anyOtherUser.save();
-          connectedUsers.set(user.code, anyOtherUser.code);
-          connectedUsers.set(anyOtherUser.code, user.code);
-
-          io.to(user.socketId).emit("sessionStart", {
-            room: session.name + user.room,
-          });
-          io.to(anyOtherUser.socketId).emit("sessionStart", {
-            room: session.name + anyOtherUser.room,
-          });
-        } else {
-          if (numberOfMaxRoom.max !== null) {
-            user.room = numberOfMaxRoom.max + 1;
-          } else {
-            user.room = 0;
-          }
-
-          Logger.dbg("Pairing - Saving user",user,["code","firstName","gender","room","blind"]);
-          await user.save();
-
-          io.to(user.socketId).emit("sessionStart", {
-            room: session.name + user.room,
-          });
-
-          console.log(
-            "User " + user.socketId + " is paired alone in room " + user.room
-          );
-
-          Logger.dbg("Pairing - Finish ",[user,numberOfMaxRoom]);
-
-        }
-      }
-    }
-  }
-
-  console.log("Pairing done!");
-  setTimeout(function () {
-    Logger.dbg("Pairing - executeSession ",session);
-    executeSession(session.name, io);
-  }, 5000);
+function randomNumber(min, max) {
+  return Math.floor(Math.random() * (max - min));
 }
 
+//A function to test if user has finished or to bring him/her a new exercise
 async function exerciseTimeUp(id, description) {
-  console.log("Friend ", id, " is out of time!");
+  Logger.dbg("Friend " + id + " is out of time!");
   const user = await User.findOne({
     socketId: id,
     environment: process.env.NODE_ENV,
@@ -186,26 +49,30 @@ async function exerciseTimeUp(id, description) {
         session: user.subject,
       });
 
+      //Until here, the function looks for an user, coinciding with id. Looks for his/her room and the test in which he/she is
       const exercise = test.exercises[room.lastExercise];
 
+      //Tries a new exercise, if there's no more on the test, tries a new test
       if (exercise) {
+        //If there is 1 more exercise on the test, user picks it
         if (test.exercises[room.lastExercise + 1]) {
-          console.log("They are going to the next exercise");
+          Logger.dbg("They are going to the next exercise");
           room.lastExercise += 1;
           await room.save();
-        } else {
+        } else { //if not, picks another test
           const nextTest = await Test.findOne({
             orderNumber: room.currentTest + 1,
             environment: process.env.NODE_ENV,
             session: user.subject,
           });
+          //If there is a new test, it starts in the first exercise 
           if (nextTest) {
-            console.log("They got a new test (Prueba)");
+            Logger.dbg("They got a new test (Prueba)");
             room.lastExercise = 0;
             room.test += 1;
             await room.save();
-          } else {
-            console.log("They finished");
+          } else { //If there isn't, it indicates the room has finished
+            Logger.dbg("They finished");
             room.finished = true;
             await room.save();
           }
@@ -216,119 +83,442 @@ async function exerciseTimeUp(id, description) {
 }
 
 
-
+//Executing a new session and testing the following exercise it has to be launched
 async function executeSession(sessionName, io) {
+  //Pick up a session by its name, and puts in true the "running" attribute
+  lastSessionEvent.set(sessionName, []);
+  Logger.dbg("executeSession - Cleared last event of session " + sessionName);
 
-  lastSessionEvent.set(sessionName,[]);
-  Logger.dbg("executeSession - Cleared last event of session "+sessionName);
-
-  Logger.dbg("executeSession - Starting "+ sessionName);
+  Logger.dbg("executeSession - Starting " + sessionName);
   const session = await Session.findOne({
     name: sessionName,
     environment: process.env.NODE_ENV,
   });
 
   session.running = true;
-  session.save();
-  Logger.dbg("executeSession - Running ",session,["name","pairingMode","tokenPairing","blindParticipant"]);
-
+  session.save(); //Saves it on database
+  Logger.dbg("executeSession - Running ", session, ["name", "pairingMode", "tokenPairing", "blindParticipant"]);
+  //Pick all tests
   const tests = await Test.find({
     session: session.name,
     environment: process.env.NODE_ENV,
   }).sort({ orderNumber: 1 });
-
+  //Number of tests in a session
   const numTests = tests.length;
-
+  //testCounter = session attribute that shows the order of the tests (actual test)
   let timer = 0;
   let maxExercises = tests[session.testCounter].exercises.length;
 
-  Logger.dbg("executeSession - testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
-
+  Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
+  //Here it is loaded the test
   var event = ["loadTest", {
-        data: {
-          testDescription: tests[0].description,
-          peerChange: tests[0].peerChange,
-        }
-      }];
+    data: {
+      testDescription: tests[0].description,
+      peerChange: tests[0].peerChange,
+    }
+  }];
 
-  io.to(sessionName).emit(event[0],event[1]);
+  io.to(sessionName).emit(event[0], event[1]);
 
-  lastSessionEvent.set(sessionName,event);
-  Logger.dbg("executeSession - lastSessionEvent saved",event[0]);
-        
-  const interval = setInterval(function () {
+  lastSessionEvent.set(sessionName, event);
+  Logger.dbg("executeSession - lastSessionEvent saved", event[0])  
+  
+  
+  const potentialParticipants = await User.find({ //It picks all the registered users in the session
+    environment: process.env.NODE_ENV,
+    subject: sessionName,
+  });
+
+  potentialParticipants.forEach((p) => {
+    var participantF = p;
+    participantF.visitedPExercises = [];
+    participantF.visitedIExercises = [];
+    participantF.nextExercise = false;
+    participantF.save();
     
-    if (session.testCounter == numTests) {
-      console.log("There are no more tests, the session <"+session.name+"> has finish!");
-      Logger.dbg("executeSession - emitting 'finish' event in session "+session.name+" #############################");
-      
-      io.to(sessionName).emit("finish");
-      lastSessionEvent.set(sessionName,["finish"]);
-      Logger.dbg("executeSession - lastSessionEvent saved",event);
-        
-      clearInterval(interval);
-    } else if (timer > 0) {
-      io.to(sessionName).emit("countDown", {
-        data: timer,
+  });
+  
+  //Start of the tests, following a time line
+  const interval = setInterval(async function () {  
+    //If this session quantity of tests is the same test than loaded
+    if (session.isStandard) {
+      const potentialParticipants = await User.find({ //It picks all the registered users in the session
+        environment: process.env.NODE_ENV,
+        subject: sessionName,
       });
-      console.log(timer);
-      timer--;
-    } else if (session.exerciseCounter == maxExercises) {
-      console.log("Going to the next test!");
-      session.testCounter++;
-      session.exerciseCounter = -1;
-    } else if (session.exerciseCounter === -1) {
-      console.log("Loading test");
+  
+      var participants = [];
+      potentialParticipants.forEach((p) => {
+        //Filter out the one not connected : they don't have the property socketId! 
+        if (p.socketId) {
+          participants.push(p);
+        }
+      });
+  
+      participants.sort(function(a, b) {
+        return a.room - b.room;
+      });
 
-      var event = ["loadTest", {
-        data: {
-          testDescription: tests[session.testCounter].description,
-          peerChange: tests[session.testCounter].peerChange,
-        },
-      }];
-      io.to(sessionName).emit(event[0],event[1]);
-
-      lastSessionEvent.set(sessionName,event);
-      Logger.dbg("executeSession - lastSessionEvent saved",event[0]);
+      for (let p = 0; p < participants.length; p++) {
+        var participant1 = participants[p];
+        var participant2 = participants[p+1];
         
+        
+        if (participant1.nextExercise || participant2.nextExercise) {
+        
+          Logger.dbg("Starting new exercise:");
+          if (session.testCounter != 2) {
+            var testNumber = session.testCounter;
+          } else {
+            var testNumber = 0;
+          }
 
-      timer = tests[session.testCounter].time;
-      session.exerciseCounter = 0;
-      Logger.dbg("executeSession - testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
+          let testLanguage = tests[testNumber].language;
+          let listExercises = tests[testNumber].exercises;
+          
+          Logger.dbg("EVENT - Send a random exercise to each pair");
+          var num2Send = randomNumber(0, listExercises.length);
 
-    } else {
-      console.log("Starting new exercise:");
-      let exercise =
-        tests[session.testCounter].exercises[session.exerciseCounter];
-      if (exercise) {
-        console.log("   "+exercise.description.substring(0,Math.min(80,exercise.description.length))+"...");
+          if (listExercises[num2Send].type == "PAIR" && participant1.visitedPExercises.length < listExercises.length) {
+            while(participant1.visitedPExercises.includes(num2Send)) {
+              num2Send = randomNumber(0, listExercises.length);
+            }
+          } else if (listExercises[num2Send].type == "INDIVIDUAL" && participant1.visitedIExercises.length < listExercises.length) {
+            while(participant1.visitedIExercises.includes(num2Send)) {
+              num2Send = randomNumber(0, listExercises.length);
+            }
+          }
 
-        var event = ["newExercise", {
+          var exercise = listExercises[num2Send];
+
+          if ((exercise.type == "PAIR" && participant1.visitedPExercises.length < listExercises.length) || (exercise.type == "INDIVIDUAL" && participant1.visitedIExercises.length < listExercises.length)) {
+            if (exercise.type == "PAIR" || participant1.nextExercise) {
+              io.to(participant1.socketId).emit("newExercise", {
+                data: {
+                  maxTime: tests[testNumber].testTime,
+                  exerciseDescription: exercise.description,
+                  exerciseType: exercise.type,
+                  inputs: exercise.inputs,
+                  solutions: exercise.solutions,
+                  testLanguage: testLanguage,
+                }
+              });
+              
+              io.to(participant1.socketId).emit("customAlert", {
+                data: {
+                  message: "New exercise beggins"
+                }
+              });
+            }
+          } else {
+            participant1.nextExercise = false;
+            io.to(participant1.socketId).emit("customAlert", {
+              data: {
+                message: "There are no more exercises left on this test"
+              }
+            });
+          }
+          if ((exercise.type == "PAIR" && participant2.visitedPExercises.length < listExercises.length) || (exercise.type == "INDIVIDUAL" && participant2.visitedIExercises.length < listExercises.length)) {
+            if (exercise.type == "PAIR" || participant2.nextExercise) {
+              io.to(participant2.socketId).emit("newExercise", {
+                data: {
+                  maxTime: tests[testNumber].testTime,
+                  exerciseDescription: exercise.description,
+                  exerciseType: exercise.type,
+                  inputs: exercise.inputs,
+                  solutions: exercise.solutions,
+                  testLanguage: testLanguage,
+                }
+              });
+              
+              io.to(participant2.socketId).emit("customAlert", {
+                data: {
+                  message: "New exercise beggins"
+                }
+              });
+            }
+          } else {
+            participant2.nextExercise = false;
+            io.to(participant2.socketId).emit("customAlert", {
+              data: {
+                message: "There are no more exercises left on this test"
+              }
+            });
+          }
+          /*
+          else {
+            io.to(participant1.socketId).emit("customAlert", {
+              data: {
+                message: "There are no more exercises left"
+              }
+            });
+          }
+          */
+
+
+          if (listExercises[num2Send].type == "PAIR") {
+            participant1.visitedPExercises.push(num2Send);
+            participant1.save();
+            participant2.visitedPExercises.push(num2Send);
+            participant2.save();
+          } else {
+            if (participant1.nextExercise) {
+              participant1.visitedIExercises.push(num2Send);
+              participant1.save();
+            }
+            if (participant2.nextExercise) {
+              participant2.visitedIExercises.push(num2Send);
+              participant2.save();
+            }
+          }
+        } 
+        p++;
+      }
+      
+      if (session.testCounter == 3) {
+        Logger.dbg("There are no more tests, the session <" + session.name + "> has finish!");
+        Logger.dbg("executeSession - emitting 'finish' event in session " + session.name + " #############################");
+  
+        io.to(sessionName).emit("finish");
+        lastSessionEvent.set(sessionName, ["finish"]);
+        Logger.dbg("executeSession - lastSessionEvent saved", event);
+  
+        clearInterval(interval);
+
+        for (let p = 0; p < participants.length; p++) {
+          var participantF = participants[p];
+          participantF.visitedPExercises = [];
+          participantF.visitedIExercises = [];
+          participantF.nextExercise = false;
+          participantF.save();
+        }
+      } else if (timer > 0) { //If timer hasn't finished counting, it goes down
+        io.to(sessionName).emit("countDown", {
+          data: timer,
+        });
+        Logger.dbg(timer);
+        timer--;
+      } else if (session.exerciseCounter == maxExercises) { //If timer goes to 0, and exercise in a test is the same as actual exercise, it goes to the next test
+        Logger.dbg("Going to the next test!");
+        session.testCounter++;
+        session.exerciseCounter = -1;
+      } else if (session.exerciseCounter === -1) { //If exercises have been finished, it pass to a new test
+        Logger.dbg("Loading test");
+        if (session.testCounter != 2) {
+          var testNumber = session.testCounter;
+        } else {
+          var testNumber = 0;
+        }
+        
+        var event = ["loadTest", {
           data: {
-            maxTime: exercise.time,
-            exerciseDescription: exercise.description,
-            exerciseType: exercise.type,
-            inputs: exercise.inputs,
+            testDescription: tests[testNumber].description,
+            peerChange: tests[testNumber].peerChange,
+            isStandard: true,
           },
         }];
-        io.to(sessionName).emit(event[0],event[1]);
-        lastSessionEvent.set(sessionName,event);
-        Logger.dbg("executeSession - lastSessionEvent saved",event[0]);
+        
+        io.to(sessionName).emit(event[0], event[1]);
+  
+        lastSessionEvent.set(sessionName, event);
+        Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
+  
+        timer = tests[testNumber].time; //Resets the timer
+        session.exerciseCounter = 0;
+        Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
+  
+      } else if (session.exerciseCounter == 0) { //If nothing before happens, it means that there are more exercises to do, and then in goes to the next one
+        if (session.testCounter != 2) {
+          var testNumber = session.testCounter;
+        } else {
+          var testNumber = 0;
+        }
 
+        Logger.dbg("Starting new exercise:");
+        let testLanguage = tests[testNumber].language;
+        let listExercises = tests[testNumber].exercises;
+        
+        Logger.dbg("EVENT - Send a random exercise to each pair");
+        for (let p = 0; p < participants.length; p++) {
+          var participant1 = participants[p];
+          var participant2 = participants[p+1];
+  
+          var num2Send = randomNumber(0, listExercises.length);
+  
+          var exercise = listExercises[num2Send];
+  
+          io.to(participant1.socketId).emit("newExercise", {
+            data: {
+              maxTime: tests[testNumber].testTime,
+              exerciseDescription: exercise.description,
+              exerciseType: exercise.type,
+              inputs: exercise.inputs,
+              solutions: exercise.solutions,
+              testLanguage: testLanguage,
+            }
+          });
+          io.to(participant2.socketId).emit("newExercise", {
+            data: {
+              maxTime: tests[testNumber].testTime,
+              exerciseDescription: exercise.description,
+              exerciseType: exercise.type,
+              inputs: exercise.inputs,
+              solutions: exercise.solutions,
+              testLanguage: testLanguage,
+            }
+          });
+
+          io.to(participant1.socketId).emit("customAlert", {
+            data: {
+              message: "New exercise beggins"
+            }
+          });
+          io.to(participant2.socketId).emit("customAlert", {
+            data: {
+              message: "New exercise beggins"
+            }
+          });
+          
+
+        if (exercise.type == "PAIR") {
+          participant1.visitedPExercises.push(num2Send);
+          participant1.save();
+          participant2.visitedPExercises.push(num2Send);
+          participant2.save();
+        } else {
+          participant1.visitedIExercises.push(num2Send);
+          participant1.save();
+          participant2.visitedIExercises.push(num2Send);
+          participant2.save();
+        }
+
+          p++;
+        }
+
+        lastSessionEvent.set(sessionName, event);
+        Logger.dbg("executeSession - lastSessionEvent saved", "newExercise");
+  
         sessions.set(session.name, {
           session: session,
-          exerciseType: exercise.type,
+          exerciseType: listExercises[0].type,
         });
-        timer = exercise.time;
-      }
-      session.exerciseCounter++;
-      Logger.dbg(" testCounter: "+session.testCounter +" of "+numTests+" , exerciseCounter: "+session.exerciseCounter+" of "+maxExercises);
 
-      session.save();
-      Logger.dbg("executeSession - session saved ");
+        timer = timer == 0 ? tests[testNumber].testTime : timer;
+  
+        session.exerciseCounter++; //After that, it increments the counter to test in the before code if thera are more or not
+        Logger.dbg(" testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
+  
+        session.save();
+        Logger.dbg("executeSession - session saved ");
+      } else {
+        Logger.dbg("Going to the next test!");
+        session.testCounter++;
+        session.exerciseCounter = -1;
+        
+        Logger.dbg("Loading test");
+                
+        if (session.testCounter < 2) {
+          var testNumber = session.testCounter;
+        } else {
+          var testNumber = 0;
+        }
+        
+        var event = ["loadTest", {
+          data: {
+            testDescription: tests[testNumber].description,
+            peerChange: tests[testNumber].peerChange,
+            isStandard: true,
+          },
+        }];
+        
+        io.to(sessionName).emit(event[0], event[1]);
+  
+        lastSessionEvent.set(sessionName, event);
+        Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
+  
+  
+        timer = tests[testNumber].time; //Resets the timer
+        session.exerciseCounter = 0;
+        Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
+  
+      }
+
+    } else {
+      if (session.testCounter == numTests) {
+        Logger.dbg("There are no more tests, the session <" + session.name + "> has finish!");
+        Logger.dbg("executeSession - emitting 'finish' event in session " + session.name + " #############################");
+  
+        io.to(sessionName).emit("finish");
+        lastSessionEvent.set(sessionName, ["finish"]);
+        Logger.dbg("executeSession - lastSessionEvent saved", event);
+  
+        clearInterval(interval);
+      } else if (timer > 0) { //If timer hasn't finished counting, it goes down
+        io.to(sessionName).emit("countDown", {
+          data: timer,
+        });
+        Logger.dbg(timer);
+        timer--;
+      } else if (session.exerciseCounter == maxExercises) { //If timer goes to 0, and exercise in a test is the same as actual exercise, it goes to the next test
+        Logger.dbg("Going to the next test!");
+        session.testCounter++;
+        session.exerciseCounter = -1;
+      } else if (session.exerciseCounter === -1) { //If exercises have been finished, it pass to a new test
+        Logger.dbg("Loading test");
+  
+        var event = ["loadTest", {
+          data: {
+            testDescription: tests[session.testCounter].description,
+            peerChange: tests[session.testCounter].peerChange,
+          },
+        }];
+        io.to(sessionName).emit(event[0], event[1]);
+  
+        lastSessionEvent.set(sessionName, event);
+        Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
+  
+  
+        timer = tests[session.testCounter].time; //Resets the timer
+        session.exerciseCounter = 0;
+        Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
+  
+      } else { //If nothing before happens, it means that there are more exercises to do, and then in goes to the next one
+        Logger.dbg("Starting new exercise:");
+        let testLanguage = tests[session.testCounter].language;
+        let exercise =
+          tests[session.testCounter].exercises[session.exerciseCounter];
+        if (exercise) {
+          Logger.dbg("   " + exercise.description.substring(0, Math.min(80, exercise.description.length)) + "...");
+  
+          var event = ["newExercise", {
+            data: {
+              maxTime: exercise.time,
+              exerciseDescription: exercise.description,
+              exerciseType: exercise.type,
+              inputs: exercise.inputs,
+              solutions: exercise.solutions,
+              testLanguage: testLanguage,
+            },
+          }];
+          io.to(sessionName).emit(event[0], event[1]);
+          lastSessionEvent.set(sessionName, event);
+          Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
+  
+          sessions.set(session.name, {
+            session: session,
+            exerciseType: exercise.type,
+          });
+          timer = exercise.time;
+        }
+        session.exerciseCounter++; //After that, it increments the counter to test in the before code if thera are more or not
+        Logger.dbg(" testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
+  
+        session.save();
+        Logger.dbg("executeSession - session saved ");
+      }
     }
 
-    
+    //If the session is not running, it's beacuse it has not been active or it has finished, so it clears all before
     Session.findOne({
       name: sessionName,
       environment: process.env.NODE_ENV,
@@ -341,26 +531,30 @@ async function executeSession(sessionName, io) {
   }, 1000);
 }
 
+
+//This is the "pairing method" and where the rooms are given and configured, and the first test started
 async function notifyParticipants(sessionName, io) {
-  const potentialParticipants = await User.find({
+  const potentialParticipants = await User.find({ //It picks all the registered users in the session
     environment: process.env.NODE_ENV,
     subject: sessionName,
   })
-  
+
   var participants = [];
-  Logger.dbg("notifyParticipants - Number of potential participants: "+potentialParticipants.length);
-  potentialParticipants.forEach((p)=>{
+  Logger.dbg("notifyParticipants - Number of potential participants: " + potentialParticipants.length);
+  potentialParticipants.forEach((p) => {
     //Filter out the one not connected : they don't have the property socketId! 
-    if(p.socketId){
-      Logger.dbg("notifyParticipants - Including connected participant",p.mail);
+    if (p.socketId) {
+      Logger.dbg("notifyParticipants - Including connected participant", p.mail);
       participants.push(p);
-    }else{
-      Logger.dbg("notifyParticipants - Skipping NOT CONNECTED participant",p.mail);
+    } else {
+      Logger.dbg("notifyParticipants - Skipping NOT CONNECTED participant", p.mail);
     }
   });
 
-  if(participants.length < 2){
-    Logger.dbg("notifyParticipants - UNEXPECTED ERROR - THERE ARE NOT CONNECTED PARTICIPANTS:"+JSON.stringify(potentialParticipants,null,2));
+  //If participant is logged (so this function is executed after pressing the "Start sessiobn" button), he/she is introduced to "participants" list
+
+  if (participants.length < 2) { //There must be at least 2 participants to start the session
+    Logger.dbg("notifyParticipants - UNEXPECTED ERROR - THERE ARE NOT CONNECTED PARTICIPANTS:" + JSON.stringify(potentialParticipants, null, 2));
     return;
   }
 
@@ -369,64 +563,94 @@ async function notifyParticipants(sessionName, io) {
     environment: process.env.NODE_ENV,
   });
 
-  var excluded = {code: "XXXX"};
+  var excluded = { code: "XXXX" };
 
-  if (session.pairingMode == "MANUAL"){
-    Logger.dbg("notifyParticipants - MANUAL pairing");
- 
-    var participantCount = participants.length;
-    var roomCount = Math.floor(participantCount / 2);
-    
 
-    if((participantCount % 2) == 0)
-      Logger.dbg("notifyParticipants - the participant count is even, PERFECT PAIRING! :-)");
-    else{
-      excluded = participants[participantCount-1];
-      Logger.dbg("notifyParticipants - the participant count is odd: IMPERFECT PAIRING :-(");
-      Logger.dbg("   -> One participant will be excluded: ",excluded,["code","mail"]);
+  Logger.dbg("notifyParticipants - MANUAL pairing");
+
+  var participantCount = participants.length;
+  var roomCount = Math.floor(participantCount / 2);
+
+  //If there are an odd number of participants, one of them randomly will be disconnected
+  if ((participantCount % 2) == 0)
+    Logger.dbg("notifyParticipants - the participant count is even, PERFECT PAIRING! :-)");
+  else {
+    excluded = participants[participantCount - 1];
+    Logger.dbg("notifyParticipants - the participant count is odd: IMPERFECT PAIRING :-(");
+    Logger.dbg("   -> One participant will be excluded: ", excluded, ["code", "mail"]);
+  }
+
+  var initialRoom = 100; //First room (So in pairing, ther can be as minimum, 200 participants, that will be in pairs from room 0 to room 99 before they are well paired)
+
+  Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
+
+  //Here starts the pairing method
+  var nonMaleList = []
+  var maleList = []
+  for (j = 0; j < participants.length; j++) {
+    if (participants[j].gender == "Male") {
+      maleList[maleList.length] = participants[j];
     }
-    
-    var initialRoom = 100;
-
-    Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
-
-    for(i=0;i<roomCount;i++){
-      let peer1 = participants[i*2];
-      let peer2 = participants[(i*2)+1];
-      peer1.room = i+initialRoom;
-      peer2.room = i+initialRoom;
-      
-      peer1.blind = session.blindParticipant;
-      peer2.blind = false;
-      Logger.dbg("notifyParticipants - Pair created in room <"+peer1.room+">:\n"+
-                  "    -"+ peer1.code+", "+peer1.firstName+", "+peer1.firstName+", "+peer1.gender+", "+peer1.blind+"\n"+
-                  "    -"+ peer2.code+", "+peer2.firstName+", "+peer2.firstName+", "+peer2.gender+", "+peer2.blind);
+    else {
+      nonMaleList[nonMaleList.length] = participants[j];
     }
-       
-  }else{
-    Logger.dbg("notifyParticipants - AUTO pairing");
-  } 
-  
-  participants.forEach((p)=>{
-    Logger.dbg("notifyParticipants - connected participants: ",p,["code","mail","room","blind"]);
+  }
+
+  //Before, we have divide all the participants into Male or Non male (Female, non-binary, etc)
+  l = nonMaleList.concat(maleList);
+
+
+  //Half of male will be on conrtol list, and the other half, on experiment. It happens the same with non-male group
+  var controlList = [];
+  var expertimentList = [];
+
+  for (ui = 0; ui < l.length; ui++) {
+    if (ui % 2 == 0) expertimentList[expertimentList.length] = l[ui];
+    else controlList[controlList.length] = l[ui];
+  }
+
+  participantNumber = 0;
+
+  for (i = 0; i < roomCount; i++) {
+    //Now we put together 1 participant of each group (control and experiment)
+    let peer1 = controlList[i];
+    let peer2 = expertimentList[i];
+
+
+    peer1.room = i + initialRoom;
+    peer2.room = i + initialRoom;
+
+    //The control group will see avatar if wanted, and experiment will never see avatar
+    peer1.blind = session.blindParticipant;
+    peer2.blind = false;
+    
+    Logger.dbg("notifyParticipants - Pair created in room <" + peer1.room + ">:\n" +
+      "    -" + peer1.code + ", " + peer1.firstName + ", " + peer1.firstName + ", " + peer1.gender + ", " + peer1.blind + "\n" +
+      "    -" + peer2.code + ", " + peer2.firstName + ", " + peer2.firstName + ", " + peer2.gender + ", " + peer2.blind);
+  }
+
+
+
+  participants.forEach((p) => {
+    Logger.dbg("notifyParticipants - connected participants: ", p, ["code", "mail", "room", "blind"]);
   });
-  
+
   connectedUsers = new Map();
 
-  Logger.dbg("notifyParticipants - connectedUsers cleared",connectedUsers);
+  Logger.dbg("notifyParticipants - connectedUsers cleared", connectedUsers);
 
 
-  for (const participant of participants) {
-  
+  for (const participant of participants) { //To each participant
+
     /** VERBOSE DEBUG ******************************************************************
     Logger.dbg("notifyParticipants - excluded: ",excluded,["code"]);
     Logger.dbg("notifyParticipants - participant: ",participant,["code"]);
     Logger.dbg("notifyParticipants - (<"+excluded.code+"> == <"+participant.code+">)?");
     ************************************************************************************/
 
-    if(excluded.code != participant.code){
-
-      myRoom = participant.room; 
+    if (excluded.code != participant.code) {
+      //If this participant is not the one excluded, It saves all the before changes on the database from here to the next comment * 
+      myRoom = participant.room;
       myCode = participant.code;
       myBlind = participant.blind;
 
@@ -435,69 +659,79 @@ async function notifyParticipants(sessionName, io) {
         environment: process.env.NODE_ENV,
         code: myCode
       });
-  
-      if(!user){
-        Logger.dbg("notifyParticipants - UNEXPECTED ERROR - USER NOT FOUND for "+myCode+" in DB");
+
+      if (!user) {
+        Logger.dbg("notifyParticipants - UNEXPECTED ERROR - USER NOT FOUND for " + myCode + " in DB");
         return;
       }
-      
+
       user.blind = myBlind;
       user.room = myRoom;
-      
-      Logger.dbg("notifyParticipants - Saving user",user,["code","firstName","gender","room","blind"]);
-      user.save();
 
-      Logger.dbg("notifyParticipants - Saving room in DB for "+myCode,user.room);
+      Logger.dbg("notifyParticipants - Saving user", user, ["code", "firstName", "gender", "room", "blind"]);
+      user.save();
+      // Until here, all the changes have been saved on database *
+
+      Logger.dbg("notifyParticipants - Saving room in DB for " + myCode, user.room);
 
       // DBG-VERBOSE: Logger.dbg("notifyParticipants - Searching pair of "+myCode+" in room"+myRoom);  
 
-      const pair = participants.filter((p)=>{
+
+      const pair = participants.filter((p) => {
         return (p.room == myRoom) && (p.code != myCode);
       })[0];
-        
+
       connectedUsers.set(myCode, pair.code);
 
-      if(!pair){
-        Logger.dbg("notifyParticipants - UNEXPECTED ERROR - PAIR NOT FOUND for "+myCode+" in room");
+      if (!pair) {
+        Logger.dbg("notifyParticipants - UNEXPECTED ERROR - PAIR NOT FOUND for " + myCode + " in room");
         return;
       }
-      
-      Logger.dbg("notifyParticipants - Found pair of "+myCode+" in room"+myRoom,pair,["code","mail"]);
 
+      Logger.dbg("notifyParticipants - Found pair of " + myCode + " in room" + myRoom, pair, ["code", "mail"]);
 
-      Logger.dbg("notifyParticipants - Session <"+sessionName+"> - Emitting 'sessionStart' event to <"+participant.code+"> in room <"+sessionName + participant.room+">");
+      var newGender = Math.random() > 0.5 ? "Female" : "Male"; // If number greater than 0.5, gender = , else gender = Male
+      Logger.dbg("notifyParticipants - Session <" + sessionName + "> - Emitting 'sessionStart' event to <" + participant.code + "> in room <" + sessionName + participant.room + ">");
       io.to(participant.socketId).emit("sessionStart", {
         room: sessionName + participant.room,
         user: {
           code: participant.code,
           blind: participant.blind,
         },
-        pairedTo: pair.gender,
+        pairedTo: newGender, //Random first other pair gender (fake to do experiments)
       });
 
-    }else{
-      Logger.dbg("notifyParticipants - Session <"+sessionName+"> - Excluding  <"+participant.code+"> from the 'sessionStart' event");
+    } else {
+      Logger.dbg("notifyParticipants - Session <" + sessionName + "> - Excluding  <" + participant.code + "> from the 'sessionStart' event");
     }
 
   }
-  Logger.dbg("notifyParticipants - connectedUsers after notification",connectedUsers);
+  Logger.dbg("notifyParticipants - connectedUsers after notification", connectedUsers);
 
 }
 
+
+/*  
+  This is the main function, the one that calls the others
+  It contains some "properties" / functions, that are called in other scripts
+  It's a kind of Object converter. It's like self. functions of the Consumer.js object
+*/ 
 module.exports = {
+  //This starts the session calling notifyParticipants to pair them and give them a room
   startSession: function (sessionName, io) {
-    
-    Logger.dbg("startSession "+sessionName);
-    
+
+    Logger.dbg("startSession " + sessionName);
+    //Room giving
     notifyParticipants(sessionName, io);
-    
+    //Wait 5000 ms, 5s, and then, execute the session
     setTimeout(() => {
       executeSession(sessionName, io);
     }, 5000);
   },
+  //On this funcition, the server test some things with socket.on(), like if admin is connected and do some actions as disconnect
   start: function (io) {
     function connection(socket) {
-      Logger.dbg("NEW CONNECTION "+socket.id);
+      Logger.dbg("NEW CONNECTION " + socket.id);
 
       Logger.log(
         "NewConn",
@@ -506,13 +740,13 @@ module.exports = {
       );
 
       socket.on("adminConnected", (session) => {
-        Logger.dbg("EVENT adminConnected",session);
-        console.log("Admin watching " + session);
+        Logger.dbg("EVENT adminConnected", session);
+        Logger.dbg("Admin watching " + session);
         socket.join(session);
       });
 
       socket.on("clientConnected", async (pack) => {
-        Logger.dbg("EVENT clientConnected",pack);
+        Logger.dbg("EVENT clientConnected", pack);
 
         const user = await User.findOne({
           code: pack,
@@ -524,12 +758,12 @@ module.exports = {
       });
 
       socket.on("requestToJoinAgain", (pack) => {
-        console.log("Asking " + pack + " to rejoin.");
+        Logger.dbg("Asking " + pack + " to rejoin.");
         io.to(pack).emit("clientJoinAgain");
       });
 
       socket.on("clientReady", async (pack) => {
-        Logger.dbg("EVENT clientReady",pack);
+        Logger.dbg("EVENT clientReady", pack);
 
         const user = await User.findOne({
           code: pack,
@@ -537,7 +771,7 @@ module.exports = {
         });
 
 
-        Logger.dbg("EVENT clientReady - User Retrival ["+pack+"] - ",user,["code","mail"]);
+        Logger.dbg("EVENT clientReady - User Retrival [" + pack + "] - ", user, ["code", "mail"]);
 
         const session = await Session.findOne({
           name: user.subject,
@@ -545,111 +779,116 @@ module.exports = {
         });
         if (session && session.active) {
           userToSocketID.set(user.code, socket.id);
-          user.socketId = socket.id; // TODO: Will be placed outside this function at some pointç
-          Logger.dbg("EVENT clientReady - Saving user",user,["code","firstName","gender","room","blind"]);
+          user.socketId = socket.id; // TODO: Will be placed outside this function at some point
+          Logger.dbg("EVENT clientReady - Saving user", user, ["code", "firstName", "gender", "room", "blind"]);
           await user.save();
 
-          Logger.dbg("EVENT clientReady ------- Starting " + session.pairingMode+" pairing in session <"+session.name +"> for User "+user.code+"------------------------------");
-          if (session.pairingMode === "AUTO") {
-            let usersCountSupposedToConnectNotReady = await User.countDocuments(
-              {
-                subject: session.name,
-                token: { $exists: false },
-                room: { $exists: false },
-                environment: process.env.NODE_ENV,
-              }
-            );
-            console.log(
-              "Faltan " + usersCountSupposedToConnectNotReady + " usuarios..."
-            );
-            if (usersCountSupposedToConnectNotReady == 0) {
-              console.log("Pairing...");
-              await pairing(session, io);
-            }
-          } else {
-            let lastUserJoined = await User.find({
+          Logger.dbg("EVENT clientReady ------- Starting " + session.pairingMode + " pairing in session <" + session.name + "> for User " + user.code + "------------------------------");
+
+          let lastUserJoined = await User.find({
+            subject: session.name,
+            environment: process.env.NODE_ENV,
+            room: { $exists: true },
+          }).sort("-room");
+
+          Logger.dbg("EVENT clientReady - MANUAL Pairing [" + pack + "] - Last User: ", lastUserJoined[lastUserJoined.length - 1], ["code"]);
+          Logger.dbg("EVENT clientReady - lastUserJoined Length:", lastUserJoined.length);
+
+          if (lastUserJoined.length != 0) {
+            let lastUserPairJoined = await User.find({
               subject: session.name,
               environment: process.env.NODE_ENV,
-              room: { $exists: true },
-            }).sort("-room");
+              room: lastUserJoined[0].room,
+            });
 
-            Logger.dbg("EVENT clientReady - MANUAL Pairing ["+pack+"] - Last User: ",lastUserJoined[lastUserJoined.length-1],["code"]);
-            Logger.dbg("EVENT clientReady - lastUserJoined Length:",lastUserJoined.length);
+            Logger.dbg("EVENT clientReady - lastUserPairJoined Length: ", lastUserPairJoined.length);
 
-            if (lastUserJoined.length != 0) {
-              let lastUserPairJoined = await User.find({
-                subject: session.name,
-                environment: process.env.NODE_ENV,
-                room: lastUserJoined[0].room,
-              });
-                    
-              Logger.dbg("EVENT clientReady - lastUserPairJoined Length: ", lastUserPairJoined.length);
-              
-              if (lastUserPairJoined.length < 2) {
-                user.room = lastUserPairJoined[0].room;
+            if (lastUserPairJoined.length < 2) {
+              user.room = lastUserPairJoined[0].room;
 
-                Logger.dbg("EVENT clientReady - Peer Assigned: ",lastUserPairJoined[0],["code","mail"]);                
-                Logger.dbg("EVENT clientReady - Room Assigned: "+user.room);
+              Logger.dbg("EVENT clientReady - Peer Assigned: ", lastUserPairJoined[0], ["code", "mail"]);
+              Logger.dbg("EVENT clientReady - Room Assigned: " + user.room);
 
-                connectedUsers.set(user.code, lastUserPairJoined[0].code);
-                connectedUsers.set(lastUserPairJoined[0].code, user.code);
+              connectedUsers.set(user.code, lastUserPairJoined[0].code);
+              connectedUsers.set(lastUserPairJoined[0].code, user.code);
 
-                Logger.dbg("EVENT clientReady - connectedUsers: ",connectedUsers);
+              Logger.dbg("EVENT clientReady - connectedUsers: ", connectedUsers);
 
 
-                if (session.blindParticipant) {
-                  user.blind = true;
-                }
-              } else {
-                user.room = lastUserPairJoined[0].room + 1;
-                Logger.dbg("EVENT clientReady - Room Assigned: "+user.room);
+              if (session.blindParticipant) {
+                user.blind = true;
               }
             } else {
-              user.room = 0;
-              Logger.dbg("EVENT clientReady - First PEER - Assigned Room 0 ");
+              user.room = lastUserPairJoined[0].room + 1;
+              Logger.dbg("EVENT clientReady - Room Assigned: " + user.room);
             }
-            Logger.dbg("EVENT clientReady - FINISH - Saving user",user,["code","firstName","gender","room","blind"]);
-            user.save();
+          } else {
+            user.room = 0;
+            Logger.dbg("EVENT clientReady - First PEER - Assigned Room 0 ");
           }
+          Logger.dbg("EVENT clientReady - FINISH - Saving user", user, ["code", "firstName", "gender", "room", "blind"]);
+          user.save();
+
         }
       });
 
+      socket.on("changeExercise", async (pack) => {
+        Logger.dbg("EVENT changeExercise - User in socket " + socket.id, pack);
+        const user = await User.findOne({
+          code: pack.code,
+          environment: process.env.NODE_ENV,
+        });
+        if (user) {
+          Logger.dbg(`EVENT changeExercise - user(${pack.code}).nextExercise (pre) : <${user.nextExercise}> `,user,["mail"]);
+
+          if (pack.exercisedCharged) {
+            user.nextExercise = false;
+          } else {
+            user.nextExercise = true;
+          }       
+          
+          await user.save();
+          Logger.dbg(`EVENT changeExercise - user(${pack.code}).nextExercise (post) : <${user.nextExercise}> `,user,["mail"]);
+
+        }
+      })
+
       socket.on("clientReconnection", async (pack) => {
-        Logger.dbg("EVENT clientReconnection ",pack);
+        Logger.dbg("EVENT clientReconnection ", pack);
         const user = await User.findOne({
           code: pack,
           environment: process.env.NODE_ENV,
         });
         if (user) {
-          Logger.dbg("EVENT clientReconnection - user found",user,["code","socketId"]);
+          Logger.dbg("EVENT clientReconnection - user found", user, ["code", "socketId"]);
 
           userToSocketID.set(user.code, socket.id);
           user.socketId = socket.id;
           socket.join(user.subject);
 
-          Logger.dbg("EVENT clientReconnection - Saving user",user,["code","firstName","gender","room","blind"]);
+          Logger.dbg("EVENT clientReconnection - Saving user", user, ["code", "firstName", "gender", "room", "blind"]);
           await user.save();
-          
-          Logger.dbg("EVENT clientReconnection - socketId updated",user,["code","socketId"]);
-          
+
+          Logger.dbg("EVENT clientReconnection - socketId updated", user, ["code", "socketId"]);
+
           // RECOVER LAST EVENT OF USER SESSION
           let lastEvent = lastSessionEvent.get(user.subject);
 
-          if(lastEvent && lastEvent.length){
-            Logger.dbg("EVENT clientReconnection - Last Recovered Event",lastEvent[0]);
-            if(lastEvent.length == 1){
-              Logger.dbg("EVENT clientReconnection - Submitted last event without data",lastEvent[0]);
+          if (lastEvent && lastEvent.length) {
+            Logger.dbg("EVENT clientReconnection - Last Recovered Event", lastEvent[0]);
+            if (lastEvent.length == 1) {
+              Logger.dbg("EVENT clientReconnection - Submitted last event without data", lastEvent[0]);
               io.to(socket.id).emit(lastEvent[0]);
-            }else{
-              Logger.dbg("EVENT clientReconnection - Submitted last event with data",lastEvent[0]);
+            } else {
+              Logger.dbg("EVENT clientReconnection - Submitted last event with data", lastEvent[0]);
 
               // SEND LAST EVENT OF THE SESSION TO RECONNECTED USER
-              io.to(socket.id).emit(lastEvent[0],lastEvent[1]);
+              io.to(socket.id).emit(lastEvent[0], lastEvent[1]);
 
-              if(lastEvent[0] == "newExercise" && lastEvent[1]){
+              if (lastEvent[0] == "newExercise" && lastEvent[1]) {
                 Logger.dbg("EVENT clientReconnection - Session in the middle of an exercise.");
 
-                if (lastEvent[1].data && lastEvent[1].data.exerciseType == "PAIR"){
+                if (lastEvent[1].data && lastEvent[1].data.exerciseType == "PAIR") {
                   Logger.dbg("EVENT clientReconnection - Session in the middle of an exercise to be done in PAIRs...");
 
                   // FIND PEER SOCKET 
@@ -657,45 +896,44 @@ module.exports = {
                     room: user.room,
                     subject: user.subject,
                     environment: process.env.NODE_ENV,
-                    code: { $ne : user.code}
+                    code: { $ne: user.code }
                   });
 
-                  if(peer){
-                    Logger.dbg("EVENT clientReconnection - Peer found for "+user.code,peer,["code"]);
-                    io.to(peer.socketId).emit("requestBulkCodeEvent",user.socketId);
-                    Logger.dbg("EVENT clientReconnection - Submitted requestBulkCodeEvent to peer",peer,["code","socketId"]);
-                  }else{
-                    Logger.dbg("EVENT clientReconnection - PEER NOT FOUND with query ",{
+                  if (peer) {
+                    Logger.dbg("EVENT clientReconnection - Peer found for " + user.code, peer, ["code"]);
+                    io.to(peer.socketId).emit("requestBulkCodeEvent", user.socketId);
+                    Logger.dbg("EVENT clientReconnection - Submitted requestBulkCodeEvent to peer", peer, ["code", "socketId"]);
+                  } else {
+                    Logger.dbg("EVENT clientReconnection - PEER NOT FOUND with query ", {
                       room: user.room,
                       subject: user.subject,
                       environment: process.env.NODE_ENV,
-                      code: { $ne : user.code}
+                      code: { $ne: user.code }
                     });
                   }
-    
-                  
-                }
-              }else{
-                Logger.dbg("EVENT clientReconnection - Last event wasn't an exercise",lastEvent[0]);
-              }
-                
 
-            }  
-          }else{
-            Logger.dbg("EVENT clientReconnection : LAST EVENT NOT FOUND for session "+user.subject,lastEvent);
+                }
+              } else {
+                Logger.dbg("EVENT clientReconnection - Last event wasn't an exercise", lastEvent[0]);
+              }
+
+
+            }
+          } else {
+            Logger.dbg("EVENT clientReconnection : LAST EVENT NOT FOUND for session " + user.subject, lastEvent);
           }
-          
-        }else{
-          Logger.dbg("EVENT clientReconnection : USER NOT FOUND",pack);
+
+        } else {
+          Logger.dbg("EVENT clientReconnection : USER NOT FOUND", pack);
         }
         tokens.set(pack, user.subject);
 
       });
 
       socket.on("bulkCode", async (pack) => {
-        Logger.dbg("EVENT bulkCode ",pack);
-        io.to(pack.data.peerSocketId).emit("bulkCodeUpdate",pack.data.code);
-        Logger.dbg("EVENT clientReconnection - Submitted bulkCodeUpdate to peer "+pack.data.peerSocketId,pack.data.code);
+        Logger.dbg("EVENT bulkCode ", pack);
+        io.to(pack.data.peerSocketId).emit("bulkCodeUpdate", pack.data.code);
+        Logger.dbg("EVENT clientReconnection - Submitted bulkCodeUpdate to peer " + pack.data.peerSocketId, pack.data.code);
       });
 
       socket.on("cursorActivity", (data) => {
@@ -705,7 +943,7 @@ module.exports = {
       });
 
       socket.on("updateCode", (pack) => {
-        
+
         // Too expensive dbg:
         // Logger.dbg("EVENT updateCode",pack);
 
@@ -733,15 +971,15 @@ module.exports = {
 
       socket.on("msg", (pack) => {
 
-        Logger.dbg("EVENT msg",pack);
+        Logger.dbg("EVENT msg", pack);
 
-        if(sessions.get(tokens.get(pack.token)) == null ){
-          Logger.dbg("EVENT msg - MESSAGE SENT when exercise hasn't started!!!: Ignored ",pack.token);
-          Logger.dbg("EVENT msg - tokens ",tokens);
-          Logger.dbg("EVENT msg - tokens.get(pack.token) ",tokens.get(pack.token));  
+        if (sessions.get(tokens.get(pack.token)) == null) {
+          Logger.dbg("EVENT msg - MESSAGE SENT when exercise hasn't started!!!: Ignored ", pack.token);
+          Logger.dbg("EVENT msg - tokens ", tokens);
+          Logger.dbg("EVENT msg - tokens.get(pack.token) ", tokens.get(pack.token));
           return;
         }
-        
+
 
         if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
           io.sockets.emit("msg", pack);
@@ -757,26 +995,26 @@ module.exports = {
       });
 
       socket.on("giveControl", (pack) => {
-        Logger.dbg("EVENT giveControl",pack);
+        Logger.dbg("EVENT giveControl", pack);
         io.sockets.emit("giveControl", pack);
         var uid = uids.get(socket.id);
         Logger.log(
           "giveControl",
           pack.token,
           "New giveControl event by " +
-            socket.id +
-            "(" +
-            uid +
-            ") in room <" +
-            pack.rid +
-            ">:" +
-            toJSON(pack)
+          socket.id +
+          "(" +
+          uid +
+          ") in room <" +
+          pack.rid +
+          ">:" +
+          toJSON(pack)
         );
       });
 
       socket.on("registry", async (pack) => {
-        Logger.dbg("EVENT registry",pack);
-        console.log("Registry event for: " + socket.id + "," + pack.uid);
+        Logger.dbg("EVENT registry", pack);
+        Logger.dbg("Registry event for: " + socket.id + "," + pack.uid);
 
         uids.set(socket.id, pack.uid);
 
@@ -787,13 +1025,13 @@ module.exports = {
             "Registry",
             pack.token,
             "Entering room " +
-              socket.id +
-              ": with <" +
-              pack.uid +
-              ">  of room <" +
-              pack.rid +
-              ">: " +
-              pack.data
+            socket.id +
+            ": with <" +
+            pack.uid +
+            ">  of room <" +
+            pack.rid +
+            ">: " +
+            pack.data
           );
           room = rooms.get(pack.rid);
           io.sockets.emit("giveControl", {
@@ -807,13 +1045,13 @@ module.exports = {
             "Registry",
             pack.token,
             "Registering " +
-              socket.id +
-              ": with <" +
-              pack.uid +
-              ">  of room <" +
-              pack.rid +
-              ">: " +
-              pack.data
+            socket.id +
+            ": with <" +
+            pack.uid +
+            ">  of room <" +
+            pack.rid +
+            ">: " +
+            pack.data
           );
           room.users = new Array();
           room.lastText = "";
@@ -829,8 +1067,8 @@ module.exports = {
           environment: process.env.NODE_ENV,
         });
 
-        console.log("###################################################");
-        console.log("User to enter in room: " + JSON.stringify(user, null, 2));
+        Logger.dbg("###################################################");
+        Logger.dbg("User to enter in room: " + JSON.stringify(user, null, 2));
 
         room.session = rooms.set(pack.rid, room);
 
@@ -849,7 +1087,7 @@ module.exports = {
       });
 
       socket.on("nextExercise", async (pack) => {
-        
+
         io.sockets.emit("nextExercise", {
           uid: pack.uid,
           rid: pack.rid,
@@ -862,7 +1100,7 @@ module.exports = {
       });
 
       socket.on("clientFinished", async (data) => {
-        Logger.dbg("EVENT clientFinished",data);
+        Logger.dbg("EVENT clientFinished", data);
       });
 
       socket.on("startDebugSession", async (pack) => {
@@ -878,6 +1116,8 @@ module.exports = {
           io.to(user.subject).emit("clientDisconnected", user.code);
         }
       });
+
+
       // In case of a failure in the connection.
       io.to(socket.id).emit("reconnect");
     }

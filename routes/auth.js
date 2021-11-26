@@ -29,7 +29,32 @@ router.post("/login", (req, res) => {
 });
 
 router.post("/signup", async (req, res) => {
-  const code = Math.floor(Math.random() * 1000000 + 1);
+  var code = Math.floor(Math.random() * 1000000 + 1);
+  var codeList = await User.find().then((res) => {
+    var listAux = []
+    for(r=0;r<res.length;r++) {
+      listAux.push(res[r].code);
+    }
+    return listAux;
+  });
+
+  var repeated = false;
+  while(true) {
+    for(c=0;c<codeList.length;c++) {
+      if (codeList[c] == code.toString()) {
+        repeated = true;
+        break;
+      }
+    }
+    
+    if(repeated) {
+      code = Math.floor(Math.random() * 1000000 + 1);
+      repeated = false;
+    } else {
+      break;
+    }
+  }
+  
 
   const newUser = new User(req.body);
   newUser.code = code;
@@ -78,6 +103,7 @@ router.post("/signup", async (req, res) => {
 
       Logger.monitorLog("Message sent: "+ info.messageId);
       res.send(bodyResponse);
+      res.sendStatus(200);
     } catch (e) {
       Logger.monitorLog(e);
       if (e.name == "ValidationError") {
@@ -88,6 +114,7 @@ router.post("/signup", async (req, res) => {
           message: "User already registered on the session.",
         });
       } else {
+        res.send({"error": e})
         res.sendStatus(500);
       }
     }

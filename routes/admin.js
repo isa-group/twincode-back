@@ -30,7 +30,7 @@ router.post("/startSession/:sessionName", async (req, res) => {
 router.get("/sessions", async (req, res) => {
   const adminSecret = req.headers.authorization;
 
-  //const limit = parseInt(req.query.limit) || 20;
+  const limit = parseInt(req.query.limit) || 20;
   const skip = parseInt(req.query.skip) || 0;
 
   if (adminSecret === process.env.ADMIN_SECRET && limit <= 20) {
@@ -64,7 +64,8 @@ router.get("/sessions", async (req, res) => {
         },
       },
     ])
-      .skip(skip); // .limit(limit)
+    .limit(limit)
+      .skip(skip);
 
     res.send(sessions);
   } else if (limit > 20) {

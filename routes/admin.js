@@ -33,7 +33,7 @@ router.get("/sessions", async (req, res) => {
   const limit = 100;
   const skip = parseInt(req.query.skip) || 0;
 
-  if (adminSecret === process.env.ADMIN_SECRET && limit <= 20) {
+  if (adminSecret === process.env.ADMIN_SECRET && limit <= 100) {
     const sessions = await Session.aggregate([
       {
         $lookup: {

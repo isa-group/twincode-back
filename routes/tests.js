@@ -75,13 +75,20 @@ router.post("/verify", async (req, res) => {
 
     Logger.dbg("/verify - Trying to validate " + session.testCounter + " " + session.exerciseCounter);
 
+    var numTest = session.testCounter;
+    if (session.isStandard && session.testCounter == 2) numTest = 0; 
+
     const test = await Test.findOne({
-      orderNumber: session.testCounter,
+      orderNumber: numTest,
       environment: process.env.NODE_ENV,
       session: user.subject,
     });
 
-    const exercise = test.exercises[session.exerciseCounter - 1];
+    var numExercise = session.exerciseCounter - 1;
+    if (session.isStandard && numTest == 0) numExercise = user.visitedPExercises[user.visitedPExercises.length - 1];
+    else if (session.isStandard && numTest == 0) numExercise = user.visitedIExercises[user.visitedIExercises.length - 1];
+    
+    const exercise = test.exercises[numExercise];
 
     if (exercise) {
       Logger.dbg("/verify - Validate exercise:\n  " + exercise.description.substring(0,Math.min(80,exercise.description.length))+"...");

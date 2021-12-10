@@ -201,6 +201,7 @@ async function executeSession(sessionName, io) {
                   inputs: exercise.inputs,
                   solutions: exercise.solutions,
                   testLanguage: testLanguage,
+                  testIndex: session.testCounter,
                 }
               });
               
@@ -228,6 +229,7 @@ async function executeSession(sessionName, io) {
                   inputs: exercise.inputs,
                   solutions: exercise.solutions,
                   testLanguage: testLanguage,
+                  testIndex: session.testCounter,
                 }
               });
               
@@ -355,6 +357,7 @@ async function executeSession(sessionName, io) {
               inputs: exercise.inputs,
               solutions: exercise.solutions,
               testLanguage: testLanguage,
+              testIndex: session.testCounter,
             }
           });
           io.to(participant2.socketId).emit("newExercise", {
@@ -365,6 +368,7 @@ async function executeSession(sessionName, io) {
               inputs: exercise.inputs,
               solutions: exercise.solutions,
               testLanguage: testLanguage,
+              testIndex: session.testCounter,
             }
           });
 
@@ -690,7 +694,7 @@ async function notifyParticipants(sessionName, io) {
 
       Logger.dbg("notifyParticipants - Found pair of " + myCode + " in room" + myRoom, pair, ["code", "mail"]);
 
-      var newGender = Math.random() > 0.5 ? "Female" : "Male"; // If number greater than 0.5, gender = , else gender = Male
+      var newGender = user.gender;//Math.random() > 0.5 ? "Female" : "Male"; // If number greater than 0.5, gender = , else gender = Male
       Logger.dbg("notifyParticipants - Session <" + sessionName + "> - Emitting 'sessionStart' event to <" + participant.code + "> in room <" + sessionName + participant.room + ">");
       io.to(participant.socketId).emit("sessionStart", {
         room: sessionName + participant.room,

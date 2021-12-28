@@ -29,6 +29,15 @@ function randomNumber(min, max) {
   return Math.floor(Math.random() * (max - min));
 }
 
+function shuffleArray(array) {
+  let i = array.length;
+  while (i--) {
+    const ri = Math.floor(Math.random() * i);
+    [array[i], array[ri]] = [array[ri], array[i]];
+  }
+  return array;
+}
+
 //A function to test if user has finished or to bring him/her a new exercise
 async function exerciseTimeUp(id, description) {
   Logger.dbg("Friend " + id + " is out of time!");
@@ -115,6 +124,8 @@ async function executeSession(sessionName, io) {
     data: {
       testDescription: tests[0].description,
       peerChange: tests[0].peerChange,
+      isStandard: true,
+      testCounterS: session.testCounter
     }
   }];
 
@@ -315,6 +326,7 @@ async function executeSession(sessionName, io) {
             testDescription: tests[testNumber].description,
             peerChange: tests[testNumber].peerChange,
             isStandard: true,
+            testCounterS: session.testCounter
           },
         }];
         
@@ -428,6 +440,7 @@ async function executeSession(sessionName, io) {
             testDescription: tests[testNumber].description,
             peerChange: tests[testNumber].peerChange,
             isStandard: true,
+            testCounterS: session.testCounter
           },
         }];
         
@@ -470,6 +483,8 @@ async function executeSession(sessionName, io) {
           data: {
             testDescription: tests[session.testCounter].description,
             peerChange: tests[session.testCounter].peerChange,
+            isStandard: false,
+            testCounterS: session.testCounter
           },
         }];
         io.to(sessionName).emit(event[0], event[1]);
@@ -584,6 +599,10 @@ async function notifyParticipants(sessionName, io) {
 
   Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
 
+
+  
+  
+  participants = shuffleArray(participants);
   //Here starts the pairing method
   var nonMaleList = []
   var maleList = []
@@ -690,7 +709,9 @@ async function notifyParticipants(sessionName, io) {
 
       Logger.dbg("notifyParticipants - Found pair of " + myCode + " in room" + myRoom, pair, ["code", "mail"]);
 
-      var newGender = Math.random() > 0.5 ? "Female" : "Male"; // If number greater than 0.5, gender = , else gender = Male
+      //var newGender = Math.random() > 0.5 ? "Female" : "Male"; // If number greater than 0.5, gender = , else gender = Male
+      var newGender = session.isStandard ? participant.shown_gender : participant.gender;
+      Logger.dbg("GENDER SENT: ",newGender);
       Logger.dbg("notifyParticipants - Session <" + sessionName + "> - Emitting 'sessionStart' event to <" + participant.code + "> in room <" + sessionName + participant.room + ">");
       io.to(participant.socketId).emit("sessionStart", {
         room: sessionName + participant.room,

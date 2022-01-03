@@ -163,7 +163,7 @@ async function executeSession(sessionName, io) {
       // Rounding the length to the maximum even number.
       const maxParticipants = (Math.floor(participants.length/2))*2;
 
-      
+
       for (let p = 0; p < maxParticipants; p++) {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
@@ -345,8 +345,12 @@ async function executeSession(sessionName, io) {
         let testLanguage = tests[testNumber].language;
         let listExercises = tests[testNumber].exercises;
         
+      // Calculate the maximum amount of participants possible 
+      // Rounding the length to the maximum even number.
+      const maxParticipants = (Math.floor(participants.length/2))*2;
+
         Logger.dbg("EVENT - Send a random exercise to each pair");
-        for (let p = 0; p < participants.length; p++) {
+        for (let p = 0; p < maxParticipants; p++) {
           var participant1 = participants[p];
           var participant2 = participants[p+1];
   

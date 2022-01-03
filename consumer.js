@@ -159,7 +159,12 @@ async function executeSession(sessionName, io) {
         return a.room - b.room;
       });
 
-      for (let p = 0; p < participants.length; p++) {
+      // Calculate the maximum amount of participants possible 
+      // Rounding the length to the maximum even number.
+      const maxParticipants = (Math.floor(participants.length/2))*2;
+
+      
+      for (let p = 0; p < maxParticipants; p++) {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
         

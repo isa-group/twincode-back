@@ -214,6 +214,16 @@ async function executeSession(sessionName, io) {
                   testLanguage: testLanguage,
                 }
               });
+              lastSessionEvent.set(participant1.socketId, ["newExercise", {
+                data: {
+                  maxTime: tests[testNumber].testTime,
+                  exerciseDescription: exercise.description,
+                  exerciseType: exercise.type,
+                  inputs: exercise.inputs,
+                  solutions: exercise.solutions,
+                  testLanguage: testLanguage,
+                }
+              }]);
               
               io.to(participant1.socketId).emit("customAlert", {
                 data: {
@@ -241,6 +251,16 @@ async function executeSession(sessionName, io) {
                   testLanguage: testLanguage,
                 }
               });
+              lastSessionEvent.set(participant2.socketId, ["newExercise", {
+                data: {
+                  maxTime: tests[testNumber].testTime,
+                  exerciseDescription: exercise.description,
+                  exerciseType: exercise.type,
+                  inputs: exercise.inputs,
+                  solutions: exercise.solutions,
+                  testLanguage: testLanguage,
+                }
+              }]);
               
               io.to(participant2.socketId).emit("customAlert", {
                 data: {
@@ -291,7 +311,9 @@ async function executeSession(sessionName, io) {
         Logger.dbg("executeSession - emitting 'finish' event in session " + session.name + " #############################");
   
         io.to(sessionName).emit("finish");
-        lastSessionEvent.set(sessionName, ["finish"]);
+        for (let i = 0; i < participants.length; i++) {
+          lastSessionEvent.set(sessionName, ["finish"]);
+        }
         Logger.dbg("executeSession - lastSessionEvent saved", event);
   
         clearInterval(interval);
@@ -369,6 +391,16 @@ async function executeSession(sessionName, io) {
               testLanguage: testLanguage,
             }
           });
+          lastSessionEvent.set(participant1.socketId, ["newExercise", {
+            data: {
+              maxTime: tests[testNumber].testTime,
+              exerciseDescription: exercise.description,
+              exerciseType: exercise.type,
+              inputs: exercise.inputs,
+              solutions: exercise.solutions,
+              testLanguage: testLanguage,
+            }
+          }]);
           io.to(participant2.socketId).emit("newExercise", {
             data: {
               maxTime: tests[testNumber].testTime,
@@ -874,6 +906,9 @@ module.exports = {
         }
       })
 
+
+
+
       socket.on("clientReconnection", async (pack) => {
         Logger.dbg("EVENT clientReconnection ", pack);
         const user = await User.findOne({
@@ -882,6 +917,8 @@ module.exports = {
         });
         if (user) {
           Logger.dbg("EVENT clientReconnection - user found", user, ["code", "socketId"]);
+
+          var oldSocket = user.socketId;
 
           userToSocketID.set(user.code, socket.id);
           user.socketId = socket.id;
@@ -892,8 +929,19 @@ module.exports = {
 
           Logger.dbg("EVENT clientReconnection - socketId updated", user, ["code", "socketId"]);
 
+          const userSession = await Session.findOne({
+            name: user.subject
+          });
+          let lastEvent;
+          
           // RECOVER LAST EVENT OF USER SESSION
-          let lastEvent = lastSessionEvent.get(user.subject);
+          if (userSession.isStandard) {
+            lastEvent = lastSessionEvent.get(oldSocket);
+            lastSessionEvent.set(user.socketId, lastEvent);
+          } else {
+            lastEvent = lastSessionEvent.get(user.subject);
+          }
+
 
           if (lastEvent && lastEvent.length) {
             Logger.dbg("EVENT clientReconnection - Last Recovered Event", lastEvent[0]);
@@ -950,6 +998,10 @@ module.exports = {
         tokens.set(pack, user.subject);
 
       });
+
+
+
+
 
       socket.on("bulkCode", async (pack) => {
         Logger.dbg("EVENT bulkCode ", pack);

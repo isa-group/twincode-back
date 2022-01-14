@@ -166,6 +166,10 @@ async function executeSession(sessionName, io) {
         }
       });
   
+      if (participants.length % 2 != 0) {
+        participants = participants.splice(0, participants.length-1);
+      }
+
       participants.sort(function(a, b) {
         return a.room - b.room;
       });
@@ -625,6 +629,7 @@ async function notifyParticipants(sessionName, io) {
     excluded = participants[participantCount - 1];
     Logger.dbg("notifyParticipants - the participant count is odd: IMPERFECT PAIRING :-(");
     Logger.dbg("   -> One participant will be excluded: ", excluded, ["code", "mail"]);
+    participants = participants.slice(0, participantCount-1);
   }
 
   var initialRoom = 100; //First room (So in pairing, ther can be as minimum, 200 participants, that will be in pairs from room 0 to room 99 before they are well paired)
@@ -635,6 +640,7 @@ async function notifyParticipants(sessionName, io) {
   
   
   participants = shuffleArray(participants);
+  
   //Here starts the pairing method
   var nonMaleList = []
   var maleList = []

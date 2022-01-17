@@ -97,9 +97,9 @@ router.post("/signup", async (req, res) => {
         html: `
     <h1>Welcome to TwinCode</h1>
     <br/>
-    <p>Your code in order to participate in the session is the following: <b>${code}</b></p>
-    <p>Detailed instructions on how to participate in the experiment will be sent in a further email.</p><br/>
-    <p>But you can click directly <a href="https://twincode.netlify.app/?code=${code}">here</a> for easy access when the session starts.</p>`, // html body
+    <p>Your anonymous code to participate in the twincode session is the following: <b>${code}</b></p>
+    <p>But you can click directly <a href="https://twincode.netlify.app/?code=${code}">https://twincode.netlify.app/?code=${code}</a> for easy access when the session starts.</p><br/>
+    <p>You will receive detailed instructions at the beginning of the session.</p>`, // html body
       });
 
       Logger.monitorLog("Message sent: "+ info.messageId);

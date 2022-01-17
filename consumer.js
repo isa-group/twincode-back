@@ -174,7 +174,12 @@ async function executeSession(sessionName, io) {
         return a.room - b.room;
       });
 
-      for (let p = 0; p < participants.length; p++) {
+      // Calculate the maximum amount of participants possible 
+      // Rounding the length to the maximum even number.
+      const maxParticipants = (Math.floor(participants.length/2))*2;
+
+
+      for (let p = 0; p < maxParticipants; p++) {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
         
@@ -216,6 +221,7 @@ async function executeSession(sessionName, io) {
                   inputs: exercise.inputs,
                   solutions: exercise.solutions,
                   testLanguage: testLanguage,
+                  testIndex: session.testCounter,
                 }
               });
               lastSessionEvent.set(participant1.socketId, ["newExercise", {
@@ -253,6 +259,7 @@ async function executeSession(sessionName, io) {
                   inputs: exercise.inputs,
                   solutions: exercise.solutions,
                   testLanguage: testLanguage,
+                  testIndex: session.testCounter,
                 }
               });
               lastSessionEvent.set(participant2.socketId, ["newExercise", {
@@ -376,8 +383,12 @@ async function executeSession(sessionName, io) {
         let testLanguage = tests[testNumber].language;
         let listExercises = tests[testNumber].exercises;
         
+      // Calculate the maximum amount of participants possible 
+      // Rounding the length to the maximum even number.
+      const maxParticipants = (Math.floor(participants.length/2))*2;
+
         Logger.dbg("EVENT - Send a random exercise to each pair");
-        for (let p = 0; p < participants.length; p++) {
+        for (let p = 0; p < maxParticipants; p++) {
           var participant1 = participants[p];
           var participant2 = participants[p+1];
   
@@ -393,6 +404,7 @@ async function executeSession(sessionName, io) {
               inputs: exercise.inputs,
               solutions: exercise.solutions,
               testLanguage: testLanguage,
+              testIndex: session.testCounter,
             }
           });
           lastSessionEvent.set(participant1.socketId, ["newExercise", {
@@ -413,6 +425,7 @@ async function executeSession(sessionName, io) {
               inputs: exercise.inputs,
               solutions: exercise.solutions,
               testLanguage: testLanguage,
+              testIndex: session.testCounter,
             }
           });
 
@@ -747,9 +760,10 @@ async function notifyParticipants(sessionName, io) {
 
       Logger.dbg("notifyParticipants - Found pair of " + myCode + " in room" + myRoom, pair, ["code", "mail"]);
 
-      //var newGender = Math.random() > 0.5 ? "Female" : "Male"; // If number greater than 0.5, gender = , else gender = Male
+
       var newGender = session.isStandard ? participant.shown_gender : participant.gender;
-      Logger.dbg("GENDER SENT: ",newGender);
+      Logger.dbg("notifyParticipans - gender sent ",newGender);
+
       Logger.dbg("notifyParticipants - Session <" + sessionName + "> - Emitting 'sessionStart' event to <" + participant.code + "> in room <" + sessionName + participant.room + ">");
       io.to(participant.socketId).emit("sessionStart", {
         room: sessionName + participant.room,

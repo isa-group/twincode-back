@@ -58,7 +58,8 @@ router.post("/signup", async (req, res) => {
 
   const newUser = new User(req.body);
   newUser.code = code;
-
+  newUser.shown_gender = Math.round(Math.random()) == 0 ? "Female" : "Male";
+  
   const session = await Session.findOne({
     name: req.body.subject,
     environment: process.env.NODE_ENV,

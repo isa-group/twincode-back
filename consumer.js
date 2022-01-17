@@ -29,6 +29,15 @@ function randomNumber(min, max) {
   return Math.floor(Math.random() * (max - min));
 }
 
+function shuffleArray(array) {
+  let i = array.length;
+  while (i--) {
+    const ri = Math.floor(Math.random() * i);
+    [array[i], array[ri]] = [array[ri], array[i]];
+  }
+  return array;
+}
+
 //A function to test if user has finished or to bring him/her a new exercise
 async function exerciseTimeUp(id, description) {
   Logger.dbg("Friend " + id + " is out of time!");
@@ -115,6 +124,8 @@ async function executeSession(sessionName, io) {
     data: {
       testDescription: tests[0].description,
       peerChange: tests[0].peerChange,
+      isStandard: true,
+      testCounterS: session.testCounter
     }
   }];
 
@@ -155,6 +166,10 @@ async function executeSession(sessionName, io) {
         }
       });
   
+      if (participants.length % 2 != 0) {
+        participants = participants.splice(0, participants.length-1);
+      }
+
       participants.sort(function(a, b) {
         return a.room - b.room;
       });
@@ -209,6 +224,16 @@ async function executeSession(sessionName, io) {
                   testIndex: session.testCounter,
                 }
               });
+              lastSessionEvent.set(participant1.socketId, ["newExercise", {
+                data: {
+                  maxTime: tests[testNumber].testTime,
+                  exerciseDescription: exercise.description,
+                  exerciseType: exercise.type,
+                  inputs: exercise.inputs,
+                  solutions: exercise.solutions,
+                  testLanguage: testLanguage,
+                }
+              }]);
               
               io.to(participant1.socketId).emit("customAlert", {
                 data: {
@@ -237,6 +262,16 @@ async function executeSession(sessionName, io) {
                   testIndex: session.testCounter,
                 }
               });
+              lastSessionEvent.set(participant2.socketId, ["newExercise", {
+                data: {
+                  maxTime: tests[testNumber].testTime,
+                  exerciseDescription: exercise.description,
+                  exerciseType: exercise.type,
+                  inputs: exercise.inputs,
+                  solutions: exercise.solutions,
+                  testLanguage: testLanguage,
+                }
+              }]);
               
               io.to(participant2.socketId).emit("customAlert", {
                 data: {
@@ -287,7 +322,9 @@ async function executeSession(sessionName, io) {
         Logger.dbg("executeSession - emitting 'finish' event in session " + session.name + " #############################");
   
         io.to(sessionName).emit("finish");
-        lastSessionEvent.set(sessionName, ["finish"]);
+        for (let i = 0; i < participants.length; i++) {
+          lastSessionEvent.set(sessionName, ["finish"]);
+        }
         Logger.dbg("executeSession - lastSessionEvent saved", event);
   
         clearInterval(interval);
@@ -322,6 +359,7 @@ async function executeSession(sessionName, io) {
             testDescription: tests[testNumber].description,
             peerChange: tests[testNumber].peerChange,
             isStandard: true,
+            testCounterS: session.testCounter
           },
         }];
         
@@ -369,6 +407,16 @@ async function executeSession(sessionName, io) {
               testIndex: session.testCounter,
             }
           });
+          lastSessionEvent.set(participant1.socketId, ["newExercise", {
+            data: {
+              maxTime: tests[testNumber].testTime,
+              exerciseDescription: exercise.description,
+              exerciseType: exercise.type,
+              inputs: exercise.inputs,
+              solutions: exercise.solutions,
+              testLanguage: testLanguage,
+            }
+          }]);
           io.to(participant2.socketId).emit("newExercise", {
             data: {
               maxTime: tests[testNumber].testTime,
@@ -441,6 +489,7 @@ async function executeSession(sessionName, io) {
             testDescription: tests[testNumber].description,
             peerChange: tests[testNumber].peerChange,
             isStandard: true,
+            testCounterS: session.testCounter
           },
         }];
         
@@ -483,6 +532,8 @@ async function executeSession(sessionName, io) {
           data: {
             testDescription: tests[session.testCounter].description,
             peerChange: tests[session.testCounter].peerChange,
+            isStandard: false,
+            testCounterS: session.testCounter
           },
         }];
         io.to(sessionName).emit(event[0], event[1]);
@@ -591,12 +642,18 @@ async function notifyParticipants(sessionName, io) {
     excluded = participants[participantCount - 1];
     Logger.dbg("notifyParticipants - the participant count is odd: IMPERFECT PAIRING :-(");
     Logger.dbg("   -> One participant will be excluded: ", excluded, ["code", "mail"]);
+    participants = participants.slice(0, participantCount-1);
   }
 
   var initialRoom = 100; //First room (So in pairing, ther can be as minimum, 200 participants, that will be in pairs from room 0 to room 99 before they are well paired)
 
   Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
 
+
+  
+  
+  participants = shuffleArray(participants);
+  
   //Here starts the pairing method
   var nonMaleList = []
   var maleList = []
@@ -703,7 +760,10 @@ async function notifyParticipants(sessionName, io) {
 
       Logger.dbg("notifyParticipants - Found pair of " + myCode + " in room" + myRoom, pair, ["code", "mail"]);
 
-      var newGender = user.gender;//Math.random() > 0.5 ? "Female" : "Male"; // If number greater than 0.5, gender = , else gender = Male
+
+      var newGender = session.isStandard ? participant.shown_gender : participant.gender;
+      Logger.dbg("notifyParticipans - gender sent ",newGender);
+
       Logger.dbg("notifyParticipants - Session <" + sessionName + "> - Emitting 'sessionStart' event to <" + participant.code + "> in room <" + sessionName + participant.room + ">");
       io.to(participant.socketId).emit("sessionStart", {
         room: sessionName + participant.room,
@@ -866,6 +926,9 @@ module.exports = {
         }
       })
 
+
+
+
       socket.on("clientReconnection", async (pack) => {
         Logger.dbg("EVENT clientReconnection ", pack);
         const user = await User.findOne({
@@ -874,6 +937,8 @@ module.exports = {
         });
         if (user) {
           Logger.dbg("EVENT clientReconnection - user found", user, ["code", "socketId"]);
+
+          var oldSocket = user.socketId;
 
           userToSocketID.set(user.code, socket.id);
           user.socketId = socket.id;
@@ -884,8 +949,19 @@ module.exports = {
 
           Logger.dbg("EVENT clientReconnection - socketId updated", user, ["code", "socketId"]);
 
+          const userSession = await Session.findOne({
+            name: user.subject
+          });
+          let lastEvent;
+          
           // RECOVER LAST EVENT OF USER SESSION
-          let lastEvent = lastSessionEvent.get(user.subject);
+          if (userSession.isStandard) {
+            lastEvent = lastSessionEvent.get(oldSocket);
+            lastSessionEvent.set(user.socketId, lastEvent);
+          } else {
+            lastEvent = lastSessionEvent.get(user.subject);
+          }
+
 
           if (lastEvent && lastEvent.length) {
             Logger.dbg("EVENT clientReconnection - Last Recovered Event", lastEvent[0]);
@@ -942,6 +1018,10 @@ module.exports = {
         tokens.set(pack, user.subject);
 
       });
+
+
+
+
 
       socket.on("bulkCode", async (pack) => {
         Logger.dbg("EVENT bulkCode ", pack);

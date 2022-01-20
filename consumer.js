@@ -238,7 +238,7 @@ async function executeSession(sessionName, io) {
               
               io.to(participant1.socketId).emit("customAlert", {
                 data: {
-                  message: "New exercise beggins"
+                  message: "New exercise begins"
                 }
               });
             }
@@ -276,7 +276,7 @@ async function executeSession(sessionName, io) {
               
               io.to(participant2.socketId).emit("customAlert", {
                 data: {
-                  message: "New exercise beggins"
+                  message: "New exercise begins"
                 }
               });
             }
@@ -432,12 +432,12 @@ async function executeSession(sessionName, io) {
 
           io.to(participant1.socketId).emit("customAlert", {
             data: {
-              message: "New exercise beggins"
+              message: "New exercise begins"
             }
           });
           io.to(participant2.socketId).emit("customAlert", {
             data: {
-              message: "New exercise beggins"
+              message: "New exercise begins"
             }
           });
           

@@ -651,13 +651,29 @@ async function notifyParticipants(sessionName, io) {
 
 
   
-  
+  //Participants array shuffled
   participants = shuffleArray(participants);
+
   
+  //Random shown genres randomized and 50% Male and 50% Female
+  var genres_list = []
+  for (j = 0; j < participants.length; j++) {
+    var newGeneratedGenre = "Male";
+    if (j > participants.length / 2) {
+      newGeneratedGenre = "Female";
+    }
+    genres_list.push(newGeneratedGenre);
+  }
+  genres_list = shuffleArray(genres_list);
+
+
   //Here starts the pairing method
   var nonMaleList = []
   var maleList = []
   for (j = 0; j < participants.length; j++) {
+    Logger.dbg(" User: ", participants[j].code, " Old shown genre: ", participants[j].shown_gender);
+    participants[j].shown_gender = genres_list[j];
+    Logger.dbg(" User: ", participants[j].code, " New shown genre: ", participants[j].shown_gender);
     if (participants[j].gender == "Male") {
       maleList[maleList.length] = participants[j];
     }

@@ -29,6 +29,7 @@ function randomNumber(min, max) {
   return Math.floor(Math.random() * (max - min));
 }
 
+// Fisher yates-shuffle to randomize an array --> https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
 function shuffleArray(array) {
   let i = array.length;
   while (i--) {
@@ -237,7 +238,7 @@ async function executeSession(sessionName, io) {
               
               io.to(participant1.socketId).emit("customAlert", {
                 data: {
-                  message: "New exercise beggins"
+                  message: "New exercise begins"
                 }
               });
             }
@@ -275,7 +276,7 @@ async function executeSession(sessionName, io) {
               
               io.to(participant2.socketId).emit("customAlert", {
                 data: {
-                  message: "New exercise beggins"
+                  message: "New exercise begins"
                 }
               });
             }
@@ -431,12 +432,12 @@ async function executeSession(sessionName, io) {
 
           io.to(participant1.socketId).emit("customAlert", {
             data: {
-              message: "New exercise beggins"
+              message: "New exercise begins"
             }
           });
           io.to(participant2.socketId).emit("customAlert", {
             data: {
-              message: "New exercise beggins"
+              message: "New exercise begins"
             }
           });
           

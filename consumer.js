@@ -143,7 +143,7 @@ async function executeStandardSession(session, io) {
   
   
 
-  Logger.log("Timing", "System", "T1A");
+  Logger.log("Timing", sessionName, "T1A");
   //Start of the tests, following a time line
   const interval = setInterval(async function () {
     //If this session quantity of tests is the same test than loaded
@@ -479,11 +479,11 @@ async function executeStandardSession(session, io) {
     } else {
       //---------------------------
       if (session.testCounter == 0) {
-        Logger.log("Timing", "System", "T1B");
+        Logger.log("Timing", sessionName, "T1B");
       } else if (session.testCounter == 1) {
-        Logger.log("Timing", "System", "T2A");
+        Logger.log("Timing", sessionName, "T2A");
       } else if (session.testCounter == 2) {
-        Logger.log("Timing", "System", "T2B");
+        Logger.log("Timing", sessionName, "T2B");
       } 
 
       Logger.dbg("Going to the next test!");

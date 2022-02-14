@@ -26,7 +26,8 @@ const UserSchema = new Schema({
   blind: { type: Boolean },
   visitedPExercises: { type: Array, required: true, default: [] },
   visitedIExercises: { type: Array, required: true, default: [] },
-  nextExercise: { type: Boolean, required: true, default: true }
+  nextExercise: { type: Boolean, required: true, default: true },
+  exerciseSwitch: { type: Boolean, required: false }
 });
 
 UserSchema.index(

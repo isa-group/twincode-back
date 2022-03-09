@@ -196,6 +196,9 @@ async function executeStandardSession(session, io) {
           if (!participant1.exerciseSwitch) {
             num2Send += listExercises.length / 2;
           }
+          if (num2Send >= listExercises.length) {
+            num2Send -= 1;
+          }
         } else {
           var num2Send = randomNumber(0, listExercises.length);
   
@@ -208,9 +211,62 @@ async function executeStandardSession(session, io) {
 
         var exercise = listExercises[num2Send];
 
-        if ((exercise.type == "PAIR" && participant1.visitedPExercises.length < listExercises.length/2) || (exercise.type == "INDIVIDUAL" && participant1.visitedIExercises.length < listExercises.length)) {
-          if (exercise.type == "PAIR" || participant1.nextExercise) {
-            io.to(participant1.socketId).emit("newExercise", {
+        if (listExercises[0].type == "PAIR") {
+          Logger.dbg("Exercise type", "PAIR");
+          if (participant1.visitedPExercises.length < listExercises.length/2) {
+            if (participant1.nextExercise || participant2.nextExercise) {
+              var newEvent = ["newExercise", {
+                data: {
+                  maxTime: tests[testNumber].testTime,
+                  exerciseDescription: exercise.description,
+                  exerciseType: exercise.type,
+                  inputs: exercise.inputs,
+                  solutions: exercise.solutions,
+                  testLanguage: testLanguage,
+                  testIndex: session.testCounter,
+                }
+              }];
+              io.to(participant1.socketId).emit(newEvent[0], newEvent[1]);
+              io.to(participant2.socketId).emit(newEvent[0], newEvent[1]);
+              
+              lastSessionEvent.set(participant1.socketId, newEvent);
+              lastSessionEvent.set(participant2.socketId, newEvent);
+              
+              io.to(participant1.socketId).emit("customAlert", {
+                data: {
+                  message: "New exercise begins"
+                }
+              });
+              io.to(participant2.socketId).emit("customAlert", {
+                data: {
+                  message: "New exercise begins"
+                }
+              });
+              
+              participant1.nextExercise = false;
+              participant2.nextExercise = false;
+            }
+          } else {
+            participant1.nextExercise = false;
+            participant2.nextExercise = false;
+            io.to(participant1.socketId).emit("customAlert", {
+              data: {
+                message: "There are no more exercises left on this test"
+              }
+            });
+            io.to(participant2.socketId).emit("customAlert", {
+              data: {
+                message: "There are no more exercises left on this test"
+              }
+            });
+          }
+            
+        } else if (listExercises[0].type == "INDIVIDUAL") {
+          Logger.dbg("Exercise type", "INDIVIDUAL");
+          if (participant1.nextExercise) {
+            if (participant1.visitedIExercises.length < listExercises.length) {
+              Logger.dbg("Participant 1 going to next exercise");
+              var newEvent = ["newExercise", {
               data: {
                 maxTime: tests[testNumber].testTime,
                 exerciseDescription: exercise.description,
@@ -220,35 +276,33 @@ async function executeStandardSession(session, io) {
                 testLanguage: testLanguage,
                 testIndex: session.testCounter,
               }
-            });
-            lastSessionEvent.set(participant1.socketId, ["newExercise", {
-              data: {
-                maxTime: tests[testNumber].testTime,
-                exerciseDescription: exercise.description,
-                exerciseType: exercise.type,
-                inputs: exercise.inputs,
-                solutions: exercise.solutions,
-                testLanguage: testLanguage,
-              }
-            }]);
+            }];
+  
+            io.to(participant1.socketId).emit(newEvent[0], newEvent[1]);
+                
+            lastSessionEvent.set(participant1.socketId, newEvent);
             
             io.to(participant1.socketId).emit("customAlert", {
               data: {
                 message: "New exercise begins"
               }
             });
-          }
-        } else {
-          participant1.nextExercise = false;
-          io.to(participant1.socketId).emit("customAlert", {
-            data: {
-              message: "There are no more exercises left on this test"
+              participant1.nextExercise = false;
+            } else {
+              Logger.dbg("Participant 1 has no more exercises");
+              participant1.nextExercise = false;
+              io.to(participant1.socketId).emit("customAlert", {
+                data: {
+                  message: "There are no more exercises left on this test"
+                }
+              });
             }
-          });
-        }
-        if ((exercise.type == "PAIR" && participant2.visitedPExercises.length < listExercises.length/2) || (exercise.type == "INDIVIDUAL" && participant2.visitedIExercises.length < listExercises.length)) {
-          if (exercise.type == "PAIR" || participant2.nextExercise) {
-            io.to(participant2.socketId).emit("newExercise", {
+          }
+
+          if (participant2.nextExercise) {
+            if (participant2.visitedIExercises.length < listExercises.length) {
+              Logger.dbg("Participant 2 going to next exercise");
+              var newEvent = ["newExercise", {
               data: {
                 maxTime: tests[testNumber].testTime,
                 exerciseDescription: exercise.description,
@@ -258,41 +312,31 @@ async function executeStandardSession(session, io) {
                 testLanguage: testLanguage,
                 testIndex: session.testCounter,
               }
-            });
-            lastSessionEvent.set(participant2.socketId, ["newExercise", {
-              data: {
-                maxTime: tests[testNumber].testTime,
-                exerciseDescription: exercise.description,
-                exerciseType: exercise.type,
-                inputs: exercise.inputs,
-                solutions: exercise.solutions,
-                testLanguage: testLanguage,
-              }
-            }]);
-            
-            io.to(participant2.socketId).emit("customAlert", {
-              data: {
-                message: "New exercise begins"
-              }
-            });
+              }];
+
+              io.to(participant2.socketId).emit(newEvent[0], newEvent[1]);
+                  
+              lastSessionEvent.set(participant2.socketId, newEvent);
+              
+              io.to(participant2.socketId).emit("customAlert", {
+                data: {
+                  message: "New exercise begins"
+                }
+              });
+                
+              participant2.nextExercise = false;
+            } else {
+              Logger.dbg("Participant 2 has no more exercises");
+              participant2.nextExercise = false;
+              io.to(participant2.socketId).emit("customAlert", {
+                data: {
+                  message: "There are no more exercises left on this test"
+                }
+              });
+            }
           }
-        } else {
-          participant2.nextExercise = false;
-          io.to(participant2.socketId).emit("customAlert", {
-            data: {
-              message: "There are no more exercises left on this test"
-            }
-          });
+
         }
-        /*
-        else {
-          io.to(participant1.socketId).emit("customAlert", {
-            data: {
-              message: "There are no more exercises left"
-            }
-          });
-        }
-        */
 
 
         if (listExercises[num2Send].type == "PAIR") {
@@ -310,7 +354,7 @@ async function executeStandardSession(session, io) {
             participant2.save();
           }
         }
-      } 
+      }
       p++;
     }
     
@@ -396,7 +440,7 @@ async function executeStandardSession(session, io) {
           }
         }
         else {
-        var num2Send = randomNumber(0, listExercises.length);
+          var num2Send = randomNumber(0, listExercises.length);
         }
 
         var exercise = listExercises[num2Send];
@@ -601,362 +645,7 @@ async function executeCustomSession(session, io) {
   
 
   //Start of the tests, following a time line
-  const interval = setInterval(async function () {  
-    //If this session quantity of tests is the same test than loaded
-    if (session.isStandard) {
-      const potentialParticipants = await User.find({ //It picks all the registered users in the session
-        environment: process.env.NODE_ENV,
-        subject: sessionName,
-      });
-  
-      var participants = [];
-      potentialParticipants.forEach((p) => {
-        //Filter out the one not connected : they don't have the property socketId! 
-        if (p.socketId) {
-          participants.push(p);
-        }
-      });
-  
-      if (participants.length % 2 != 0) {
-        participants = participants.splice(0, participants.length-1);
-      }
-
-      participants.sort(function(a, b) {
-        return a.room - b.room;
-      });
-
-      // Calculate the maximum amount of participants possible 
-      // Rounding the length to the maximum even number.
-      const maxParticipants = (Math.floor(participants.length/2))*2;
-
-
-      for (let p = 0; p < maxParticipants; p++) {
-        var participant1 = participants[p];
-        var participant2 = participants[p+1];
-        
-        
-        if (participant1.nextExercise || participant2.nextExercise) {
-        
-          Logger.dbg("Starting new exercise:");
-          if (session.testCounter != 2) {
-            var testNumber = session.testCounter;
-          } else {
-            var testNumber = 0;
-          }
-
-          let testLanguage = tests[testNumber].language;
-          let listExercises = tests[testNumber].exercises;
-          
-          Logger.dbg("EVENT - Send a random exercise to each pair");
-          var num2Send = randomNumber(0, listExercises.length);
-
-          if (listExercises[num2Send].type == "PAIR" && participant1.visitedPExercises.length < listExercises.length) {
-            while(participant1.visitedPExercises.includes(num2Send)) {
-              num2Send = randomNumber(0, listExercises.length);
-            }
-          } else if (listExercises[num2Send].type == "INDIVIDUAL" && participant1.visitedIExercises.length < listExercises.length) {
-            while(participant1.visitedIExercises.includes(num2Send)) {
-              num2Send = randomNumber(0, listExercises.length);
-            }
-          }
-
-          var exercise = listExercises[num2Send];
-
-          if ((exercise.type == "PAIR" && participant1.visitedPExercises.length < listExercises.length) || (exercise.type == "INDIVIDUAL" && participant1.visitedIExercises.length < listExercises.length)) {
-            if (exercise.type == "PAIR" || participant1.nextExercise) {
-              io.to(participant1.socketId).emit("newExercise", {
-                data: {
-                  maxTime: tests[testNumber].testTime,
-                  exerciseDescription: exercise.description,
-                  exerciseType: exercise.type,
-                  inputs: exercise.inputs,
-                  solutions: exercise.solutions,
-                  testLanguage: testLanguage,
-                  testIndex: session.testCounter,
-                }
-              });
-              lastSessionEvent.set(participant1.socketId, ["newExercise", {
-                data: {
-                  maxTime: tests[testNumber].testTime,
-                  exerciseDescription: exercise.description,
-                  exerciseType: exercise.type,
-                  inputs: exercise.inputs,
-                  solutions: exercise.solutions,
-                  testLanguage: testLanguage,
-                }
-              }]);
-              
-              io.to(participant1.socketId).emit("customAlert", {
-                data: {
-                  message: "New exercise begins"
-                }
-              });
-            }
-          } else {
-            participant1.nextExercise = false;
-            io.to(participant1.socketId).emit("customAlert", {
-              data: {
-                message: "There are no more exercises left on this test"
-              }
-            });
-          }
-          if ((exercise.type == "PAIR" && participant2.visitedPExercises.length < listExercises.length) || (exercise.type == "INDIVIDUAL" && participant2.visitedIExercises.length < listExercises.length)) {
-            if (exercise.type == "PAIR" || participant2.nextExercise) {
-              io.to(participant2.socketId).emit("newExercise", {
-                data: {
-                  maxTime: tests[testNumber].testTime,
-                  exerciseDescription: exercise.description,
-                  exerciseType: exercise.type,
-                  inputs: exercise.inputs,
-                  solutions: exercise.solutions,
-                  testLanguage: testLanguage,
-                  testIndex: session.testCounter,
-                }
-              });
-              lastSessionEvent.set(participant2.socketId, ["newExercise", {
-                data: {
-                  maxTime: tests[testNumber].testTime,
-                  exerciseDescription: exercise.description,
-                  exerciseType: exercise.type,
-                  inputs: exercise.inputs,
-                  solutions: exercise.solutions,
-                  testLanguage: testLanguage,
-                }
-              }]);
-              
-              io.to(participant2.socketId).emit("customAlert", {
-                data: {
-                  message: "New exercise begins"
-                }
-              });
-            }
-          } else {
-            participant2.nextExercise = false;
-            io.to(participant2.socketId).emit("customAlert", {
-              data: {
-                message: "There are no more exercises left on this test"
-              }
-            });
-          }
-          /*
-          else {
-            io.to(participant1.socketId).emit("customAlert", {
-              data: {
-                message: "There are no more exercises left"
-              }
-            });
-          }
-          */
-
-
-          if (listExercises[num2Send].type == "PAIR") {
-            participant1.visitedPExercises.push(num2Send);
-            participant1.save();
-            participant2.visitedPExercises.push(num2Send);
-            participant2.save();
-          } else {
-            if (participant1.nextExercise) {
-              participant1.visitedIExercises.push(num2Send);
-              participant1.save();
-            }
-            if (participant2.nextExercise) {
-              participant2.visitedIExercises.push(num2Send);
-              participant2.save();
-            }
-          }
-        } 
-        p++;
-      }
-      
-      if (session.testCounter == 3) {
-        Logger.dbg("There are no more tests, the session <" + session.name + "> has finish!");
-        Logger.dbg("executeSession - emitting 'finish' event in session " + session.name + " #############################");
-  
-        io.to(sessionName).emit("finish");
-        for (let i = 0; i < participants.length; i++) {
-          lastSessionEvent.set(sessionName, ["finish"]);
-        }
-        Logger.dbg("executeSession - lastSessionEvent saved", event);
-  
-        clearInterval(interval);
-
-        for (let p = 0; p < participants.length; p++) {
-          var participantF = participants[p];
-          participantF.visitedPExercises = [];
-          participantF.visitedIExercises = [];
-          participantF.nextExercise = false;
-          participantF.save();
-        }
-      } else if (timer > 0) { //If timer hasn't finished counting, it goes down
-        io.to(sessionName).emit("countDown", {
-          data: timer,
-        });
-        Logger.dbg(timer);
-        timer--;
-      } else if (session.exerciseCounter == maxExercises) { //If timer goes to 0, and exercise in a test is the same as actual exercise, it goes to the next test
-        Logger.dbg("Going to the next test!");
-        session.testCounter++;
-        session.exerciseCounter = -1;
-      } else if (session.exerciseCounter === -1) { //If exercises have been finished, it pass to a new test
-        Logger.dbg("Loading test");
-        if (session.testCounter != 2) {
-          var testNumber = session.testCounter;
-        } else {
-          var testNumber = 0;
-        }
-        
-        var event = ["loadTest", {
-          data: {
-            testDescription: tests[testNumber].description,
-            peerChange: tests[testNumber].peerChange,
-            isStandard: true,
-            testCounterS: session.testCounter
-          },
-        }];
-        
-        io.to(sessionName).emit(event[0], event[1]);
-  
-        lastSessionEvent.set(sessionName, event);
-        Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
-  
-        timer = tests[testNumber].time; //Resets the timer
-        session.exerciseCounter = 0;
-        Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
-  
-      } else if (session.exerciseCounter == 0) { //If nothing before happens, it means that there are more exercises to do, and then in goes to the next one
-        if (session.testCounter != 2) {
-          var testNumber = session.testCounter;
-        } else {
-          var testNumber = 0;
-        }
-
-        Logger.dbg("Starting new exercise:");
-        let testLanguage = tests[testNumber].language;
-        let listExercises = tests[testNumber].exercises;
-        
-      // Calculate the maximum amount of participants possible 
-      // Rounding the length to the maximum even number.
-      const maxParticipants = (Math.floor(participants.length/2))*2;
-
-        Logger.dbg("EVENT - Send a random exercise to each pair");
-        for (let p = 0; p < maxParticipants; p++) {
-          var participant1 = participants[p];
-          var participant2 = participants[p+1];
-  
-          var num2Send = randomNumber(0, listExercises.length);
-  
-          var exercise = listExercises[num2Send];
-  
-          io.to(participant1.socketId).emit("newExercise", {
-            data: {
-              maxTime: tests[testNumber].testTime,
-              exerciseDescription: exercise.description,
-              exerciseType: exercise.type,
-              inputs: exercise.inputs,
-              solutions: exercise.solutions,
-              testLanguage: testLanguage,
-              testIndex: session.testCounter,
-            }
-          });
-          lastSessionEvent.set(participant1.socketId, ["newExercise", {
-            data: {
-              maxTime: tests[testNumber].testTime,
-              exerciseDescription: exercise.description,
-              exerciseType: exercise.type,
-              inputs: exercise.inputs,
-              solutions: exercise.solutions,
-              testLanguage: testLanguage,
-            }
-          }]);
-          io.to(participant2.socketId).emit("newExercise", {
-            data: {
-              maxTime: tests[testNumber].testTime,
-              exerciseDescription: exercise.description,
-              exerciseType: exercise.type,
-              inputs: exercise.inputs,
-              solutions: exercise.solutions,
-              testLanguage: testLanguage,
-              testIndex: session.testCounter,
-            }
-          });
-
-          io.to(participant1.socketId).emit("customAlert", {
-            data: {
-              message: "New exercise begins"
-            }
-          });
-          io.to(participant2.socketId).emit("customAlert", {
-            data: {
-              message: "New exercise begins"
-            }
-          });
-          
-
-        if (exercise.type == "PAIR") {
-          participant1.visitedPExercises.push(num2Send);
-          participant1.save();
-          participant2.visitedPExercises.push(num2Send);
-          participant2.save();
-        } else {
-          participant1.visitedIExercises.push(num2Send);
-          participant1.save();
-          participant2.visitedIExercises.push(num2Send);
-          participant2.save();
-        }
-
-          p++;
-        }
-
-        lastSessionEvent.set(sessionName, event);
-        Logger.dbg("executeSession - lastSessionEvent saved", "newExercise");
-  
-        sessions.set(session.name, {
-          session: session,
-          exerciseType: listExercises[0].type,
-        });
-
-        timer = timer == 0 ? tests[testNumber].testTime : timer;
-  
-        session.exerciseCounter++; //After that, it increments the counter to test in the before code if thera are more or not
-        Logger.dbg(" testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
-  
-        session.save();
-        Logger.dbg("executeSession - session saved ");
-      } else {
-        Logger.dbg("Going to the next test!");
-        session.testCounter++;
-        session.exerciseCounter = -1;
-        
-        Logger.dbg("Loading test");
-                
-        if (session.testCounter < 2) {
-          var testNumber = session.testCounter;
-        } else {
-          var testNumber = 0;
-        }
-        
-        var event = ["loadTest", {
-          data: {
-            testDescription: tests[testNumber].description,
-            peerChange: tests[testNumber].peerChange,
-            isStandard: true,
-            testCounterS: session.testCounter
-          },
-        }];
-        
-        io.to(sessionName).emit(event[0], event[1]);
-  
-        lastSessionEvent.set(sessionName, event);
-        Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
-  
-  
-        timer = tests[testNumber].time; //Resets the timer
-        session.exerciseCounter = 0;
-        Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
-  
-      }
-
-    } else {
+  const interval = setInterval(async function () { 
       if (session.testCounter == numTests) {
         Logger.dbg("There are no more tests, the session <" + session.name + "> has finish!");
         Logger.dbg("executeSession - emitting 'finish' event in session " + session.name + " #############################");
@@ -1031,7 +720,6 @@ async function executeCustomSession(session, io) {
         session.save();
         Logger.dbg("executeSession - session saved ");
       }
-    }
 
     //If the session is not running, it's beacuse it has not been active or it has finished, so it clears all before
     Session.findOne({

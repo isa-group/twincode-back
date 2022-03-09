@@ -67,7 +67,6 @@ router.post("/verify", async (req, res) => {
   Logger.dbg("/verify",req.body);
   
   if (user) {
-    console.log("User " + user.token);
     let session = await Session.findOne({
       name: user.subject,
       environment: process.env.NODE_ENV,
@@ -85,10 +84,13 @@ router.post("/verify", async (req, res) => {
     });
 
     var numExercise = session.exerciseCounter - 1;
-    if (session.isStandard && numTest == 0) numExercise = user.visitedPExercises[user.visitedPExercises.length - 1];
-    else if (session.isStandard && numTest == 0) numExercise = user.visitedIExercises[user.visitedIExercises.length - 1];
+    if (session.isStandard && (numTest == 0 || numTest == 2)) numExercise = user.visitedPExercises[user.visitedPExercises.length - 1];
+    else if (session.isStandard && numTest == 1) numExercise = user.visitedIExercises[user.visitedIExercises.length - 1];
     
-    const exercise = test.exercises[numExercise];
+    var exercise;
+    test.exercises.forEach(exer => {
+      if (exer.description == req.body.exerciseDescription) exercise = exer;
+    });
 
     if (exercise) {
       Logger.dbg("/verify - Validate exercise:\n  " + exercise.description.substring(0,Math.min(80,exercise.description.length))+"...");
@@ -96,12 +98,19 @@ router.post("/verify", async (req, res) => {
       const solutions = exercise.solutions;
 
       let isCorrect = true;
+      
+      var numCorrect = 0; /** NEW */
+      var numWrong = 0;
+      var tot = solutions.length;
 
       for (var i = 0; i < solutions.length; i++) {
         
         let correctSolution = JSON.stringify(solutions[i]) === JSON.stringify(req.body.solutions[i]);
-
+        
         isCorrect = isCorrect && correctSolution;
+
+        if (correctSolution) numCorrect++;
+        else numWrong++;
   
         Logger.dbg("/verify - "
                    +"("+i+")" 
@@ -149,9 +158,9 @@ router.post("/verify", async (req, res) => {
           session.testCounter
         );
 
-        res.send({ result: isCorrect, twcc: twccScore });        
+        res.send({ result: isCorrect, twcc: twccScore, numCorrect: numCorrect, numWrong: numWrong, tot: tot });        
       }else{
-        res.send({ result: isCorrect });
+        res.send({ result: isCorrect, numCorrect: numCorrect, numWrong: numWrong, tot: tot });
       }
 
     } else {

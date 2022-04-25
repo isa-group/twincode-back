@@ -555,9 +555,9 @@ async function executeStandardSession(session, io) {
       for (let p = 0; p < maxParticipants; p++) {
         participants[p].visitedPExercises = [];
         if (session.testCounter == 2) {
-          Logger.dbg("executeSession - changing exerciseSwitch", participants[p].exerciseSwitch);
+          Logger.dbg(`executeSession - changing exerciseSwitch <${participants[p].exerciseSwitch}> for code <${participants[p].code}>`);
           participants[p].exerciseSwitch = !participants[p].exerciseSwitch;
-          Logger.dbg("executeSession - changed exerciseSwitch", participants[p].exerciseSwitch);
+          Logger.dbg(`executeSession - changed exerciseSwitch <${participants[p].exerciseSwitch}> for code <${participants[p].code}>`);
         }
         participants[p].save();
 

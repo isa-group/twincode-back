@@ -94,28 +94,52 @@ async function exerciseTimeUp(id, description) {
 }
 
 function  getExercise(participant1, listExercises, num2Send) {
+  Logger.dbg("getExercise - Init");
+  
+  var num2Send = null;
+
   if (listExercises[0].type == "PAIR") {
-    Logger.dbg("EVENT - PAIR exercise, num2Send variable created following a list of exercises");
-    var num2Send = participant1.visitedPExercises.length;
+  
+    Logger.dbg(`getExercise - <${listExercises[0].type}> exercise`);
+    
+    num2Send = participant1.visitedPExercises.length;
+
+    Logger.dbg(`getExercise - num2send = <${num2Send}> DEFAULT`);
+
     if (!participant1.exerciseSwitch) {
-      Logger.dbg(`EVENT - Checking user ${participant1.code} exerciseSwitch is false`);
+      Logger.dbg(`getExercise - switch for ${participant1.code} is <${participant1.exerciseSwitch}>`);
       num2Send += listExercises.length / 2;
+      Logger.dbg(`getExercise - num2send = <${num2Send}> UPDATE `);
     }
+
     if (num2Send >= listExercises.length) {
+      Logger.dbg(`getExercise - num2send Overflow (${num2Send} >= ${listExercises.length}) (no more available exercises) `);
       num2Send -= 1;
+      Logger.dbg(`getExercise - num2send = <${num2Send}> UPDATE `);
     }
+
+
   } else {
-    Logger.dbg("EVENT - INDIVIDUAL exercise, num2Send variable created randomly");
-    var num2Send = randomNumber(0, listExercises.length);
+    
+    Logger.dbg(`getExercise - <${listExercises[0].type}> exercise`);
+        
+    num2Send = randomNumber(0, listExercises.length);
+
+    Logger.dbg(`getExercise - num2send = <${num2Send}> DEFAULT (random between 0 and ${listExercises.length})`);
 
     if (participant1.visitedIExercises.length < listExercises.length) {
-      Logger.dbg(`EVENT - User ${participant1.code} visitedIExercises is less than listExercises length, a new exercise will be sent`);
+      Logger.dbg(`getExercise - (${participant1.visitedIExercises.length} < ${listExercises.length}) (there are available exercises) `);
+
       while(participant1.visitedIExercises.includes(num2Send)) {
+        Logger.dbg(`getExercise - num2send already visited`);
         num2Send = randomNumber(0, listExercises.length);
+        Logger.dbg(`getExercise - num2send = <${num2Send}> UPDATED (random between 0 and ${listExercises.length})`);
       }
     }
+    
   }
-
+  
+  Logger.dbg(`getExercise - num2send = <${num2Send}> FINAL `);
   return listExercises[num2Send];
 }
 

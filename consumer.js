@@ -93,6 +93,32 @@ async function exerciseTimeUp(id, description) {
   }
 }
 
+function  switchExercise(participant1, participant2, listExercises, num2Send) {
+  if (listExercises[0].type == "PAIR") {
+    Logger.dbg("EVENT - PAIR exercise, num2Send variable created following a list of exercises");
+    var num2Send = participant1.visitedPExercises.length;
+    if (!participant1.exerciseSwitch) {
+      Logger.dbg(`EVENT - Checking user ${participant1.code} exerciseSwitch is false`);
+      num2Send += listExercises.length / 2;
+    }
+    if (num2Send >= listExercises.length) {
+      num2Send -= 1;
+    }
+  } else {
+    Logger.dbg("EVENT - INDIVIDUAL exercise, num2Send variable created randomly");
+    var num2Send = randomNumber(0, listExercises.length);
+
+    if (participant1.visitedIExercises.length < listExercises.length) {
+      Logger.dbg(`EVENT - User ${participant1.code} visitedIExercises is less than listExercises length, a new exercise will be sent`);
+      while(participant1.visitedIExercises.includes(num2Send)) {
+        num2Send = randomNumber(0, listExercises.length);
+      }
+    }
+  }
+
+  return listExercises[num2Send];
+}
+
 
 async function executeStandardSession(session, io) {
   var sessionName = session.name;
@@ -194,29 +220,7 @@ async function executeStandardSession(session, io) {
         let listExercises = tests[testNumber].exercises;
         
         Logger.dbg("EVENT - Send a random exercise to each pair");
-        if (listExercises[0].type == "PAIR") {
-          Logger.dbg("EVENT - PAIR exercise, num2Send variable created following a list of exercises");
-          var num2Send = participant1.visitedPExercises.length;
-          if (!participant1.exerciseSwitch) {
-            Logger.dbg(`EVENT - Checking user ${participant1.code} exerciseSwitch is false`);
-            num2Send += listExercises.length / 2;
-          }
-          if (num2Send >= listExercises.length) {
-            num2Send -= 1;
-          }
-        } else {
-          Logger.dbg("EVENT - INDIVIDUAL exercise, num2Send variable created randomly");
-          var num2Send = randomNumber(0, listExercises.length);
-  
-          if (participant1.visitedIExercises.length < listExercises.length) {
-            Logger.dbg(`EVENT - User ${participant1.code} visitedIExercises is less than listExercises length, a new exercise will be sent`);
-            while(participant1.visitedIExercises.includes(num2Send)) {
-              num2Send = randomNumber(0, listExercises.length);
-            }
-          }
-        }
-
-        var exercise = listExercises[num2Send];
+        var exercise = switchExercise(participant1, participant2, listExercises, num2Send);
         Logger.dbg(`EVENT - Exercise to be sent is -> ${exercise.name}`);
 
         if (listExercises[0].type == "PAIR") {
@@ -446,29 +450,7 @@ async function executeStandardSession(session, io) {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
 
-        if (listExercises[0].type == "PAIR") {
-          Logger.dbg("EVENT - PAIR exercise, num2Send variable created following a list of exercises");
-          var num2Send = participant1.visitedPExercises.length;
-          if (!participant1.exerciseSwitch) {
-            Logger.dbg(`EVENT - Checking user ${participant1.code} exerciseSwitch is false`);
-            num2Send += listExercises.length / 2;
-          }
-          if (num2Send >= listExercises.length) {
-            num2Send -= 1;
-          }
-        } else {
-          Logger.dbg("EVENT - INDIVIDUAL exercise, num2Send variable created randomly");
-          var num2Send = randomNumber(0, listExercises.length);
-  
-          if (participant1.visitedIExercises.length < listExercises.length) {
-            Logger.dbg(`EVENT - User ${participant1.code} visitedIExercises is less than listExercises length, a new exercise will be sent`);
-            while(participant1.visitedIExercises.includes(num2Send)) {
-              num2Send = randomNumber(0, listExercises.length);
-            }
-          }
-        }
-
-        var exercise = listExercises[num2Send];
+        var exercise = switchExercise(participant1, participant2, listExercises, num2Send);
         Logger.dbg(`EVENT - Exercise to be sent is -> ${exercise.name}`);
 
         Logger.dbg(`EVENT - Sending exercise to ${participant1.code}`);

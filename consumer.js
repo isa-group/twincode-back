@@ -140,7 +140,7 @@ function  getExercise(participant1, listExercises) {
   }
   
   Logger.dbg(`getExercise - num2send = <${num2Send}> FINAL `);
-  return listExercises[num2Send];
+  return num2Send;
 }
 
 
@@ -244,7 +244,8 @@ async function executeStandardSession(session, io) {
         let listExercises = tests[testNumber].exercises;
         
         Logger.dbg("EVENT - Send a random exercise to each pair");
-        var exercise = getExercise(participant1, listExercises);
+        var num2Send = getExercise(participant1, listExercises);
+        var exercise = listExercises[num2Send];
 
         Logger.dbg(`EVENT - Exercise to be sent is -> ${exercise.name}`);
 
@@ -475,7 +476,8 @@ async function executeStandardSession(session, io) {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
 
-        var exercise = getExercise(participant1, listExercises);
+        var num2Send = getExercise(participant1, listExercises);
+        var exercise = listExercises[num2Send];
 
         Logger.dbg(`EVENT - Exercise to be sent is -> ${exercise.name}`);
 

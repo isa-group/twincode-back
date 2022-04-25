@@ -242,11 +242,12 @@ async function executeStandardSession(session, io) {
         let listExercises = tests[testNumber].exercises;
         
         Logger.dbg(`NEXT EXERCISE - Calculating the next exercise number for ${(participant1.nextExercise)?"participant1":"participant2"}`);
-        let num2Send = (participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises);
+        //let num2Send = (participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises);
+/*
         Logger.dbg(`NEXT EXERCISE - Exercise number calculated (i): <${(participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises)}>`);
         Logger.dbg(`NEXT EXERCISE - Exercise number calculated (ii): <${num2send}>`);
 
-/*
+
         if(participant1.nextExercise){
           Logger.dbg("NEXT EXERCISE - Calculating the next exercise number for participant1");
           num2Send = getNextExerciseNumber(participant1, listExercises);
@@ -257,6 +258,7 @@ async function executeStandardSession(session, io) {
           Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${num2send}>`);
         }
 */
+        var num2Send = getNextExerciseNumber(participant1, listExercises);
         var exercise = listExercises[num2Send];
 
         Logger.dbg(`NEXT EXERCISE - Exercise to be sent is -> ${exercise.name} , number <${num2send}>`);

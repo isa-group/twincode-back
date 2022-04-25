@@ -92,57 +92,55 @@ async function exerciseTimeUp(id, description) {
     }
   }
 }
-
-function  getNextExerciseNumber(participant1, listExercises) {
-  Logger.dbg(`getExercise - ${participant1.code} - Init - for code ${participant1.code}`);
+function  getNextExerciseNumber(participant, listExercises) {
+  Logger.dbg(`getExercise - ${participant.code} - Init - for code ${participant.code}`);
   
   var num2Send = null;
 
   if (listExercises[0].type == "PAIR") {
   
-    Logger.dbg(`getExercise - ${participant1.code} - <${listExercises[0].type}> exercise`);
+    Logger.dbg(`getExercise - ${participant.code} - <${listExercises[0].type}> exercise`);
     
-    num2Send = participant1.visitedPExercises.length;
+    num2Send = participant.visitedPExercises.length;
 
-    Logger.dbg(`getExercise - ${participant1.code} - num2send = <${num2Send}> DEFAULT`);
+    Logger.dbg(`getExercise - ${participant.code} - num2send = <${num2Send}> DEFAULT`);
 
-    if (!participant1.exerciseSwitch) {
-      Logger.dbg(`getExercise - ${participant1.code} - switch for ${participant1.code} is <${participant1.exerciseSwitch}>`);
+    if (!participant.exerciseSwitch) {
+      Logger.dbg(`getExercise - ${participant.code} - switch for ${participant.code} is <${participant.exerciseSwitch}>`);
       num2Send += listExercises.length / 2;
-      Logger.dbg(`getExercise - ${participant1.code} - num2send = <${num2Send}> UPDATE `);
+      Logger.dbg(`getExercise - ${participant.code} - num2send = <${num2Send}> UPDATE `);
     }
 
     if (num2Send >= listExercises.length) {
-      Logger.dbg(`getExercise - ${participant1.code} - num2send Overflow (${num2Send} >= ${listExercises.length}) (no more available exercises) `);
+      Logger.dbg(`getExercise - ${participant.code} - num2send Overflow (${num2Send} >= ${listExercises.length}) (no more available exercises) `);
       num2Send -= 1;
-      Logger.dbg(`getExercise - ${participant1.code} - num2send = <${num2Send}> UPDATE `);
+      Logger.dbg(`getExercise - ${participant.code} - num2send = <${num2Send}> UPDATE `);
     }
 
 
   } else {
     
-    Logger.dbg(`getExercise - ${participant1.code} - <${listExercises[0].type}> exercise`);
+    Logger.dbg(`getExercise - ${participant.code} - <${listExercises[0].type}> exercise`);
         
     num2Send = randomNumber(0, listExercises.length);
 
-    Logger.dbg(`getExercise - ${participant1.code} - num2send = <${num2Send}> DEFAULT (random between 0 and ${listExercises.length})`);
+    Logger.dbg(`getExercise - ${participant.code} - num2send = <${num2Send}> DEFAULT (random between 0 and ${listExercises.length})`);
 
-    if (participant1.visitedIExercises.length < listExercises.length) {
-      Logger.dbg(`getExercise - ${participant1.code} - (${participant1.visitedIExercises.length} < ${listExercises.length}) (there are available exercises) `);
+    if (participant.visitedIExercises.length < listExercises.length) {
+      Logger.dbg(`getExercise - ${participant.code} - (${participant.visitedIExercises.length} < ${listExercises.length}) (there are available exercises) `);
 
-      while(participant1.visitedIExercises.includes(num2Send)) {
-        Logger.dbg(`getExercise - ${participant1.code} - num2send already visited`);
+      while(participant.visitedIExercises.includes(num2Send)) {
+        Logger.dbg(`getExercise - ${participant.code} - num2send already visited`);
         num2Send = randomNumber(0, listExercises.length);
-        Logger.dbg(`getExercise - ${participant1.code} - num2send = <${num2Send}> UPDATED (random between 0 and ${listExercises.length})`);
+        Logger.dbg(`getExercise - ${participant.code} - num2send = <${num2Send}> UPDATED (random between 0 and ${listExercises.length})`);
       }
     }
     
   }
   
-  Logger.dbg(`getExercise - ${participant1.code} - num2send = <${num2Send}> FINAL `);
+  Logger.dbg(`getExercise - ${participant.code} - num2send = <${num2Send}> FINAL `);
   return num2Send;
 }
-
 
 async function executeStandardSession(session, io) {
   var sessionName = session.name;
@@ -243,15 +241,21 @@ async function executeStandardSession(session, io) {
         let testLanguage = tests[testNumber].language;
         let listExercises = tests[testNumber].exercises;
         
-        Logger.dbg("NEXT EXERCISE - Send a random exercise to each pair");
-        var num2Send = getNextExerciseNumber(participant1, listExercises);
+        Logger.dbg("NEXT EXERCISE - Calculating the next exercise number...");
+        var num2Send = null;
+        if( participant1.nextExercise)
+          num2Send = getNextExerciseNumber(participant1, listExercises);
+        else
+          num2Send = getNextExerciseNumber(participant2, listExercises);
+
         var exercise = listExercises[num2Send];
 
-        Logger.dbg(`NEXT EXERCISE - Exercise to be sent is -> ${exercise.name}`);
+        Logger.dbg(`NEXT EXERCISE - Exercise to be sent is -> ${exercise.name} , number <${num2send}>`);
 
         if (listExercises[0].type == "PAIR") {
           Logger.dbg(`NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
           if (participant1.visitedPExercises.length < listExercises.length/2) {
+            Logger.dbg(`NEXT EXERCISE - There are still exercises (${participant1.visitedPExercises.length} < ${listExercises.length/2}) `);
             if (participant1.nextExercise || participant2.nextExercise) {
               var newEvent = ["newExercise", {
                 data: {
@@ -478,8 +482,6 @@ async function executeStandardSession(session, io) {
 
         var num2Send = getNextExerciseNumber(participant1, listExercises);
         var exercise = listExercises[num2Send];
-
-        Logger.dbg(`FIRST EXERCISE - Exercise to be sent is -> ${exercise.name}`);
 
         Logger.dbg(`FIRST EXERCISE - Sending exercise <${num2Send}> to participant1 <${participant1.code}>`);
         io.to(participant1.socketId).emit("newExercise", {

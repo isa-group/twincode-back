@@ -243,7 +243,8 @@ async function executeStandardSession(session, io) {
         
         Logger.dbg(`NEXT EXERCISE - Calculating the next exercise number for ${(participant1.nextExercise)?"participant1":"participant2"}`);
         var num2Send = (participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises);
-        Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${num2send}>`);
+        Logger.dbg(`NEXT EXERCISE - Exercise number calculated (i): <${(participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises)}>`);
+        Logger.dbg(`NEXT EXERCISE - Exercise number calculated (ii): <${num2send}>`);
 
 /*
         if(participant1.nextExercise){

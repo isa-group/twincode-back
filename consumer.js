@@ -258,10 +258,10 @@ async function executeStandardSession(session, io) {
           Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${num2send}>`);
         }
 */
-        var num2Send = getNextExerciseNumber(participant1, listExercises);
-        var exercise = listExercises[num2Send];
+        var exerciseNumber = getNextExerciseNumber(participant1, listExercises);
+        var exercise = listExercises[exerciseNumber];
 
-        Logger.dbg(`NEXT EXERCISE - Exercise to be sent is -> ${exercise.name} , number <${num2send}>`);
+        Logger.dbg(`NEXT EXERCISE - Exercise to be sent is -> ${exercise.name} , number <${exerciseNumber}>`);
 
         if (listExercises[0].type == "PAIR") {
           Logger.dbg(`NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
@@ -397,18 +397,18 @@ async function executeStandardSession(session, io) {
         }
 
 
-        if (listExercises[num2Send].type == "PAIR") {
-          participant1.visitedPExercises.push(num2Send);
+        if (listExercises[exerciseNumber].type == "PAIR") {
+          participant1.visitedPExercises.push(exerciseNumber);
           participant1.save();
-          participant2.visitedPExercises.push(num2Send);
+          participant2.visitedPExercises.push(exerciseNumber);
           participant2.save();
         } else {
           if (participant1.nextExercise) {
-            participant1.visitedIExercises.push(num2Send);
+            participant1.visitedIExercises.push(exerciseNumber);
             participant1.save();
           }
           if (participant2.nextExercise) {
-            participant2.visitedIExercises.push(num2Send);
+            participant2.visitedIExercises.push(exerciseNumber);
             participant2.save();
           }
         }
@@ -492,10 +492,10 @@ async function executeStandardSession(session, io) {
         var participant2 = participants[p+1];
 
         Logger.dbg("FIRST EXERCISE - Calculating FIRST exercise");
-        var num2Send = getNextExerciseNumber(participant1, listExercises);
-        var exercise = listExercises[num2Send];
+        var exerciseNumber = getNextExerciseNumber(participant1, listExercises);
+        var exercise = listExercises[exerciseNumber];
 
-        Logger.dbg(`FIRST EXERCISE - Sending exercise <${num2Send}> to participant1 <${participant1.code}>`);
+        Logger.dbg(`FIRST EXERCISE - Sending exercise <${exerciseNumber}> to participant1 <${participant1.code}>`);
         io.to(participant1.socketId).emit("newExercise", {
           data: {
             maxTime: tests[testNumber].testTime,
@@ -518,7 +518,7 @@ async function executeStandardSession(session, io) {
           }
         }]);
 
-        Logger.dbg(`FIRST EXERCISE - Sending exercise <${num2Send}> to participant2 <${participant2.code}>`);
+        Logger.dbg(`FIRST EXERCISE - Sending exercise <${exerciseNumber}> to participant2 <${participant2.code}>`);
         io.to(participant2.socketId).emit("newExercise", {
           data: {
             maxTime: tests[testNumber].testTime,
@@ -543,9 +543,9 @@ async function executeStandardSession(session, io) {
         });
         
 
-        participant1.visitedPExercises.push(num2Send);
+        participant1.visitedPExercises.push(exerciseNumber);
         participant1.save();
-        participant2.visitedPExercises.push(num2Send);
+        participant2.visitedPExercises.push(exerciseNumber);
         participant2.save();
       
 

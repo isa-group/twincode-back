@@ -233,7 +233,7 @@ async function executeStandardSession(session, io) {
         Logger.dbg(`User <${participant1.code}> clicked on the button: ${participant1.nextExercise}`);
         Logger.dbg(`User <${participant2.code}> clicked on the button: ${participant2.nextExercise}`);
       
-        Logger.dbg("Starting new exercise:");
+        Logger.dbg("NEXT EXERCISE - Starting new exercise:");
         if (session.testCounter != 2) {
           var testNumber = session.testCounter;
         } else {
@@ -243,14 +243,14 @@ async function executeStandardSession(session, io) {
         let testLanguage = tests[testNumber].language;
         let listExercises = tests[testNumber].exercises;
         
-        Logger.dbg("EVENT - Send a random exercise to each pair");
+        Logger.dbg("NEXT EXERCISE - Send a random exercise to each pair");
         var num2Send = getNextExerciseNumber(participant1, listExercises);
         var exercise = listExercises[num2Send];
 
-        Logger.dbg(`EVENT - Exercise to be sent is -> ${exercise.name}`);
+        Logger.dbg(`NEXT EXERCISE - Exercise to be sent is -> ${exercise.name}`);
 
         if (listExercises[0].type == "PAIR") {
-          Logger.dbg("Exercise type", "PAIR");
+          Logger.dbg(`NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
           if (participant1.visitedPExercises.length < listExercises.length/2) {
             if (participant1.nextExercise || participant2.nextExercise) {
               var newEvent = ["newExercise", {
@@ -265,7 +265,7 @@ async function executeStandardSession(session, io) {
                 }
               }];
               
-              Logger.dbg(`EVENT - Sending exercise to ${participant1.code} and ${participant2.code}`);
+              Logger.dbg(`NEXT EXERCISE - Sending exercise to ${participant1.code} and ${participant2.code}`);
               io.to(participant1.socketId).emit(newEvent[0], newEvent[1]);
               io.to(participant2.socketId).emit(newEvent[0], newEvent[1]);
               
@@ -289,7 +289,7 @@ async function executeStandardSession(session, io) {
           } else {
             participant1.nextExercise = false;
             participant2.nextExercise = false;
-            Logger.dbg(`EVENT - There are no more exercises left on this test for users ${participant1.code} and ${participant2.code}`);
+            Logger.dbg(`NEXT EXERCISE - There are no more exercises left on this test for users ${participant1.code} and ${participant2.code}`);
             io.to(participant1.socketId).emit("customAlert", {
               data: {
                 message: "There are no more exercises left on this test"
@@ -303,10 +303,10 @@ async function executeStandardSession(session, io) {
           }
             
         } else if (listExercises[0].type == "INDIVIDUAL") {
-          Logger.dbg("Exercise type", "INDIVIDUAL");
+          Logger.dbg(`NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
           if (participant1.nextExercise) {
             if (participant1.visitedIExercises.length < listExercises.length) {
-              Logger.dbg(`User with code <${participant1.code}> going to next exercise`);
+              Logger.dbg(`NEXT EXERCISE - P1 IND - User with code <${participant1.code}> going to next exercise`);
               var newEvent = ["newExercise", {
               data: {
                 maxTime: tests[testNumber].testTime,
@@ -319,7 +319,7 @@ async function executeStandardSession(session, io) {
               }
             }];
   
-            Logger.dbg(`EVENT - Sending exercise to ${participant1.code}`);
+            Logger.dbg(`NEXT EXERCISE - P1 IND - Sending exercise to ${participant1.code}`);
             io.to(participant1.socketId).emit(newEvent[0], newEvent[1]);
                 
             lastSessionEvent.set(participant1.socketId, newEvent);
@@ -332,7 +332,7 @@ async function executeStandardSession(session, io) {
               participant1.nextExercise = false;
             } else {
               participant1.nextExercise = false;
-              Logger.dbg(`EVENT - There are no more exercises left on this test for user ${participant1.code}`);
+              Logger.dbg(`NEXT EXERCISE - P1 IND - There are no more exercises left on this test for user ${participant1.code}`);
               io.to(participant1.socketId).emit("customAlert", {
                 data: {
                   message: "There are no more exercises left on this test"
@@ -343,7 +343,7 @@ async function executeStandardSession(session, io) {
 
           if (participant2.nextExercise) {
             if (participant2.visitedIExercises.length < listExercises.length) {
-              Logger.dbg(`User with code <${participant2.code}> going to next exercise`);
+              Logger.dbg(`NEXT EXERCISE - P2 IND - User with code <${participant2.code}> going to next exercise`);
               var newEvent = ["newExercise", {
               data: {
                 maxTime: tests[testNumber].testTime,
@@ -356,7 +356,7 @@ async function executeStandardSession(session, io) {
               }
               }];
 
-              Logger.dbg(`EVENT - Sending exercise to ${participant2.code}`);
+              Logger.dbg(`NEXT EXERCISE - P2 IND - Sending exercise to ${participant2.code}`);
               io.to(participant2.socketId).emit(newEvent[0], newEvent[1]);
                   
               lastSessionEvent.set(participant2.socketId, newEvent);
@@ -370,7 +370,7 @@ async function executeStandardSession(session, io) {
               participant2.nextExercise = false;
             } else {
               participant2.nextExercise = false;
-              Logger.dbg(`EVENT - There are no more exercises left on this test for user ${participant2.code}`);
+              Logger.dbg(`NEXT EXERCISE - P2 IND - There are no more exercises left on this test for user ${participant2.code}`);
               io.to(participant2.socketId).emit("customAlert", {
                 data: {
                   message: "There are no more exercises left on this test"
@@ -471,7 +471,7 @@ async function executeStandardSession(session, io) {
       // Rounding the length to the maximum even number.
       const maxParticipants = (Math.floor(participants.length/2))*2;
 
-      Logger.dbg("EVENT - Send a random exercise to each pair");
+      Logger.dbg("Send a random exercise to each pair");
       for (let p = 0; p < maxParticipants; p++) {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
@@ -479,9 +479,9 @@ async function executeStandardSession(session, io) {
         var num2Send = getNextExerciseNumber(participant1, listExercises);
         var exercise = listExercises[num2Send];
 
-        Logger.dbg(`EVENT - Exercise to be sent is -> ${exercise.name}`);
+        Logger.dbg(`FIRST EXERCISE - Exercise to be sent is -> ${exercise.name}`);
 
-        Logger.dbg(`EVENT - Sending exercise to ${participant1.code}`);
+        Logger.dbg(`FIRST EXERCISE - Sending exercise <${num2Send}> to participant1 <${participant1.code}>`);
         io.to(participant1.socketId).emit("newExercise", {
           data: {
             maxTime: tests[testNumber].testTime,
@@ -504,7 +504,7 @@ async function executeStandardSession(session, io) {
           }
         }]);
 
-        Logger.dbg(`EVENT - Sending exercise to ${participant1.code}`);
+        Logger.dbg(`FIRST EXERCISE - Sending exercise <${num2Send}> to participant2 <${participant2.code}>`);
         io.to(participant2.socketId).emit("newExercise", {
           data: {
             maxTime: tests[testNumber].testTime,

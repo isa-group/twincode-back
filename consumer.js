@@ -909,8 +909,7 @@ async function notifyParticipants(sessionName, io) {
 
       user.blind = myBlind;
       user.room = myRoom;
-      //user.exerciseSwitch = (myRoom%2==0);
-      user.exerciseSwitch = false;
+      user.exerciseSwitch = (myRoom%2==0);
 
       Logger.dbg("notifyParticipants - Saving user", user, ["code", "firstName", "gender", "room", "blind"]);
       user.save();

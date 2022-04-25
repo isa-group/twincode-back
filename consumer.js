@@ -227,9 +227,9 @@ async function executeStandardSession(session, io) {
       
       
       if (participant1.nextExercise || participant2.nextExercise) {
-        Logger.dbg(`${participant1.code} or ${participant2.code} tried to validate a code`);
-        Logger.dbg(`User <${participant1.code}> clicked on the button: ${participant1.nextExercise}`);
-        Logger.dbg(`User <${participant2.code}> clicked on the button: ${participant2.nextExercise}`);
+        Logger.dbg(`NEXT EXERCISE - ${participant1.code} or ${participant2.code} tried to validate a code`);
+        Logger.dbg(`NEXT EXERCISE - User <${participant1.code}> clicked on the button: ${participant1.nextExercise}`);
+        Logger.dbg(`NEXT EXERCISE - User <${participant2.code}> clicked on the button: ${participant2.nextExercise}`);
       
         Logger.dbg("NEXT EXERCISE - Starting new exercise:");
         if (session.testCounter != 2) {
@@ -241,9 +241,11 @@ async function executeStandardSession(session, io) {
         let testLanguage = tests[testNumber].language;
         let listExercises = tests[testNumber].exercises;
         
-        Logger.dbg("NEXT EXERCISE - Calculating the next exercise number...");
-        var num2Send = null;
+        Logger.dbg(`NEXT EXERCISE - Calculating the next exercise number for ${(participant1.nextExercise)?"participant1":"participant2"}`);
+        var num2Send = (participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises);
+        Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${num2send}>`);
 
+/*
         if(participant1.nextExercise){
           Logger.dbg("NEXT EXERCISE - Calculating the next exercise number for participant1");
           num2Send = getNextExerciseNumber(participant1, listExercises);
@@ -253,7 +255,7 @@ async function executeStandardSession(session, io) {
           num2Send = getNextExerciseNumber(participant2, listExercises);
           Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${num2send}>`);
         }
-
+*/
         var exercise = listExercises[num2Send];
 
         Logger.dbg(`NEXT EXERCISE - Exercise to be sent is -> ${exercise.name} , number <${num2send}>`);

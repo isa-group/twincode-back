@@ -243,10 +243,13 @@ async function executeStandardSession(session, io) {
         
         Logger.dbg("NEXT EXERCISE - Calculating the next exercise number...");
         var num2Send = null;
+
         if( participant1.nextExercise)
           num2Send = getNextExerciseNumber(participant1, listExercises);
         else
           num2Send = getNextExerciseNumber(participant2, listExercises);
+
+        Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${num2send}>`);
 
         var exercise = listExercises[num2Send];
 
@@ -475,11 +478,12 @@ async function executeStandardSession(session, io) {
       // Rounding the length to the maximum even number.
       const maxParticipants = (Math.floor(participants.length/2))*2;
 
-      Logger.dbg("Send a random exercise to each pair");
+      Logger.dbg("Send a initial exercieses to to each pair");
       for (let p = 0; p < maxParticipants; p++) {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
 
+        Logger.dbg("FIRST EXERCISE - Calculating FIRST exercise");
         var num2Send = getNextExerciseNumber(participant1, listExercises);
         var exercise = listExercises[num2Send];
 

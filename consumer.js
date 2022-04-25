@@ -93,7 +93,7 @@ async function exerciseTimeUp(id, description) {
   }
 }
 
-function  getExercise(participant1, listExercises, num2Send) {
+function  getExercise(participant1, listExercises) {
   Logger.dbg("getExercise - Init");
   
   var num2Send = null;
@@ -244,7 +244,8 @@ async function executeStandardSession(session, io) {
         let listExercises = tests[testNumber].exercises;
         
         Logger.dbg("EVENT - Send a random exercise to each pair");
-        var exercise = getExercise(participant1, listExercises, num2Send);
+        var exercise = getExercise(participant1, listExercises);
+
         Logger.dbg(`EVENT - Exercise to be sent is -> ${exercise.name}`);
 
         if (listExercises[0].type == "PAIR") {
@@ -474,7 +475,8 @@ async function executeStandardSession(session, io) {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
 
-        var exercise = getExercise(participant1, listExercises, num2Send);
+        var exercise = getExercise(participant1, listExercises);
+
         Logger.dbg(`EVENT - Exercise to be sent is -> ${exercise.name}`);
 
         Logger.dbg(`EVENT - Sending exercise to ${participant1.code}`);

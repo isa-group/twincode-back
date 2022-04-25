@@ -179,6 +179,9 @@ async function executeStandardSession(session, io) {
       
       
       if (participant1.nextExercise || participant2.nextExercise) {
+        Logger.dbg(`${participant1.code} or ${participant2.code} tried to validate a code`);
+        Logger.dbg(`User <${participant1.code}> clicked on the button: ${participant1.nextExercise}`);
+        Logger.dbg(`User <${participant2.code}> clicked on the button: ${participant2.nextExercise}`);
       
         Logger.dbg("Starting new exercise:");
         if (session.testCounter != 2) {
@@ -192,17 +195,21 @@ async function executeStandardSession(session, io) {
         
         Logger.dbg("EVENT - Send a random exercise to each pair");
         if (listExercises[0].type == "PAIR") {
+          Logger.dbg("EVENT - PAIR exercise, num2Send variable created following a list of exercises");
           var num2Send = participant1.visitedPExercises.length;
           if (!participant1.exerciseSwitch) {
+            Logger.dbg(`EVENT - Checking user ${participant1.code} exerciseSwitch is false`);
             num2Send += listExercises.length / 2;
           }
           if (num2Send >= listExercises.length) {
             num2Send -= 1;
           }
         } else {
+          Logger.dbg("EVENT - INDIVIDUAL exercise, num2Send variable created randomly");
           var num2Send = randomNumber(0, listExercises.length);
   
           if (participant1.visitedIExercises.length < listExercises.length) {
+            Logger.dbg(`EVENT - User ${participant1.code} visitedIExercises is less than listExercises length, a new exercise will be sent`);
             while(participant1.visitedIExercises.includes(num2Send)) {
               num2Send = randomNumber(0, listExercises.length);
             }
@@ -210,6 +217,7 @@ async function executeStandardSession(session, io) {
         }
 
         var exercise = listExercises[num2Send];
+        Logger.dbg(`EVENT - Exercise to be sent is -> ${exercise.name}`);
 
         if (listExercises[0].type == "PAIR") {
           Logger.dbg("Exercise type", "PAIR");
@@ -226,6 +234,8 @@ async function executeStandardSession(session, io) {
                   testIndex: session.testCounter,
                 }
               }];
+              
+              Logger.dbg(`EVENT - Sending exercise to ${participant1.code} and ${participant2.code}`);
               io.to(participant1.socketId).emit(newEvent[0], newEvent[1]);
               io.to(participant2.socketId).emit(newEvent[0], newEvent[1]);
               
@@ -249,6 +259,7 @@ async function executeStandardSession(session, io) {
           } else {
             participant1.nextExercise = false;
             participant2.nextExercise = false;
+            Logger.dbg(`EVENT - There are no more exercises left on this test for users ${participant1.code} and ${participant2.code}`);
             io.to(participant1.socketId).emit("customAlert", {
               data: {
                 message: "There are no more exercises left on this test"
@@ -265,7 +276,7 @@ async function executeStandardSession(session, io) {
           Logger.dbg("Exercise type", "INDIVIDUAL");
           if (participant1.nextExercise) {
             if (participant1.visitedIExercises.length < listExercises.length) {
-              Logger.dbg("Participant 1 going to next exercise");
+              Logger.dbg(`User with code <${participant1.code}> going to next exercise`);
               var newEvent = ["newExercise", {
               data: {
                 maxTime: tests[testNumber].testTime,
@@ -278,6 +289,7 @@ async function executeStandardSession(session, io) {
               }
             }];
   
+            Logger.dbg(`EVENT - Sending exercise to ${participant1.code}`);
             io.to(participant1.socketId).emit(newEvent[0], newEvent[1]);
                 
             lastSessionEvent.set(participant1.socketId, newEvent);
@@ -289,8 +301,8 @@ async function executeStandardSession(session, io) {
             });
               participant1.nextExercise = false;
             } else {
-              Logger.dbg("Participant 1 has no more exercises");
               participant1.nextExercise = false;
+              Logger.dbg(`EVENT - There are no more exercises left on this test for user ${participant1.code}`);
               io.to(participant1.socketId).emit("customAlert", {
                 data: {
                   message: "There are no more exercises left on this test"
@@ -301,7 +313,7 @@ async function executeStandardSession(session, io) {
 
           if (participant2.nextExercise) {
             if (participant2.visitedIExercises.length < listExercises.length) {
-              Logger.dbg("Participant 2 going to next exercise");
+              Logger.dbg(`User with code <${participant2.code}> going to next exercise`);
               var newEvent = ["newExercise", {
               data: {
                 maxTime: tests[testNumber].testTime,
@@ -314,6 +326,7 @@ async function executeStandardSession(session, io) {
               }
               }];
 
+              Logger.dbg(`EVENT - Sending exercise to ${participant2.code}`);
               io.to(participant2.socketId).emit(newEvent[0], newEvent[1]);
                   
               lastSessionEvent.set(participant2.socketId, newEvent);
@@ -326,8 +339,8 @@ async function executeStandardSession(session, io) {
                 
               participant2.nextExercise = false;
             } else {
-              Logger.dbg("Participant 2 has no more exercises");
               participant2.nextExercise = false;
+              Logger.dbg(`EVENT - There are no more exercises left on this test for user ${participant2.code}`);
               io.to(participant2.socketId).emit("customAlert", {
                 data: {
                   message: "There are no more exercises left on this test"
@@ -434,17 +447,31 @@ async function executeStandardSession(session, io) {
         var participant2 = participants[p+1];
 
         if (listExercises[0].type == "PAIR") {
+          Logger.dbg("EVENT - PAIR exercise, num2Send variable created following a list of exercises");
           var num2Send = participant1.visitedPExercises.length;
           if (!participant1.exerciseSwitch) {
+            Logger.dbg(`EVENT - Checking user ${participant1.code} exerciseSwitch is false`);
             num2Send += listExercises.length / 2;
           }
-        }
-        else {
+          if (num2Send >= listExercises.length) {
+            num2Send -= 1;
+          }
+        } else {
+          Logger.dbg("EVENT - INDIVIDUAL exercise, num2Send variable created randomly");
           var num2Send = randomNumber(0, listExercises.length);
+  
+          if (participant1.visitedIExercises.length < listExercises.length) {
+            Logger.dbg(`EVENT - User ${participant1.code} visitedIExercises is less than listExercises length, a new exercise will be sent`);
+            while(participant1.visitedIExercises.includes(num2Send)) {
+              num2Send = randomNumber(0, listExercises.length);
+            }
+          }
         }
 
         var exercise = listExercises[num2Send];
+        Logger.dbg(`EVENT - Exercise to be sent is -> ${exercise.name}`);
 
+        Logger.dbg(`EVENT - Sending exercise to ${participant1.code}`);
         io.to(participant1.socketId).emit("newExercise", {
           data: {
             maxTime: tests[testNumber].testTime,
@@ -466,6 +493,8 @@ async function executeStandardSession(session, io) {
             testLanguage: testLanguage,
           }
         }]);
+
+        Logger.dbg(`EVENT - Sending exercise to ${participant1.code}`);
         io.to(participant2.socketId).emit("newExercise", {
           data: {
             maxTime: tests[testNumber].testTime,
@@ -490,17 +519,11 @@ async function executeStandardSession(session, io) {
         });
         
 
-      if (exercise.type == "PAIR") {
         participant1.visitedPExercises.push(num2Send);
         participant1.save();
         participant2.visitedPExercises.push(num2Send);
         participant2.save();
-      } else {
-        participant1.visitedIExercises.push(num2Send);
-        participant1.save();
-        participant2.visitedIExercises.push(num2Send);
-        participant2.save();
-      }
+      
 
         p++;
       }

@@ -308,12 +308,12 @@ async function executeStandardSession(session, io) {
             Logger.dbg(`NEXT EXERCISE - There are no more exercises left on this test for users ${participant1.code} and ${participant2.code}`);
             io.to(participant1.socketId).emit("customAlert", {
               data: {
-                message: "There are no more exercises left on this test"
+                message: "There are no more exercises left, please wait for the next part."
               }
             });
             io.to(participant2.socketId).emit("customAlert", {
               data: {
-                message: "There are no more exercises left on this test"
+                message: "There are no more exercises left, please wait for the next part."
               }
             });
           }

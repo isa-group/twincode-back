@@ -1000,7 +1000,6 @@ async function notifyParticipants(sessionName, io) {
           code: participant.code,
           blind: participant.blind,
         },
-        pairSocketId: pair.socketId,
         pairedTo: newGender,
       });
 
@@ -1424,6 +1423,10 @@ module.exports = {
 
       socket.on("clientFinished", async (data) => {
         Logger.dbg("EVENT clientFinished", data);
+      });
+
+      socket.on("sendButtonStatusToPeer", async(data) => {
+        console.log(`sendButtonStatusToPeer - data: ${data} - pair code: ${pair.code}`);
       });
 
       socket.on("startDebugSession", async (pack) => {

@@ -998,6 +998,7 @@ async function notifyParticipants(sessionName, io) {
           code: participant.code,
           blind: participant.blind,
         },
+        pairSocketId: pair.socketId,
         pairedTo: newGender, //Random first other pair gender (fake to do experiments)
       });
 

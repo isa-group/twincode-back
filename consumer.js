@@ -260,8 +260,14 @@ async function executeStandardSession(session, io) {
 */
         //var exerciseNumber = getNextExerciseNumber(participant1, listExercises);
         var exerciseNumber = (participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises);
-        var exercise = (exerciseNumber >= listExercises.length) ? listExercises[listExercises.length-1] : listExercises[exerciseNumber];
         Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${exerciseNumber}>`);
+
+        if (exerciseNumber >= listExercises.length) {
+          exerciseNumber = listExercises.length - 1;
+          Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${exerciseNumber}> UPDATED`);
+        }
+        
+        var exercise = listExercises[exerciseNumber];
         Logger.dbg(`NEXT EXERCISE - Exercise to be sent is: ${exercise.name}`);
 
         if (listExercises[0].type == "PAIR") {

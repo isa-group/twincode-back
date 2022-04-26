@@ -988,8 +988,10 @@ async function notifyParticipants(sessionName, io) {
       Logger.dbg("notifyParticipants - Found pair of " + myCode + " in room" + myRoom, pair, ["code", "mail"]);
 
 
-      var newGender = session.isStandard ? participant.shown_gender : participant.gender;
+      var newGender = session.isStandard ? pair.shown_gender : pair.gender;
       Logger.dbg("notifyParticipans - gender sent ",newGender);
+      Logger.dbg("notifyParticipans - pair socket ",pair.socketId);
+
 
       Logger.dbg("notifyParticipants - Session <" + sessionName + "> - Emitting 'sessionStart' event to <" + participant.code + "> in room <" + sessionName + participant.room + ">");
       io.to(participant.socketId).emit("sessionStart", {

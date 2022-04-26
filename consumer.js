@@ -1426,7 +1426,29 @@ module.exports = {
       });
 
       socket.on("sendButtonStatusToPeer", async(data) => {
-        console.log(`sendButtonStatusToPeer - data: ${data} - pair code: ${pair.code}`);
+        const user = await User.findOne({
+          socketId: socket.id,
+          environment: process.env.NODE_ENV,
+        });
+        const usersPaired = await User.find({
+          subject: user.subject,
+          room: user.room,
+          environment: process.env.NODE_ENV,
+        });
+        const pair = usersPaired.filter((p) => {
+          return (p.room == user.room) && (p.code != user.code);
+        })[0];
+        console.log(`sendButtonStatusToPeer - data: ${data.status} - pair code: ${pair.code}`);
+        console.log(`sendButtonStatusToPeer - pair socket: ${pair.socketId} - user socket: ${user.socketId}`);
+
+        var session = Session.findOne({
+          name: user.subject
+        });
+        if (session.testCounter != 1) {
+          io.to(pair.socketId).emit("hideShowButton", {
+            hideShowButton: data.status,
+          });
+        }
       });
 
       socket.on("startDebugSession", async (pack) => {

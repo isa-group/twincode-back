@@ -1455,7 +1455,7 @@ module.exports = {
           }
 
           Logger.dbg(`EVENT sendButtonStatusToPeer - usersPaired <${usersPaired}>` );
-          
+
           const pair = usersPaired.filter((p) => {
             return (p.room == user.room) && (p.code != user.code);
           })[0];
@@ -1481,6 +1481,7 @@ module.exports = {
             return;
           }
           else if (session.testCounter != 1) {
+            Logger.dbg(`EVENT sendButtonStatusToPeer - session <${session.name}>`);
             Logger.dbg(`EVENT sendButtonStatusToPeer - Sending to socket <${pair.socketId}> from user <${pair.code}> status <${data.status}>, clicked by user <${user.code}>`);
             io.to(pair.socketId).emit("hideShowButton", {
               hideShowButton: data.status,

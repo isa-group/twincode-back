@@ -92,6 +92,7 @@ async function exerciseTimeUp(id, description) {
     }
   }
 }
+
 function  getNextExerciseNumber(participant, listExercises) {
   Logger.dbg(`getExercise - ${participant.code} - Init - for code ${participant.code}`);
   
@@ -143,23 +144,36 @@ function  getNextExerciseNumber(participant, listExercises) {
 }
 
 async function executeStandardSession(session, io) {
+  if (!session) { 
+    Logger.dbg("ExecuteStandardSession - Session not found");
+    return;
+  }
   var sessionName = session.name;
 
   session.running = true;
   session.save(); //Saves it on database
   Logger.dbg("executeSession - Running ", session, ["name", "pairingMode", "tokenPairing", "blindParticipant"]);
+  
   //Pick all tests
   const tests = await Test.find({
     session: session.name,
     environment: process.env.NODE_ENV,
   }).sort({ orderNumber: 1 });
+  
+  if (tests.length == 0) {
+    Logger.dbg("executeSession - No tests found");
+    return;
+  }
+
   //Number of tests in a session
   const numTests = tests.length;
+  
   //testCounter = session attribute that shows the order of the tests (actual test)
   let timer = 0;
   let maxExercises = tests[session.testCounter].exercises.length;
 
   Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
+  
   //Here it is loaded the test
   var event = ["loadTest", {
     data: {
@@ -170,7 +184,12 @@ async function executeStandardSession(session, io) {
     }
   }];
 
-  io.to(sessionName).emit(event[0], event[1]);
+  try {
+    Logger.dbg("executeSession - Sending loadTest event");
+    io.to(sessionName).emit(event[0], event[1]);
+  } catch (err) {
+    Logger.dbg(`executeSession - error found at executing session: ${err}`);
+  }
 
   lastSessionEvent.set(sessionName, event);
   Logger.dbg("executeSession - lastSessionEvent saved", event[0])  
@@ -181,13 +200,24 @@ async function executeStandardSession(session, io) {
     subject: sessionName,
   });
 
-  potentialParticipants.forEach((p) => {
-    var participantF = p;
-    participantF.visitedPExercises = [];
-    participantF.visitedIExercises = [];
-    participantF.nextExercise = false;
-    participantF.save();
-  });
+  if (!potentialParticipants) {
+    Logger.dbg("executeSession - No participants found");
+    return;
+  }
+
+  try {
+      potentialParticipants.forEach((p) => {
+      var participantF = p;
+      participantF.visitedPExercises = [];
+      participantF.visitedIExercises = [];
+      participantF.nextExercise = false;
+      participantF.save();
+    });
+  } catch (err) {
+    Logger.dbg(`executeSession - error saving users' new properties: ${err}`);
+    return;
+  }
+  
   
   
 
@@ -204,14 +234,17 @@ async function executeStandardSession(session, io) {
     potentialParticipants.forEach((p) => {
       //Filter out the one not connected : they don't have the property socketId! 
       if (p.socketId) {
+        Logger.dbg(`executeSession - participant with code <${p.code}> is connected`);
         participants.push(p);
       }
     });
 
+    Logger.dbg(`executeSession - participants length: ${participants.length}`);
     if (participants.length % 2 != 0) {
       participants = participants.splice(0, participants.length-1);
     }
 
+    Logger.dbg(`executeSession - sorting participants list`);
     participants.sort(function(a, b) {
       return a.room - b.room;
     });
@@ -219,47 +252,103 @@ async function executeStandardSession(session, io) {
     // Calculate the maximum amount of participants possible 
     // Rounding the length to the maximum even number.
     const maxParticipants = (Math.floor(participants.length/2))*2;
+    Logger.dbg(`executeSession - maxParticipants: ${maxParticipants}`);
 
 
     for (let p = 0; p < maxParticipants; p++) {
-      var participant1 = participants[p];
-      var participant2 = participants[p+1];
-      
-      
-      if (participant1.nextExercise || participant2.nextExercise) {
-        Logger.dbg(`NEXT EXERCISE - ${participant1.code} or ${participant2.code} tried to validate a code`);
-        Logger.dbg(`NEXT EXERCISE - User <${participant1.code}> clicked on the button: ${participant1.nextExercise}`);
-        Logger.dbg(`NEXT EXERCISE - User <${participant2.code}> clicked on the button: ${participant2.nextExercise}`);
-      
-        Logger.dbg("NEXT EXERCISE - Starting new exercise:");
-        if (session.testCounter != 2) {
-          var testNumber = session.testCounter;
-        } else {
-          var testNumber = 0;
-        }
-
-        let testLanguage = tests[testNumber].language;
-        let listExercises = tests[testNumber].exercises;
+      try {
+        var participant1 = participants[p];
+        var participant2 = participants[p+1];
+        Logger.dbg(`executeSession - checking actions for participants: ${participant1.code} and ${participant2.code}`);
         
-        Logger.dbg(`NEXT EXERCISE - Calculating the next exercise number for ${(participant1.nextExercise)?"participant1":"participant2"}`);
-
-        var exerciseNumber = (participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises);
-        Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${exerciseNumber}>`);
-
-        if (exerciseNumber >= listExercises.length) {
-          exerciseNumber = listExercises.length - 1;
-          Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${exerciseNumber}> UPDATED`);
-        }
+        if (participant1.nextExercise || participant2.nextExercise) {
+          Logger.dbg(`NEXT EXERCISE - ${participant1.code} or ${participant2.code} tried to validate a code`);
+          Logger.dbg(`NEXT EXERCISE - User <${participant1.code}> clicked on the button: ${participant1.nextExercise}`);
+          Logger.dbg(`NEXT EXERCISE - User <${participant2.code}> clicked on the button: ${participant2.nextExercise}`);
         
-        var exercise = listExercises[exerciseNumber];
-        Logger.dbg(`NEXT EXERCISE - Exercise to be sent is: ${exercise.name}`);
+          Logger.dbg("NEXT EXERCISE - Starting new exercise:");
+          if (session.testCounter != 2) {
+            var testNumber = session.testCounter;
+          } else {
+            var testNumber = 0;
+          }
 
-        if (listExercises[0].type == "PAIR") {
-          Logger.dbg(`NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
-          if (participant1.visitedPExercises.length < listExercises.length/2) {
-            Logger.dbg(`NEXT EXERCISE - There are still exercises (${participant1.visitedPExercises.length} < ${listExercises.length/2}) `);
-            if (participant1.nextExercise || participant2.nextExercise) {
-              var newEvent = ["newExercise", {
+          let testLanguage = tests[testNumber].language;
+          let listExercises = tests[testNumber].exercises;
+          
+          Logger.dbg(`NEXT EXERCISE - Calculating the next exercise number for ${(participant1.nextExercise)?"participant1":"participant2"}`);
+
+          var exerciseNumber = (participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises);
+          Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${exerciseNumber}>`);
+
+          if (exerciseNumber >= listExercises.length) {
+            exerciseNumber = listExercises.length - 1;
+            Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${exerciseNumber}> UPDATED`);
+          }
+          
+          var exercise = listExercises[exerciseNumber];
+          Logger.dbg(`NEXT EXERCISE - Exercise to be sent is: ${exercise.name}`);
+
+          if (listExercises[0].type == "PAIR") {
+            Logger.dbg(`NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
+            if (participant1.visitedPExercises.length < listExercises.length/2) {
+              Logger.dbg(`NEXT EXERCISE - There are still exercises (${participant1.visitedPExercises.length} < ${listExercises.length/2}) `);
+              if (participant1.nextExercise || participant2.nextExercise) {
+                var newEvent = ["newExercise", {
+                  data: {
+                    maxTime: tests[testNumber].testTime,
+                    exerciseDescription: exercise.description,
+                    exerciseType: exercise.type,
+                    inputs: exercise.inputs,
+                    solutions: exercise.solutions,
+                    testLanguage: testLanguage,
+                    testIndex: session.testCounter,
+                  }
+                }];
+                
+                Logger.dbg(`NEXT EXERCISE - Sending exercise to ${participant1.code} and ${participant2.code}`);
+                io.to(participant1.socketId).emit(newEvent[0], newEvent[1]);
+                io.to(participant2.socketId).emit(newEvent[0], newEvent[1]);
+                
+                lastSessionEvent.set(participant1.socketId, newEvent);
+                lastSessionEvent.set(participant2.socketId, newEvent);
+                
+                io.to(participant1.socketId).emit("customAlert", {
+                  data: {
+                    message: "New exercise begins"
+                  }
+                });
+                io.to(participant2.socketId).emit("customAlert", {
+                  data: {
+                    message: "New exercise begins"
+                  }
+                });
+                
+                participant1.nextExercise = false;
+                participant2.nextExercise = false;
+              }
+            } else {
+              participant1.nextExercise = false;
+              participant2.nextExercise = false;
+              Logger.dbg(`NEXT EXERCISE - There are no more exercises left on this test for users ${participant1.code} and ${participant2.code}`);
+              io.to(participant1.socketId).emit("customAlert", {
+                data: {
+                  message: "There are no more exercises left, please wait for the next part."
+                }
+              });
+              io.to(participant2.socketId).emit("customAlert", {
+                data: {
+                  message: "There are no more exercises left, please wait for the next part."
+                }
+              });
+            }
+              
+          } else if (listExercises[0].type == "INDIVIDUAL") {
+            Logger.dbg(`NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
+            if (participant1.nextExercise) {
+              if (participant1.visitedIExercises.length < listExercises.length) {
+                Logger.dbg(`NEXT EXERCISE - P1 IND - User with code <${participant1.code}> going to next exercise`);
+                var newEvent = ["newExercise", {
                 data: {
                   maxTime: tests[testNumber].testTime,
                   exerciseDescription: exercise.description,
@@ -270,139 +359,88 @@ async function executeStandardSession(session, io) {
                   testIndex: session.testCounter,
                 }
               }];
-              
-              Logger.dbg(`NEXT EXERCISE - Sending exercise to ${participant1.code} and ${participant2.code}`);
+    
+              Logger.dbg(`NEXT EXERCISE - P1 IND - Sending exercise to ${participant1.code}`);
               io.to(participant1.socketId).emit(newEvent[0], newEvent[1]);
-              io.to(participant2.socketId).emit(newEvent[0], newEvent[1]);
-              
-              lastSessionEvent.set(participant1.socketId, newEvent);
-              lastSessionEvent.set(participant2.socketId, newEvent);
-              
-              io.to(participant1.socketId).emit("customAlert", {
-                data: {
-                  message: "New exercise begins"
-                }
-              });
-              io.to(participant2.socketId).emit("customAlert", {
-                data: {
-                  message: "New exercise begins"
-                }
-              });
-              
-              participant1.nextExercise = false;
-              participant2.nextExercise = false;
-            }
-          } else {
-            participant1.nextExercise = false;
-            participant2.nextExercise = false;
-            Logger.dbg(`NEXT EXERCISE - There are no more exercises left on this test for users ${participant1.code} and ${participant2.code}`);
-            io.to(participant1.socketId).emit("customAlert", {
-              data: {
-                message: "There are no more exercises left, please wait for the next part."
-              }
-            });
-            io.to(participant2.socketId).emit("customAlert", {
-              data: {
-                message: "There are no more exercises left, please wait for the next part."
-              }
-            });
-          }
-            
-        } else if (listExercises[0].type == "INDIVIDUAL") {
-          Logger.dbg(`NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
-          if (participant1.nextExercise) {
-            if (participant1.visitedIExercises.length < listExercises.length) {
-              Logger.dbg(`NEXT EXERCISE - P1 IND - User with code <${participant1.code}> going to next exercise`);
-              var newEvent = ["newExercise", {
-              data: {
-                maxTime: tests[testNumber].testTime,
-                exerciseDescription: exercise.description,
-                exerciseType: exercise.type,
-                inputs: exercise.inputs,
-                solutions: exercise.solutions,
-                testLanguage: testLanguage,
-                testIndex: session.testCounter,
-              }
-            }];
-  
-            Logger.dbg(`NEXT EXERCISE - P1 IND - Sending exercise to ${participant1.code}`);
-            io.to(participant1.socketId).emit(newEvent[0], newEvent[1]);
-                
-            lastSessionEvent.set(participant1.socketId, newEvent);
-            
-            io.to(participant1.socketId).emit("customAlert", {
-              data: {
-                message: "New exercise begins"
-              }
-            });
-              participant1.nextExercise = false;
-            } else {
-              participant1.nextExercise = false;
-              Logger.dbg(`NEXT EXERCISE - P1 IND - There are no more exercises left on this test for user ${participant1.code}`);
-              io.to(participant1.socketId).emit("customAlert", {
-                data: {
-                  message: "There are no more exercises left on this test"
-                }
-              });
-            }
-          }
-
-          if (participant2.nextExercise) {
-            if (participant2.visitedIExercises.length < listExercises.length) {
-              Logger.dbg(`NEXT EXERCISE - P2 IND - User with code <${participant2.code}> going to next exercise`);
-              var newEvent = ["newExercise", {
-              data: {
-                maxTime: tests[testNumber].testTime,
-                exerciseDescription: exercise.description,
-                exerciseType: exercise.type,
-                inputs: exercise.inputs,
-                solutions: exercise.solutions,
-                testLanguage: testLanguage,
-                testIndex: session.testCounter,
-              }
-              }];
-
-              Logger.dbg(`NEXT EXERCISE - P2 IND - Sending exercise to ${participant2.code}`);
-              io.to(participant2.socketId).emit(newEvent[0], newEvent[1]);
                   
-              lastSessionEvent.set(participant2.socketId, newEvent);
+              lastSessionEvent.set(participant1.socketId, newEvent);
               
-              io.to(participant2.socketId).emit("customAlert", {
+              io.to(participant1.socketId).emit("customAlert", {
                 data: {
                   message: "New exercise begins"
                 }
               });
-                
-              participant2.nextExercise = false;
-            } else {
-              participant2.nextExercise = false;
-              Logger.dbg(`NEXT EXERCISE - P2 IND - There are no more exercises left on this test for user ${participant2.code}`);
-              io.to(participant2.socketId).emit("customAlert", {
+                participant1.nextExercise = false;
+              } else {
+                participant1.nextExercise = false;
+                Logger.dbg(`NEXT EXERCISE - P1 IND - There are no more exercises left on this test for user ${participant1.code}`);
+                io.to(participant1.socketId).emit("customAlert", {
+                  data: {
+                    message: "There are no more exercises left on this test"
+                  }
+                });
+              }
+            }
+
+            if (participant2.nextExercise) {
+              if (participant2.visitedIExercises.length < listExercises.length) {
+                Logger.dbg(`NEXT EXERCISE - P2 IND - User with code <${participant2.code}> going to next exercise`);
+                var newEvent = ["newExercise", {
                 data: {
-                  message: "There are no more exercises left on this test"
+                  maxTime: tests[testNumber].testTime,
+                  exerciseDescription: exercise.description,
+                  exerciseType: exercise.type,
+                  inputs: exercise.inputs,
+                  solutions: exercise.solutions,
+                  testLanguage: testLanguage,
+                  testIndex: session.testCounter,
                 }
-              });
+                }];
+
+                Logger.dbg(`NEXT EXERCISE - P2 IND - Sending exercise to ${participant2.code}`);
+                io.to(participant2.socketId).emit(newEvent[0], newEvent[1]);
+                    
+                lastSessionEvent.set(participant2.socketId, newEvent);
+                
+                io.to(participant2.socketId).emit("customAlert", {
+                  data: {
+                    message: "New exercise begins"
+                  }
+                });
+                  
+                participant2.nextExercise = false;
+              } else {
+                participant2.nextExercise = false;
+                Logger.dbg(`NEXT EXERCISE - P2 IND - There are no more exercises left on this test for user ${participant2.code}`);
+                io.to(participant2.socketId).emit("customAlert", {
+                  data: {
+                    message: "There are no more exercises left on this test"
+                  }
+                });
+              }
+            }
+
+          }
+
+
+          if (listExercises[exerciseNumber].type == "PAIR") {
+            participant1.visitedPExercises.push(exerciseNumber);
+            participant1.save();
+            participant2.visitedPExercises.push(exerciseNumber);
+            participant2.save();
+          } else {
+            if (participant1.nextExercise) {
+              participant1.visitedIExercises.push(exerciseNumber);
+              participant1.save();
+            }
+            if (participant2.nextExercise) {
+              participant2.visitedIExercises.push(exerciseNumber);
+              participant2.save();
             }
           }
-
         }
-
-
-        if (listExercises[exerciseNumber].type == "PAIR") {
-          participant1.visitedPExercises.push(exerciseNumber);
-          participant1.save();
-          participant2.visitedPExercises.push(exerciseNumber);
-          participant2.save();
-        } else {
-          if (participant1.nextExercise) {
-            participant1.visitedIExercises.push(exerciseNumber);
-            participant1.save();
-          }
-          if (participant2.nextExercise) {
-            participant2.visitedIExercises.push(exerciseNumber);
-            participant2.save();
-          }
-        }
+      } catch (err) {
+        Logger.err(`executeSession - Error while trying to check actions for user ${participant1.code} and ${participant2.code}`);
       }
       p++;
     }
@@ -1507,7 +1545,7 @@ module.exports = {
           Logger.dbg("EVENT disconnect - socket is null");
           return;
         }
-        
+
         const user = await User.findOne({
           socketId: socket.id,
           environment: process.env.NODE_ENV,

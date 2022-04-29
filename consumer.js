@@ -242,23 +242,7 @@ async function executeStandardSession(session, io) {
         let listExercises = tests[testNumber].exercises;
         
         Logger.dbg(`NEXT EXERCISE - Calculating the next exercise number for ${(participant1.nextExercise)?"participant1":"participant2"}`);
-        //let num2Send = (participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises);
-/*
-        Logger.dbg(`NEXT EXERCISE - Exercise number calculated (i): <${(participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises)}>`);
-        Logger.dbg(`NEXT EXERCISE - Exercise number calculated (ii): <${num2send}>`);
 
-
-        if(participant1.nextExercise){
-          Logger.dbg("NEXT EXERCISE - Calculating the next exercise number for participant1");
-          num2Send = getNextExerciseNumber(participant1, listExercises);
-          Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${num2send}>`);
-        }else{
-          Logger.dbg("NEXT EXERCISE - Calculating the next exercise number for participant2");
-          num2Send = getNextExerciseNumber(participant2, listExercises);
-          Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${num2send}>`);
-        }
-*/
-        //var exerciseNumber = getNextExerciseNumber(participant1, listExercises);
         var exerciseNumber = (participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises);
         Logger.dbg(`NEXT EXERCISE - Exercise number calculated: <${exerciseNumber}>`);
 
@@ -1021,7 +1005,6 @@ async function notifyParticipants(sessionName, io) {
 module.exports = {
   //This starts the session calling notifyParticipants to pair them and give them a room
   startSession: function (sessionName, io) {
-
     Logger.dbg("startSession " + sessionName);
     //Room giving
     notifyParticipants(sessionName, io);
@@ -1042,9 +1025,13 @@ module.exports = {
       );
 
       socket.on("adminConnected", (session) => {
-        Logger.dbg("EVENT adminConnected", session);
-        Logger.dbg("Admin watching " + session);
-        socket.join(session);
+        try {
+          Logger.dbg("EVENT adminConnected", session);
+          Logger.dbg("Admin watching " + session);
+          socket.join(session);
+        } catch (err) {
+          Logger.dbg(`EVENT adminConnected - ERROR <${err}>`);
+        }
       });
 
       socket.on("clientConnected", async (pack) => {
@@ -1055,13 +1042,21 @@ module.exports = {
           environment: process.env.NODE_ENV,
         });
         if (user) {
+          Logger.dbg(`EVENT clientConnected - User found <${user.code}>`);
           io.to(user.subject).emit("clientConnected", user.code);
+        }
+        else {
+          Logger.dbg("EVENT clientConnected - ERROR - USER NOT FOUND");
         }
       });
 
       socket.on("requestToJoinAgain", (pack) => {
         Logger.dbg("Asking " + pack + " to rejoin.");
-        io.to(pack).emit("clientJoinAgain");
+        try {
+          io.to(pack).emit("clientJoinAgain");
+        } catch (err) {
+          Logger.dbg(`EVENT requestToJoinAgain - ERROR <${err}>`);
+        }
       });
 
       socket.on("clientReady", async (pack) => {
@@ -1072,6 +1067,10 @@ module.exports = {
           environment: process.env.NODE_ENV,
         });
 
+        if (!user) {
+          Logger.dbg("EVENT clientReady - ERROR - USER NOT FOUND");
+          return;
+        }
 
         Logger.dbg("EVENT clientReady - User Retrival [" + pack + "] - ", user, ["code", "mail"]);
 
@@ -1079,6 +1078,7 @@ module.exports = {
           name: user.subject,
           environment: process.env.NODE_ENV,
         });
+
         if (session && session.active) {
           userToSocketID.set(user.code, socket.id);
           user.socketId = socket.id; // TODO: Will be placed outside this function at some point
@@ -1132,10 +1132,13 @@ module.exports = {
           user.save();
 
         }
+        else {
+          Logger.dbg(`EVENT clientReady - Session not found`)
+        }
       });
 
       socket.on("changeExercise", async (pack) => {
-        Logger.dbg("EVENT changeExercise - User in socket " + socket.id, pack);
+        Logger.dbg(`EVENT changeExercise - User in socket <${socket.id}> with data <${pack}>`);
         const user = await User.findOne({
           code: pack.code,
           environment: process.env.NODE_ENV,
@@ -1151,12 +1154,11 @@ module.exports = {
           
           await user.save();
           Logger.dbg(`EVENT changeExercise - user(${pack.code}).nextExercise (post) : <${user.nextExercise}> `,user,["mail"]);
-
         }
-      })
-
-
-
+        else {
+          Logger.dbg(`EVENT changeExercise - user not found`);
+        }
+      });
 
       socket.on("clientReconnection", async (pack) => {
         Logger.dbg("EVENT clientReconnection ", pack);
@@ -1248,10 +1250,6 @@ module.exports = {
 
       });
 
-
-
-
-
       socket.on("bulkCode", async (pack) => {
         Logger.dbg("EVENT bulkCode ", pack);
         io.to(pack.data.peerSocketId).emit("bulkCodeUpdate", pack.data.code);
@@ -1259,21 +1257,19 @@ module.exports = {
       });
 
       socket.on("cursorActivity", (data) => {
-        // Too expensive dbg:
-        // Logger.dbg("EVENT cursorActivity");
+        Logger.dbg("EVENT cursorActivity ", data);
         io.to(connectedUsers.get(socket.id)).emit("cursorActivity", data);
       });
 
       socket.on("updateCode", (pack) => {
-
-        // Too expensive dbg:
-        // Logger.dbg("EVENT updateCode",pack);
+        Logger.dbg("EVENT updateCode",pack);
 
         const sessionInMemory = sessions.get(tokens.get(pack.token));
+
         if (sessionInMemory != null) {
           if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
             // Too expensive dbg:
-            //    Logger.dbg("EVENT updateCode --> " + userToSocketID.get(connectedUsers.get(pack.token)));
+            // Logger.dbg("EVENT updateCode --> " + userToSocketID.get(connectedUsers.get(pack.token)));
             io.to(userToSocketID.get(connectedUsers.get(pack.token))).emit(
               "refreshCode",
               pack.data
@@ -1288,6 +1284,9 @@ module.exports = {
             sessions.get(tokens.get(pack.token)).session.exerciseCounter,
             sessions.get(tokens.get(pack.token)).session.testCounter
           );
+        }
+        else {
+          Logger.dbg("EVENT updateCode - Session not found in memory");
         }
       });
 
@@ -1425,7 +1424,7 @@ module.exports = {
         Logger.dbg("EVENT clientFinished", data);
       });
 
-      socket.on("EVENT sendButtonStatusToPeer", async(data) => {
+      socket.on("sendButtonStatusToPeer", async(data) => {
         try {
           if (!socket) {
             Logger.dbg("EVENT sendButtonStatusToPeer - socket is null");

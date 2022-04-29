@@ -152,7 +152,7 @@ async function executeStandardSession(session, io) {
 
   session.running = true;
   session.save(); //Saves it on database
-  Logger.dbg("executeSession - Running ", session, ["name", "pairingMode", "tokenPairing", "blindParticipant"]);
+  Logger.dbg("executeStandardSession - Running ", session, ["name", "pairingMode", "tokenPairing", "blindParticipant"]);
   
   //Pick all tests
   const tests = await Test.find({
@@ -161,7 +161,7 @@ async function executeStandardSession(session, io) {
   }).sort({ orderNumber: 1 });
   
   if (tests.length == 0) {
-    Logger.dbg("executeSession - No tests found");
+    Logger.dbg("executeStandardSession - No tests found");
     return;
   }
 
@@ -172,7 +172,7 @@ async function executeStandardSession(session, io) {
   let timer = 0;
   let maxExercises = tests[session.testCounter].exercises.length;
 
-  Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
+  Logger.dbg("executeStandardSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
   
   //Here it is loaded the test
   var event = ["loadTest", {
@@ -185,14 +185,14 @@ async function executeStandardSession(session, io) {
   }];
 
   try {
-    Logger.dbg("executeSession - Sending loadTest event");
+    Logger.dbg("executeStandardSession - Sending loadTest event");
     io.to(sessionName).emit(event[0], event[1]);
   } catch (err) {
-    Logger.dbg(`executeSession - error found at executing session: ${err}`);
+    Logger.dbg(`executeStandardSession - error found at executing session: ${err}`);
   }
 
   lastSessionEvent.set(sessionName, event);
-  Logger.dbg("executeSession - lastSessionEvent saved", event[0])  
+  Logger.dbg("executeStandardSession - lastSessionEvent saved", event[0])  
   
   
   const potentialParticipants = await User.find({ //It picks all the registered users in the session
@@ -201,7 +201,7 @@ async function executeStandardSession(session, io) {
   });
 
   if (!potentialParticipants) {
-    Logger.dbg("executeSession - No participants found");
+    Logger.dbg("executeStandardSession - No participants found");
     return;
   }
 
@@ -214,10 +214,9 @@ async function executeStandardSession(session, io) {
       participantF.save();
     });
   } catch (err) {
-    Logger.dbg(`executeSession - error saving users' new properties: ${err}`);
+    Logger.dbg(`executeStandardSession - error saving users' new properties: ${err}`);
     return;
   }
-  
   
   
 
@@ -234,17 +233,17 @@ async function executeStandardSession(session, io) {
     potentialParticipants.forEach((p) => {
       //Filter out the one not connected : they don't have the property socketId! 
       if (p.socketId) {
-        Logger.dbg(`executeSession - participant with code <${p.code}> is connected`);
+        Logger.dbg(`executeStandardSession - participant with code <${p.code}> is connected`);
         participants.push(p);
       }
     });
 
-    Logger.dbg(`executeSession - participants length: ${participants.length}`);
+    Logger.dbg(`executeStandardSession - participants length: ${participants.length}`);
     if (participants.length % 2 != 0) {
       participants = participants.splice(0, participants.length-1);
     }
 
-    Logger.dbg(`executeSession - sorting participants list`);
+    Logger.dbg(`executeStandardSession - sorting participants list`);
     participants.sort(function(a, b) {
       return a.room - b.room;
     });
@@ -252,19 +251,19 @@ async function executeStandardSession(session, io) {
     // Calculate the maximum amount of participants possible 
     // Rounding the length to the maximum even number.
     const maxParticipants = (Math.floor(participants.length/2))*2;
-    Logger.dbg(`executeSession - maxParticipants: ${maxParticipants}`);
+    Logger.dbg(`executeStandardSession - maxParticipants: ${maxParticipants}`);
 
 
     for (let p = 0; p < maxParticipants; p++) {
       try {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
-        Logger.dbg(`executeSession - checking actions for participants: ${participant1.code} and ${participant2.code}`);
+        Logger.dbg(`executeStandardSession - checking actions for participants: ${participant1.code} and ${participant2.code}`);
         
         if (participant1.nextExercise || participant2.nextExercise) {
-          Logger.dbg(`executeSession - NEXT EXERCISE - ${participant1.code} or ${participant2.code} tried to validate a code`);
-          Logger.dbg(`executeSession - NEXT EXERCISE - User <${participant1.code}> clicked on the button: ${participant1.nextExercise}`);
-          Logger.dbg(`executeSession - NEXT EXERCISE - User <${participant2.code}> clicked on the button: ${participant2.nextExercise}`);
+          Logger.dbg(`executeStandardSession - NEXT EXERCISE - ${participant1.code} or ${participant2.code} tried to validate a code`);
+          Logger.dbg(`executeStandardSession - NEXT EXERCISE - User <${participant1.code}> clicked on the button: ${participant1.nextExercise}`);
+          Logger.dbg(`executeStandardSession - NEXT EXERCISE - User <${participant2.code}> clicked on the button: ${participant2.nextExercise}`);
         
           Logger.dbg("NEXT EXERCISE - Starting new exercise:");
           if (session.testCounter != 2) {
@@ -273,30 +272,30 @@ async function executeStandardSession(session, io) {
             var testNumber = 0;
           }
 
-          Logger.dbg(`executeSession - NEXT EXERCISE - testNumber: ${testNumber}`);
+          Logger.dbg(`executeStandardSession - NEXT EXERCISE - testNumber: ${testNumber}`);
           let testLanguage = tests[testNumber].language;
           let listExercises = tests[testNumber].exercises;
 
-          Logger.dbg(`executeSession - NEXT EXERCISE - testLanguage: ${testLanguage}`);
-          Logger.dbg(`executeSession - NEXT EXERCISE - listExercisesSize: ${listExercises.length}`);
+          Logger.dbg(`executeStandardSession - NEXT EXERCISE - testLanguage: ${testLanguage}`);
+          Logger.dbg(`executeStandardSession - NEXT EXERCISE - listExercisesSize: ${listExercises.length}`);
           
-          Logger.dbg(`executeSession - NEXT EXERCISE - Calculating the next exercise number for ${(participant1.nextExercise)?"participant1":"participant2"}`);
+          Logger.dbg(`executeStandardSession - NEXT EXERCISE - Calculating the next exercise number for ${(participant1.nextExercise)?"participant1":"participant2"}`);
 
           var exerciseNumber = (participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises);
-          Logger.dbg(`executeSession - NEXT EXERCISE - Exercise number calculated: <${exerciseNumber}>`);
+          Logger.dbg(`executeStandardSession - NEXT EXERCISE - Exercise number calculated: <${exerciseNumber}>`);
 
           if (exerciseNumber >= listExercises.length) {
             exerciseNumber = listExercises.length - 1;
-            Logger.dbg(`executeSession - NEXT EXERCISE - Exercise number calculated: <${exerciseNumber}> UPDATED`);
+            Logger.dbg(`executeStandardSession - NEXT EXERCISE - Exercise number calculated: <${exerciseNumber}> UPDATED`);
           }
           
           var exercise = listExercises[exerciseNumber];
-          Logger.dbg(`executeSession - NEXT EXERCISE - Exercise to be sent is: ${exercise.name}`);
+          Logger.dbg(`executeStandardSession - NEXT EXERCISE - Exercise to be sent is: ${exercise.name}`);
 
           if (listExercises[0].type == "PAIR") {
-            Logger.dbg(`executeSession - NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
+            Logger.dbg(`executeStandardSession - NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
             if (participant1.visitedPExercises.length < listExercises.length/2) {
-              Logger.dbg(`executeSession - NEXT EXERCISE - There are still exercises (${participant1.visitedPExercises.length} < ${listExercises.length/2}) `);
+              Logger.dbg(`executeStandardSession - NEXT EXERCISE - There are still exercises (${participant1.visitedPExercises.length} < ${listExercises.length/2}) `);
               if (participant1.nextExercise || participant2.nextExercise) {
                 var newEvent = ["newExercise", {
                   data: {
@@ -311,18 +310,18 @@ async function executeStandardSession(session, io) {
                 }];
                 
                 try {
-                  Logger.dbg(`executeSession - NEXT EXERCISE - Sending exercise to ${participant1.code} and ${participant2.code}`);
+                  Logger.dbg(`executeStandardSession - NEXT EXERCISE - Sending exercise to ${participant1.code} and ${participant2.code}`);
                   io.to(participant1.socketId).emit(newEvent[0], newEvent[1]);
                   io.to(participant2.socketId).emit(newEvent[0], newEvent[1]);
                   
                   lastSessionEvent.set(participant1.socketId, newEvent);
                   lastSessionEvent.set(participant2.socketId, newEvent);
                 } catch (err) {
-                  Logger.dbgerr(`executeSession - NEXT EXERCISE - Error sending exercise to ${participant1.code} and ${participant2.code}`);
-                  Logger.dbgerr(`executeSession - NEXT EXERCISE - Error: ${err}`);
+                  Logger.dbgerr(`executeStandardSession - NEXT EXERCISE - Error sending exercise to ${participant1.code} and ${participant2.code}`);
+                  Logger.dbgerr(`executeStandardSession - NEXT EXERCISE - Error: ${err}`);
                 }
                 
-                Logger.dbg(`executeSession - NEXT EXERCISE - Sending custom alert "New exercise begins" to ${participant1.code} and ${participant2.code}`);
+                Logger.dbg(`executeStandardSession - NEXT EXERCISE - Sending custom alert "New exercise begins" to ${participant1.code} and ${participant2.code}`);
                 io.to(participant1.socketId).emit("customAlert", {
                   data: {
                     message: "New exercise begins"
@@ -334,25 +333,25 @@ async function executeStandardSession(session, io) {
                   }
                 });
                 
-                Logger.dbg(`executeSession - NEXT EXERCISE - changing nextExercise property to false`);
-                Logger.dbg(`executeSession - NEXT EXERCISE - P1 ACTUAL value ${participant1.nextExercise}`);
-                Logger.dbg(`executeSession - NEXT EXERCISE - P2 ACTUAL value ${participant2.nextExercise}`);
+                Logger.dbg(`executeStandardSession - NEXT EXERCISE - changing nextExercise property to false`);
+                Logger.dbg(`executeStandardSession - NEXT EXERCISE - P1 ACTUAL value ${participant1.nextExercise}`);
+                Logger.dbg(`executeStandardSession - NEXT EXERCISE - P2 ACTUAL value ${participant2.nextExercise}`);
                 participant1.nextExercise = false;
                 participant2.nextExercise = false;
-                Logger.dbg(`executeSession - NEXT EXERCISE - P1 UPDATED value ${participant1.nextExercise}`);
-                Logger.dbg(`executeSession - NEXT EXERCISE - P2 UPDATED value ${participant2.nextExercise}`);
+                Logger.dbg(`executeStandardSession - NEXT EXERCISE - P1 UPDATED value ${participant1.nextExercise}`);
+                Logger.dbg(`executeStandardSession - NEXT EXERCISE - P2 UPDATED value ${participant2.nextExercise}`);
               }
             } else {
-              Logger.dbg(`executeSession - NEXT EXERCISE - changing nextExercise property to false`);
-              Logger.dbg(`executeSession - NEXT EXERCISE - P1 ACTUAL value ${participant1.nextExercise}`);
-              Logger.dbg(`executeSession - NEXT EXERCISE - P2 ACTUAL value ${participant2.nextExercise}`);
+              Logger.dbg(`executeStandardSession - NEXT EXERCISE - changing nextExercise property to false`);
+              Logger.dbg(`executeStandardSession - NEXT EXERCISE - P1 ACTUAL value ${participant1.nextExercise}`);
+              Logger.dbg(`executeStandardSession - NEXT EXERCISE - P2 ACTUAL value ${participant2.nextExercise}`);
               participant1.nextExercise = false;
               participant2.nextExercise = false;
-              Logger.dbg(`executeSession - NEXT EXERCISE - P1 UPDATED value ${participant1.nextExercise}`);
-              Logger.dbg(`executeSession - NEXT EXERCISE - P2 UPDATED value ${participant2.nextExercise}`);
+              Logger.dbg(`executeStandardSession - NEXT EXERCISE - P1 UPDATED value ${participant1.nextExercise}`);
+              Logger.dbg(`executeStandardSession - NEXT EXERCISE - P2 UPDATED value ${participant2.nextExercise}`);
 
-              Logger.dbg(`executeSession - NEXT EXERCISE - There are no more exercises left on this test for users ${participant1.code} and ${participant2.code}`);
-                Logger.dbg(`executeSession - NEXT EXERCISE - Sending custom alert to ${participant1.code} and ${participant2.code}`);
+              Logger.dbg(`executeStandardSession - NEXT EXERCISE - There are no more exercises left on this test for users ${participant1.code} and ${participant2.code}`);
+                Logger.dbg(`executeStandardSession - NEXT EXERCISE - Sending custom alert to ${participant1.code} and ${participant2.code}`);
               io.to(participant1.socketId).emit("customAlert", {
                 data: {
                   message: "There are no more exercises left, please wait for the next part."
@@ -366,10 +365,10 @@ async function executeStandardSession(session, io) {
             }
               
           } else if (listExercises[0].type == "INDIVIDUAL") {
-            Logger.dbg(`executeSession - NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
+            Logger.dbg(`executeStandardSession - NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
             if (participant1.nextExercise) {
               if (participant1.visitedIExercises.length < listExercises.length) {
-                Logger.dbg(`executeSession - NEXT EXERCISE - P1 IND - User with code <${participant1.code}> going to next exercise`);
+                Logger.dbg(`executeStandardSession - NEXT EXERCISE - P1 IND - User with code <${participant1.code}> going to next exercise`);
                 var newEvent = ["newExercise", {
                 data: {
                   maxTime: tests[testNumber].testTime,
@@ -382,7 +381,7 @@ async function executeStandardSession(session, io) {
                 }
               }];
     
-              Logger.dbg(`executeSession - NEXT EXERCISE - P1 IND - Sending exercise to ${participant1.code}`);
+              Logger.dbg(`executeStandardSession - NEXT EXERCISE - P1 IND - Sending exercise to ${participant1.code}`);
               io.to(participant1.socketId).emit(newEvent[0], newEvent[1]);
                   
               lastSessionEvent.set(participant1.socketId, newEvent);
@@ -395,7 +394,7 @@ async function executeStandardSession(session, io) {
                 participant1.nextExercise = false;
               } else {
                 participant1.nextExercise = false;
-                Logger.dbg(`executeSession - NEXT EXERCISE - P1 IND - There are no more exercises left on this test for user ${participant1.code}`);
+                Logger.dbg(`executeStandardSession - NEXT EXERCISE - P1 IND - There are no more exercises left on this test for user ${participant1.code}`);
                 io.to(participant1.socketId).emit("customAlert", {
                   data: {
                     message: "There are no more exercises left on this test"
@@ -406,7 +405,7 @@ async function executeStandardSession(session, io) {
 
             if (participant2.nextExercise) {
               if (participant2.visitedIExercises.length < listExercises.length) {
-                Logger.dbg(`executeSession - NEXT EXERCISE - P2 IND - User with code <${participant2.code}> going to next exercise`);
+                Logger.dbg(`executeStandardSession - NEXT EXERCISE - P2 IND - User with code <${participant2.code}> going to next exercise`);
                 var newEvent = ["newExercise", {
                 data: {
                   maxTime: tests[testNumber].testTime,
@@ -419,7 +418,7 @@ async function executeStandardSession(session, io) {
                 }
                 }];
 
-                Logger.dbg(`executeSession - NEXT EXERCISE - P2 IND - Sending exercise to ${participant2.code}`);
+                Logger.dbg(`executeStandardSession - NEXT EXERCISE - P2 IND - Sending exercise to ${participant2.code}`);
                 io.to(participant2.socketId).emit(newEvent[0], newEvent[1]);
                     
                 lastSessionEvent.set(participant2.socketId, newEvent);
@@ -433,7 +432,7 @@ async function executeStandardSession(session, io) {
                 participant2.nextExercise = false;
               } else {
                 participant2.nextExercise = false;
-                Logger.dbg(`executeSession - NEXT EXERCISE - P2 IND - There are no more exercises left on this test for user ${participant2.code}`);
+                Logger.dbg(`executeStandardSession - NEXT EXERCISE - P2 IND - There are no more exercises left on this test for user ${participant2.code}`);
                 io.to(participant2.socketId).emit("customAlert", {
                   data: {
                     message: "There are no more exercises left on this test"
@@ -446,39 +445,39 @@ async function executeStandardSession(session, io) {
 
 
           if (listExercises[exerciseNumber].type == "PAIR") {
-            Logger.dbg(`executeSession - NEXT EXERCISE - Saving next exercise visited to <${participant1.code}> and <${participant2.code}>`);
+            Logger.dbg(`executeStandardSession - NEXT EXERCISE - Saving next exercise visited to <${participant1.code}> and <${participant2.code}>`);
             participant1.visitedPExercises.push(exerciseNumber);
             participant1.save();
             participant2.visitedPExercises.push(exerciseNumber);
             participant2.save();
           } else {
             if (participant1.nextExercise) {
-              Logger.dbg(`executeSession - NEXT EXERCISE - Saving next exercise visited to <${participant1.code}>`);
+              Logger.dbg(`executeStandardSession - NEXT EXERCISE - Saving next exercise visited to <${participant1.code}>`);
               participant1.visitedIExercises.push(exerciseNumber);
               participant1.save();
             }
             if (participant2.nextExercise) {
-              Logger.dbg(`executeSession - NEXT EXERCISE - Saving next exercise visited to <${participant2.code}>`);
+              Logger.dbg(`executeStandardSession - NEXT EXERCISE - Saving next exercise visited to <${participant2.code}>`);
               participant2.visitedIExercises.push(exerciseNumber);
               participant2.save();
             }
           }
         }
       } catch (err) {
-        Logger.err(`executeSession - Error while trying to check actions for user ${participant1.code} and ${participant2.code}`);
+        Logger.err(`executeStandardSession - Error while trying to check actions for user ${participant1.code} and ${participant2.code}`);
       }
       p++;
     }
     
     if (session.testCounter == 3) {
-      Logger.dbg("executeSession - There are no more tests, the session <" + session.name + "> has finish!");
-      Logger.dbg("executeSession - emitting 'finish' event in session " + session.name + " #############################");
+      Logger.dbg("executeStandardSession - There are no more tests, the session <" + session.name + "> has finish!");
+      Logger.dbg("executeStandardSession - emitting 'finish' event in session " + session.name + " #############################");
 
       io.to(sessionName).emit("finish");
       for (let i = 0; i < participants.length; i++) {
         lastSessionEvent.set(sessionName, ["finish"]);
       }
-      Logger.dbg("executeSession - lastSessionEvent saved", event);
+      Logger.dbg("executeStandardSession - lastSessionEvent saved", event);
 
       clearInterval(interval);
 
@@ -496,19 +495,19 @@ async function executeStandardSession(session, io) {
       Logger.dbg(timer);
       timer--;
     } else if (session.exerciseCounter == maxExercises) { //If timer goes to 0, and exercise in a test is the same as actual exercise, it goes to the next test
-      Logger.dbg("executeSession - Going to the next test!");
+      Logger.dbg("executeStandardSession - Going to the next test!");
       session.testCounter++;
       session.exerciseCounter = -1;
-      Logger.dbg(`executeSession - emitting 'nextTest' event in session ${session.name} test sent: ${session.testCounter}`);
+      Logger.dbg(`executeStandardSession - emitting 'nextTest' event in session ${session.name} test sent: ${session.testCounter}`);
     } else if (session.exerciseCounter === -1) { //If exercises have been finished, it pass to a new test
-      Logger.dbg("executeSession - Loading test");
-      Logger.dbg(`executeSession - testCounter: ${session.testCounter} ACTUAL`);
+      Logger.dbg("executeStandardSession - Loading test");
+      Logger.dbg(`executeStandardSession - testCounter: ${session.testCounter} ACTUAL`);
       if (session.testCounter != 2) {
         var testNumber = session.testCounter;
       } else {
         var testNumber = 0;
       }
-      Logger.dbg(`executeSession - testCounter: ${session.testCounter} UPDATED`);
+      Logger.dbg(`executeStandardSession - testCounter: ${session.testCounter} UPDATED`);
       
       var event = ["loadTest", {
         data: {
@@ -519,15 +518,15 @@ async function executeStandardSession(session, io) {
         },
       }];
       
-      Logger.dbg(`executeSession - emitting 'loadTest' event in session ${session.name}`);
+      Logger.dbg(`executeStandardSession - emitting 'loadTest' event in session ${session.name}`);
       io.to(sessionName).emit(event[0], event[1]);
 
       lastSessionEvent.set(sessionName, event);
-      Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
+      Logger.dbg("executeStandardSession - lastSessionEvent saved", event[0]);
 
       timer = tests[testNumber].time; //Resets the timer
       session.exerciseCounter = 0;
-      Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
+      Logger.dbg("executeStandardSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
 
     } else if (session.exerciseCounter == 0) { //If nothing before happens, it means that there are more exercises to do, and then in goes to the next one
       if (session.testCounter != 2) {
@@ -536,7 +535,7 @@ async function executeStandardSession(session, io) {
         var testNumber = 0;
       }
 
-      Logger.dbg("executeSession - Starting new exercise:");
+      Logger.dbg("executeStandardSession - Starting new exercise:");
       let testLanguage = tests[testNumber].language;
       let listExercises = tests[testNumber].exercises;
       
@@ -544,16 +543,16 @@ async function executeStandardSession(session, io) {
       // Rounding the length to the maximum even number.
       const maxParticipants = (Math.floor(participants.length/2))*2;
 
-      Logger.dbg("executeSession - Send a initial exercieses to to each pair");
+      Logger.dbg("executeStandardSession - Send a initial exercieses to to each pair");
       for (let p = 0; p < maxParticipants; p++) {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
 
-        Logger.dbg("executeSession - FIRST EXERCISE - Calculating FIRST exercise");
+        Logger.dbg("executeStandardSession - FIRST EXERCISE - Calculating FIRST exercise");
         var exerciseNumber = getNextExerciseNumber(participant1, listExercises);
         var exercise = listExercises[exerciseNumber];
 
-        Logger.dbg(`executeSession - FIRST EXERCISE - Sending exercise <${exerciseNumber}> to participant1 <${participant1.code}>`);
+        Logger.dbg(`executeStandardSession - FIRST EXERCISE - Sending exercise <${exerciseNumber}> to participant1 <${participant1.code}>`);
         io.to(participant1.socketId).emit("newExercise", {
           data: {
             maxTime: tests[testNumber].testTime,
@@ -611,7 +610,7 @@ async function executeStandardSession(session, io) {
       }
 
       lastSessionEvent.set(sessionName, event);
-      Logger.dbg("executeSession - lastSessionEvent saved", "newExercise");
+      Logger.dbg("executeStandardSession - lastSessionEvent saved", "newExercise");
 
       sessions.set(session.name, {
         session: session,
@@ -624,7 +623,7 @@ async function executeStandardSession(session, io) {
       Logger.dbg(" testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
 
       session.save();
-      Logger.dbg("executeSession - session saved ");
+      Logger.dbg("executeStandardSession - session saved ");
     } else {
       //---------------------------
       if (session.testCounter == 0) {
@@ -635,11 +634,11 @@ async function executeStandardSession(session, io) {
         Logger.log("Timing", sessionName, "T2B");
       } 
 
-      Logger.dbg("executeSession - Going to the next test!");
+      Logger.dbg("executeStandardSession - Going to the next test!");
       session.testCounter++;
       session.exerciseCounter = -1;
       
-      Logger.dbg("executeSession - Loading test");
+      Logger.dbg("executeStandardSession - Loading test");
               
       if (session.testCounter < 2) {
         var testNumber = session.testCounter;
@@ -660,9 +659,9 @@ async function executeStandardSession(session, io) {
       for (let p = 0; p < maxParticipants; p++) {
         participants[p].visitedPExercises = [];
         if (session.testCounter == 2) {
-          Logger.dbg(`executeSession - changing exerciseSwitch <${participants[p].exerciseSwitch}> for code <${participants[p].code}>`);
+          Logger.dbg(`executeStandardSession - changing exerciseSwitch <${participants[p].exerciseSwitch}> for code <${participants[p].code}>`);
           participants[p].exerciseSwitch = !participants[p].exerciseSwitch;
-          Logger.dbg(`executeSession - changed exerciseSwitch <${participants[p].exerciseSwitch}> for code <${participants[p].code}>`);
+          Logger.dbg(`executeStandardSession - changed exerciseSwitch <${participants[p].exerciseSwitch}> for code <${participants[p].code}>`);
         }
         participants[p].save();
 
@@ -670,12 +669,12 @@ async function executeStandardSession(session, io) {
         lastSessionEvent.set(participants[p].socketId, event);
       }
 
-      Logger.dbg("executeSession - lastSessionEvent saved", event[0]);
+      Logger.dbg("executeStandardSession - lastSessionEvent saved", event[0]);
 
 
       timer = tests[testNumber].time; //Resets the timer
       session.exerciseCounter = 0;
-      Logger.dbg("executeSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
+      Logger.dbg("executeStandardSession - testCounter: " + session.testCounter + " of " + numTests + " , exerciseCounter: " + session.exerciseCounter + " of " + maxExercises);
 
     }
 
@@ -687,7 +686,7 @@ async function executeStandardSession(session, io) {
     }).then((currentSession) => {
       if (!currentSession.running) {
         clearInterval(interval);
-        Logger.dbg("executeSession - clearInterval");
+        Logger.dbg("executeStandardSession - clearInterval");
       }
     });
   }, 1000);

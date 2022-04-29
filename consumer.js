@@ -1503,12 +1503,20 @@ module.exports = {
       });
 
       socket.on("disconnect", async () => {
+        if (!socket) {
+          Logger.dbg("EVENT disconnect - socket is null");
+          return;
+        }
+        
         const user = await User.findOne({
           socketId: socket.id,
           environment: process.env.NODE_ENV,
         });
         if (user) {
           io.to(user.subject).emit("clientDisconnected", user.code);
+        }
+        else {
+          Logger.dbg("EVENT disconnect - user is null");
         }
       });
 

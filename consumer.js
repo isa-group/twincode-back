@@ -1425,29 +1425,76 @@ module.exports = {
         Logger.dbg("EVENT clientFinished", data);
       });
 
-      socket.on("sendButtonStatusToPeer", async(data) => {
-        const user = await User.findOne({
-          socketId: socket.id,
-          environment: process.env.NODE_ENV,
-        });
-        const usersPaired = await User.find({
-          subject: user.subject,
-          room: user.room,
-          environment: process.env.NODE_ENV,
-        });
-        const pair = usersPaired.filter((p) => {
-          return (p.room == user.room) && (p.code != user.code);
-        })[0];
-        Logger.dbg(`sendButtonStatusToPeer - data: ${data.status} - pair code: ${pair.code}`);
-        Logger.dbg(`sendButtonStatusToPeer - pair socket: ${pair.socketId} - user socket: ${user.socketId}`);
-
-        var session = Session.findOne({
-          name: user.subject
-        });
-        if (session.testCounter != 1) {
-          io.to(pair.socketId).emit("hideShowButton", {
-            hideShowButton: data.status,
+      socket.on("EVENT sendButtonStatusToPeer", async(data) => {
+        try {
+          if (!socket) {
+            Logger.dbg("EVENT sendButtonStatusToPeer - socket is null");
+            return;
+          }
+          const user = await User.findOne({
+            socketId: socket.id,
+            environment: process.env.NODE_ENV,
           });
+
+          if(!user) {
+            Logger.dbg("EVENT sendButtonStatusToPeer - user is null");
+            return;
+          }
+
+          Logger.dbg(`EVENT sendButtonStatusToPeer - user <${user.code}>` );
+
+          const usersPaired = await User.find({
+            subject: user.subject,
+            room: user.room,
+            environment: process.env.NODE_ENV,
+          });
+
+          if(!usersPaired) {
+            Logger.dbg("EVENT sendButtonStatusToPeer - usersPaired is null");
+            return;
+          }
+
+          Logger.dbg(`EVENT sendButtonStatusToPeer - usersPaired <${usersPaired}>` );
+          
+          const pair = usersPaired.filter((p) => {
+            return (p.room == user.room) && (p.code != user.code);
+          })[0];
+
+          if(!pair) {
+            Logger.dbg("EVENT sendButtonStatusToPeer - pair is null");
+            return;
+          }
+
+          try {
+            Logger.dbg(`EVENT sendButtonStatusToPeer - data: ${data.status} - pair code: ${pair.code}`);
+            Logger.dbg(`EVENT sendButtonStatusToPeer - pair socket: ${pair.socketId} - user socket: ${user.socketId}`);
+          } catch (err) {
+            Logger.dbgerr(`EVENT sendButtonStatusToPeer - error: ${err}`);
+          }
+
+          var session = Session.findOne({
+            name: user.subject
+          });
+          
+          if(!session) {
+            Logger.dbg("EVENT sendButtonStatusToPeer - session is null");
+            return;
+          }
+          else if (session.testCounter != 1) {
+            Logger.dbg(`EVENT sendButtonStatusToPeer - Sending to socket <${pair.socketId}> from user <${pair.code}> status <${data.status}>, clicked by user <${user.code}>`);
+            io.to(pair.socketId).emit("hideShowButton", {
+              hideShowButton: data.status,
+            });
+          }
+        } catch (err) {
+          if(socket)
+            Logger.dbgerr(`EVENT sendButtonStatusToPeer - socket ID <${socket.id}>`);
+          else
+            Logger.dbgerr(`EVENT sendButtonStatusToPeer - NULL SOCKET!`);
+ 
+          Logger.dbgerr(`EVENT sendButtonStatusToPeer - DATA: user <${user}>, userPaided <${usersPaired}> , pair <${pair}>, session <${session}>`);
+
+          Logger.dbgerr(`EVENT sendButtonStatusToPeer - ${err}`);
         }
       });
 

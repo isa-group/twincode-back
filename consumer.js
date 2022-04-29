@@ -471,7 +471,7 @@ async function executeStandardSession(session, io) {
     }
     
     if (session.testCounter == 3) {
-      Logger.dbg("There are no more tests, the session <" + session.name + "> has finish!");
+      Logger.dbg("executeSession - There are no more tests, the session <" + session.name + "> has finish!");
       Logger.dbg("executeSession - emitting 'finish' event in session " + session.name + " #############################");
 
       io.to(sessionName).emit("finish");
@@ -496,16 +496,19 @@ async function executeStandardSession(session, io) {
       Logger.dbg(timer);
       timer--;
     } else if (session.exerciseCounter == maxExercises) { //If timer goes to 0, and exercise in a test is the same as actual exercise, it goes to the next test
-      Logger.dbg("Going to the next test!");
+      Logger.dbg("executeSession - Going to the next test!");
       session.testCounter++;
       session.exerciseCounter = -1;
+      Logger.dbg(`executeSession - emitting 'nextTest' event in session ${session.name} test sent: ${session.testCounter}`);
     } else if (session.exerciseCounter === -1) { //If exercises have been finished, it pass to a new test
-      Logger.dbg("Loading test");
+      Logger.dbg("executeSession - Loading test");
+      Logger.dbg(`executeSession - testCounter: ${session.testCounter} ACTUAL`);
       if (session.testCounter != 2) {
         var testNumber = session.testCounter;
       } else {
         var testNumber = 0;
       }
+      Logger.dbg(`executeSession - testCounter: ${session.testCounter} UPDATED`);
       
       var event = ["loadTest", {
         data: {
@@ -516,6 +519,7 @@ async function executeStandardSession(session, io) {
         },
       }];
       
+      Logger.dbg(`executeSession - emitting 'loadTest' event in session ${session.name}`);
       io.to(sessionName).emit(event[0], event[1]);
 
       lastSessionEvent.set(sessionName, event);
@@ -532,7 +536,7 @@ async function executeStandardSession(session, io) {
         var testNumber = 0;
       }
 
-      Logger.dbg("Starting new exercise:");
+      Logger.dbg("executeSession - Starting new exercise:");
       let testLanguage = tests[testNumber].language;
       let listExercises = tests[testNumber].exercises;
       
@@ -540,16 +544,16 @@ async function executeStandardSession(session, io) {
       // Rounding the length to the maximum even number.
       const maxParticipants = (Math.floor(participants.length/2))*2;
 
-      Logger.dbg("Send a initial exercieses to to each pair");
+      Logger.dbg("executeSession - Send a initial exercieses to to each pair");
       for (let p = 0; p < maxParticipants; p++) {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
 
-        Logger.dbg("FIRST EXERCISE - Calculating FIRST exercise");
+        Logger.dbg("executeSession - FIRST EXERCISE - Calculating FIRST exercise");
         var exerciseNumber = getNextExerciseNumber(participant1, listExercises);
         var exercise = listExercises[exerciseNumber];
 
-        Logger.dbg(`FIRST EXERCISE - Sending exercise <${exerciseNumber}> to participant1 <${participant1.code}>`);
+        Logger.dbg(`executeSession - FIRST EXERCISE - Sending exercise <${exerciseNumber}> to participant1 <${participant1.code}>`);
         io.to(participant1.socketId).emit("newExercise", {
           data: {
             maxTime: tests[testNumber].testTime,
@@ -631,11 +635,11 @@ async function executeStandardSession(session, io) {
         Logger.log("Timing", sessionName, "T2B");
       } 
 
-      Logger.dbg("Going to the next test!");
+      Logger.dbg("executeSession - Going to the next test!");
       session.testCounter++;
       session.exerciseCounter = -1;
       
-      Logger.dbg("Loading test");
+      Logger.dbg("executeSession - Loading test");
               
       if (session.testCounter < 2) {
         var testNumber = session.testCounter;

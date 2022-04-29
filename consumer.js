@@ -1438,8 +1438,8 @@ module.exports = {
         const pair = usersPaired.filter((p) => {
           return (p.room == user.room) && (p.code != user.code);
         })[0];
-        console.log(`sendButtonStatusToPeer - data: ${data.status} - pair code: ${pair.code}`);
-        console.log(`sendButtonStatusToPeer - pair socket: ${pair.socketId} - user socket: ${user.socketId}`);
+        Logger.dbg(`sendButtonStatusToPeer - data: ${data.status} - pair code: ${pair.code}`);
+        Logger.dbg(`sendButtonStatusToPeer - pair socket: ${pair.socketId} - user socket: ${user.socketId}`);
 
         var session = Session.findOne({
           name: user.subject

@@ -579,6 +579,26 @@ router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
           }
           res.status(400).send({ errorMsg });
         });
+      
+      Test.updateMany({
+        environment: process.env.NODE_ENV,
+        session: req.params.sessionName,
+        orderNumber: { $gt: req.params.orderNumber }
+      }, {
+        $inc: { orderNumber: -1 }
+      })
+        .then((response) => {
+          res.send(response);
+        }
+        )
+        .catch((error) => {
+          let errorMsg = "Something bad happened...";
+          if (error.message) {
+            errorMsg = error.message;
+          }
+          res.status(400).send({ errorMsg });
+        }
+        );
     } catch (e) {
       console.log(e);
       res.sendStatus(500);
@@ -679,6 +699,24 @@ router.delete("/sessions/:sessionName", (req, res) => {
           }
           res.status(400).send({ errorMsg });
         });
+
+      Test.deleteMany({
+        environment: process.env.NODE_ENV,
+        session: req.params.sessionName,
+      })
+        .then((response) => {
+          res.send(response);
+        }
+        )
+        .catch((error) => {
+          let errorMsg = "Something bad happened...";
+          if (error.message) {
+            errorMsg = error.message;
+          }
+          res.status(400).send({ errorMsg });
+        }
+        );
+      
     } catch (e) {
       console.log(e);
       res.sendStatus(500);

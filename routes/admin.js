@@ -564,13 +564,17 @@ router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
 
   if (adminSecret === process.env.ADMIN_SECRET) {
     try {
+      const result = {
+        removed: {},
+        updated: {}
+      }
       Test.findOneAndRemove({
         environment: process.env.NODE_ENV,
         session: req.params.sessionName,
         orderNumber: req.params.orderNumber,
       })
         .then((response) => {
-          res.send(response);
+          result.removed = response;
         })
         .catch((error) => {
           let errorMsg = "Something bad happened...";
@@ -588,9 +592,9 @@ router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
         $inc: { orderNumber: -1 }
       })
         .then((response) => {
+          result.updated = response;
           res.send(response);
-        }
-        )
+        })
         .catch((error) => {
           let errorMsg = "Something bad happened...";
           if (error.message) {

@@ -564,12 +564,36 @@ router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
 
   if (adminSecret === process.env.ADMIN_SECRET) {
     try {
+      const result = {
+        removed: {},
+        updated: {}
+      }
       Test.findOneAndRemove({
         environment: process.env.NODE_ENV,
         session: req.params.sessionName,
         orderNumber: req.params.orderNumber,
       })
         .then((response) => {
+          result.removed = response;
+        })
+        .catch((error) => {
+          let errorMsg = "Something bad happened...";
+          if (error.message) {
+            errorMsg = error.message;
+          }
+          res.status(400).send({ errorMsg });
+          return;
+        });
+      
+      Test.updateMany({
+        environment: process.env.NODE_ENV,
+        session: req.params.sessionName,
+        orderNumber: { $gt: req.params.orderNumber }
+      }, {
+        $inc: { orderNumber: -1 }
+      })
+        .then((response) => {
+          result.updated = response;
           res.send(response);
         })
         .catch((error) => {
@@ -578,7 +602,9 @@ router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
             errorMsg = error.message;
           }
           res.status(400).send({ errorMsg });
-        });
+          return;
+        }
+        );
     } catch (e) {
       console.log(e);
       res.sendStatus(500);
@@ -663,6 +689,8 @@ router.delete("/tests/:sessionName/:orderNumber/:exercise/:validation", (req, re
 router.delete("/sessions/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
 
+  const result = {};
+
   if (adminSecret === process.env.ADMIN_SECRET) {
     try {
       Session.findOneAndRemove({
@@ -670,7 +698,7 @@ router.delete("/sessions/:sessionName", (req, res) => {
         name: req.params.sessionName,
       })
         .then((response) => {
-          res.send(response);
+          result.session = response;
         })
         .catch((error) => {
           let errorMsg = "Something bad happened...";
@@ -678,7 +706,28 @@ router.delete("/sessions/:sessionName", (req, res) => {
             errorMsg = error.message;
           }
           res.status(400).send({ errorMsg });
+          return;
         });
+
+      Test.deleteMany({
+        environment: process.env.NODE_ENV,
+        session: req.params.sessionName,
+      })
+        .then((response) => {
+          result.tests = response;
+          res.send(result);
+        }
+        )
+        .catch((error) => {
+          let errorMsg = "Something bad happened...";
+          if (error.message) {
+            errorMsg = error.message;
+          }
+          res.status(400).send({ errorMsg });
+          return;
+        }
+        );
+      
     } catch (e) {
       console.log(e);
       res.sendStatus(500);

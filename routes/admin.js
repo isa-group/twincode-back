@@ -582,6 +582,7 @@ router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
             errorMsg = error.message;
           }
           res.status(400).send({ errorMsg });
+          return;
         });
       
       Test.updateMany({
@@ -601,6 +602,7 @@ router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
             errorMsg = error.message;
           }
           res.status(400).send({ errorMsg });
+          return;
         }
         );
     } catch (e) {
@@ -687,6 +689,8 @@ router.delete("/tests/:sessionName/:orderNumber/:exercise/:validation", (req, re
 router.delete("/sessions/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
 
+  const result = {};
+
   if (adminSecret === process.env.ADMIN_SECRET) {
     try {
       Session.findOneAndRemove({
@@ -694,7 +698,7 @@ router.delete("/sessions/:sessionName", (req, res) => {
         name: req.params.sessionName,
       })
         .then((response) => {
-          res.send(response);
+          result.session = response;
         })
         .catch((error) => {
           let errorMsg = "Something bad happened...";
@@ -702,6 +706,7 @@ router.delete("/sessions/:sessionName", (req, res) => {
             errorMsg = error.message;
           }
           res.status(400).send({ errorMsg });
+          return;
         });
 
       Test.deleteMany({
@@ -709,7 +714,8 @@ router.delete("/sessions/:sessionName", (req, res) => {
         session: req.params.sessionName,
       })
         .then((response) => {
-          res.send(response);
+          result.tests = response;
+          res.send(result);
         }
         )
         .catch((error) => {
@@ -718,6 +724,7 @@ router.delete("/sessions/:sessionName", (req, res) => {
             errorMsg = error.message;
           }
           res.status(400).send({ errorMsg });
+          return;
         }
         );
       

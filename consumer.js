@@ -1564,6 +1564,69 @@ module.exports = {
         }
       });
 
+      socket.on("sendControlStatusToPeer", async(data) => {
+        try {
+          if (!socket) {
+            Logger.dbg("EVENT sendControlStatusToPeer - socket is null");
+            return;
+          }
+
+          const user = await User.findOne({
+            socketId: socket.id,
+            environment: process.env.NODE_ENV,
+          });
+
+          if(!user) {
+            Logger.dbg("EVENT sendControlStatusToPeer - user is null");
+            return;
+          }
+
+          Logger.dbg(`EVENT sendControlStatusToPeer - user <${user.code}>` );
+          
+          const usersPaired = await User.find({
+            subject: user.subject,
+            room: user.room,
+            environment: process.env.NODE_ENV,
+          });
+
+          if(!usersPaired) {
+            Logger.dbg("EVENT sendControlStatusToPeer - usersPaired is null");
+            return;
+          }
+
+          Logger.dbg(`EVENT sendControlStatusToPeer - usersPaired <${usersPaired}>` );
+
+          const pair = usersPaired.filter((p) => {
+            return (p.room == user.room) && (p.code != user.code);
+          })[0];
+
+          if(!pair) {
+            Logger.dbg("EVENT sendControlStatusToPeer - pair is null");
+            return;
+          }
+
+          try {
+            Logger.dbg(`EVENT sendControlStatusToPeer - data: ${data.status} - pair code: ${pair.code}`);
+            Logger.dbg(`EVENT sendControlStatusToPeer - pair socket: ${pair.socketId} - user socket: ${user.socketId}`);
+          } catch (err) {
+            Logger.dbgerr(`EVENT sendControlStatusToPeer - error: ${err}`);
+          }
+
+          io.to(pair.socketId).emit("receiveControlStatus", {
+            status: data.status,
+          });
+        } catch (err) {
+          if(socket)
+            Logger.dbgerr(`EVENT sendControlStatusToPeer - socket ID <${socket.id}>`);
+          else
+            Logger.dbgerr(`EVENT sendControlStatusToPeer - NULL SOCKET!`);
+          
+          Logger.dbgerr(`EVENT sendControlStatusToPeer - DATA: user <${user}>, userPaided <${usersPaired}> , pair <${pair}>`);
+
+          Logger.dbgerr(`EVENT sendControlStatusToPeer - ${err}`);
+        }
+      });
+
       socket.on("startDebugSession", async (pack) => {
         if (process.env.NODE_ENV === "local") await executeSession("TFM", io);
       });

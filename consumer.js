@@ -1567,7 +1567,7 @@ module.exports = {
       socket.on("sendControlStatusToPeer", async(data) => {
         try {
           if (!socket) {
-            Logger.dbg("EVENT sendControlStatusToPeer - socket is null");
+            Logger.dbgerr("EVENT sendControlStatusToPeer - socket is null");
             return;
           }
 
@@ -1577,11 +1577,11 @@ module.exports = {
           });
 
           if(!user) {
-            Logger.dbg("EVENT sendControlStatusToPeer - user is null");
+            Logger.dbgerr("EVENT sendControlStatusToPeer - user is null");
             return;
           }
 
-          Logger.dbg(`EVENT sendControlStatusToPeer - user <${user.code}>` );
+          Logger.dbgerr(`EVENT sendControlStatusToPeer - user <${user.code}>` );
           
           const usersPaired = await User.find({
             subject: user.subject,
@@ -1590,24 +1590,24 @@ module.exports = {
           });
 
           if(!usersPaired) {
-            Logger.dbg("EVENT sendControlStatusToPeer - usersPaired is null");
+            Logger.dbgerr("EVENT sendControlStatusToPeer - usersPaired is null");
             return;
           }
 
-          Logger.dbg(`EVENT sendControlStatusToPeer - usersPaired <${usersPaired}>` );
+          Logger.dbgerr(`EVENT sendControlStatusToPeer - usersPaired <${usersPaired}>` );
 
           const pair = usersPaired.filter((p) => {
             return (p.room == user.room) && (p.code != user.code);
           })[0];
 
           if(!pair) {
-            Logger.dbg("EVENT sendControlStatusToPeer - pair is null");
+            Logger.dbgerr("EVENT sendControlStatusToPeer - pair is null");
             return;
           }
 
           try {
-            Logger.dbg(`EVENT sendControlStatusToPeer - data: ${data.status} - pair code: ${pair.code}`);
-            Logger.dbg(`EVENT sendControlStatusToPeer - pair socket: ${pair.socketId} - user socket: ${user.socketId}`);
+            Logger.dbgerr(`EVENT sendControlStatusToPeer - data: ${data.status} - pair code: ${pair.code}`);
+            Logger.dbgerr(`EVENT sendControlStatusToPeer - pair socket: ${pair.socketId} - user socket: ${user.socketId}`);
           } catch (err) {
             Logger.dbgerr(`EVENT sendControlStatusToPeer - error: ${err}`);
           }

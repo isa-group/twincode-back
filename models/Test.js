@@ -13,6 +13,7 @@ const TestSchema = new Schema({
   testTime: { type: Number, required: true, default: 300 },
   language: { type: String, required: true },
   peerChange: { type: Boolean },
+  type: { type: String, required: true },
 });
 
 module.exports = mongoose.model("Test", TestSchema);

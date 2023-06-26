@@ -253,6 +253,7 @@ router.post("/tests", (req, res) => {
       newTest.peerChange = req.body.peerChange;
       newTest.exercises = req.body.exercises;
       newTest.language = req.body.language;
+      newTest.type = req.body.type;
       newTest
         .save()
         .then((test) => {
@@ -460,6 +461,7 @@ router.post("/tests", (req, res) => {
       newTest.time = req.body.time;
       newTest.peerChange = req.body.peerChange;
       newTest.exercises = req.body.exercises;
+      newTest.type = req.body.type;
       newTest
         .save()
         .then((test) => {

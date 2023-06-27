@@ -1560,8 +1560,6 @@ module.exports = {
             Logger.dbgerr(`EVENT sendButtonStatusToPeer - socket ID <${socket.id}>`);
           else
             Logger.dbgerr(`EVENT sendButtonStatusToPeer - NULL SOCKET!`);
- 
-          Logger.dbgerr(`EVENT sendButtonStatusToPeer - DATA: user <${user}>, userPaided <${usersPaired}> , pair <${pair}>, session <${session}>`);
 
           Logger.dbgerr(`EVENT sendButtonStatusToPeer - ${err}`);
         }
@@ -1584,7 +1582,7 @@ module.exports = {
             return;
           }
 
-          Logger.dbgerr(`EVENT sendControlStatusToPeer - user <${user.code}>` );
+          Logger.dbg(`EVENT sendControlStatusToPeer - user <${user.code}>` );
           
           const usersPaired = await User.find({
             subject: user.subject,
@@ -1597,7 +1595,7 @@ module.exports = {
             return;
           }
 
-          Logger.dbgerr(`EVENT sendControlStatusToPeer - usersPaired <${usersPaired}>` );
+          Logger.dbg(`EVENT sendControlStatusToPeer - usersPaired <${usersPaired}>` );
 
           const pair = usersPaired.filter((p) => {
             return (p.room == user.room) && (p.code != user.code);
@@ -1609,8 +1607,8 @@ module.exports = {
           }
 
           try {
-            Logger.dbgerr(`EVENT sendControlStatusToPeer - data: ${data.status} - pair code: ${pair.code}`);
-            Logger.dbgerr(`EVENT sendControlStatusToPeer - pair socket: ${pair.socketId} - user socket: ${user.socketId}`);
+            Logger.dbg(`EVENT sendControlStatusToPeer - data: ${data.status} - pair code: ${pair.code}`);
+            Logger.dbg(`EVENT sendControlStatusToPeer - pair socket: ${pair.socketId} - user socket: ${user.socketId}`);
           } catch (err) {
             Logger.dbgerr(`EVENT sendControlStatusToPeer - error: ${err}`);
           }
@@ -1618,13 +1616,28 @@ module.exports = {
           io.to(pair.socketId).emit("receiveControlStatus", {
             status: data.status,
           });
+
+          if (sessions.get(tokens.get(user.code)) == null) {
+            Logger.dbgerr("EVENT sendControlStatusToPeer - Session not found, token: ", user.code);
+            Logger.dbgerr("EVENT sendControlStatusToPeer - tokens ", tokens);
+            Logger.dbgerr("EVENT sendControlStatusToPeer - tokens.get(pack.token) ", tokens.get(user.code));
+            Logger.dbgerr("EVENT sendControlStatusToPeer - Sessions ", sessions);
+            return;
+          }
+          
+          Logger.dbg("EVENT sendControlStatusToPeer - Session found: ", sessions.get(tokens.get(user.code)));
+
+          Logger.log("Control",
+                      user.code,
+                      "room: "+ user.room,
+                      sessions.get(tokens.get(user.code)).session.exerciseCounter,
+                      sessions.get(tokens.get(user.code)).session.testCounter);
+
         } catch (err) {
           if(socket)
             Logger.dbgerr(`EVENT sendControlStatusToPeer - socket ID <${socket.id}>`);
           else
             Logger.dbgerr(`EVENT sendControlStatusToPeer - NULL SOCKET!`);
-          
-          Logger.dbgerr(`EVENT sendControlStatusToPeer - DATA: user <${user}>, userPaided <${usersPaired}> , pair <${pair}>`);
 
           Logger.dbgerr(`EVENT sendControlStatusToPeer - ${err}`);
         }

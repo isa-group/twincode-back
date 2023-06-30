@@ -75,4 +75,41 @@ router.delete("/participants/:sessionName/:mail", (req, res) => {
     res.sendStatus(401);
   }
 });
+
+router.post("/participants/:sessionName/import", (req, res) => {
+  const adminSecret = req.headers.authorization;
+
+  if (adminSecret === process.env.ADMIN_SECRET) {
+    try {
+      let users = req.body;
+      let participants = [];
+      users.forEach((user) => {
+        var participant = new User();
+        participant.code = Math.floor(Math.random() * 100000000);
+        participant.firstName = user.name;
+        participant.surname = user.surname;
+        participant.mail = user.email;
+        participant.subject = req.params.sessionName;
+        participant.environment = process.env.NODE_ENV;
+        participant.gender = user.gender;
+        participant.shown_gender = user.gender;
+        participant.birthDate = user.birthday;
+        participant.knownLanguages = user.knownLanguages;
+        participant.beganStudying = user.studyStartYear;
+        participant.numberOfSubjects = user.subjectsNumber;
+
+        participants.push(participant);
+      });
+
+      User.insertMany(participants);
+      res.sendStatus(200);
+    } catch (e) {
+      Logger.monitorLog(e);
+      res.sendStatus(500);
+    }
+  } else {
+    res.sendStatus(401);
+  }
+});
+
 module.exports = router;

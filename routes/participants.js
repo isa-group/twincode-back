@@ -175,7 +175,7 @@ router.post("/participants/:sessionName/:mail/send", (req, res) => {
           });
 
           transporter.sendMail({
-            from: '"TwinCode Team 👩🏼‍💻👨🏽‍💻" <no-reply@twincode.com>',
+            from: '"TwinCode" < ' + process.env.EMAIL_USERNAME + " > ",
             to: user.mail, // list of receivers
             subject: "TwinCode - Your code", // Subject line
             text: "Welcome to TwinCode", // plain text body

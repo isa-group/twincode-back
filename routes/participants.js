@@ -159,12 +159,13 @@ router.post("/participants/:sessionName/:mail/send", (req, res) => {
       }).then((user) => {
         if (user) {
           let transporter = nodemailer.createTransport({
+            name: "mail.us.es",
             host: "mail.us.es",
             requierTLS: true,
             port: 587,
             auth: {
-              user: process.env.MAIL_USER,
-              pass: process.env.MAIL_PASS,
+              user: process.env.EMAIL_USERNAME,
+              pass: process.env.EMAIL_PASSWORD,
             },
           });
 
@@ -185,7 +186,7 @@ router.post("/participants/:sessionName/:mail/send", (req, res) => {
               <p>But you can click directly <a href="https://twincode.netlify.app/?code=${user.code}">HERE</a> for easy access when the session starts.</p><br/>
               <p>You will receive detailed instructions at the beginning of the session.</p>`, // html body
           }).then((info) => {
-            Logger.monitorLog("Message sent: " + info.messageId);
+            Logger.monitorLog("Message sent: " + info.messageId + " to " + user.mail);
             res.sendStatus(200);
 
             transporter.close();

@@ -77,33 +77,60 @@ router.delete("/participants/:sessionName/:mail", (req, res) => {
   }
 });
 
-router.post("/participants/:sessionName/import", (req, res) => {
+router.post("/participants/:sessionName/import", async (req, res) => {
   const adminSecret = req.headers.authorization;
 
   if (adminSecret === process.env.ADMIN_SECRET) {
     try {
       let users = req.body;
       let participants = [];
-      users.forEach((user) => {
-        var participant = new User();
-        participant.code = Math.floor(Math.random() * 100000000);
-        participant.firstName = user.name;
-        participant.surname = user.surname;
-        participant.mail = user.email;
-        participant.subject = req.params.sessionName;
-        participant.environment = process.env.NODE_ENV;
-        participant.gender = user.gender;
-        participant.shown_gender = user.gender;
-        participant.birthDate = user.birthday;
-        participant.beganStudying = user.studyStartYear;
-
-        participants.push(participant);
-      });
-
-      User.insertMany(participants);
-      res.sendStatus(200);
+      let errors = 0;
+      let success = 0;
+      let exists = 0;
+      for (const user of users) {
+        try {
+          const val = await User.exists({ mail: user.email, subject: req.params.sessionName, environment: process.env.NODE_ENV });
+      
+          if (!val) {
+            const generatedCode = await generateCodeInit();
+      
+            console.log(generatedCode);
+      
+            if (generatedCode !== null) {
+              var participant = new User();
+              participant.code = generatedCode;
+              participant.firstName = user.name;
+              participant.surname = user.surname;
+              participant.mail = user.email;
+              participant.subject = req.params.sessionName;
+              participant.environment = process.env.NODE_ENV;
+              participant.gender = user.gender;
+              participant.shown_gender = user.gender;
+              participant.birthDate = user.birthday;
+              participant.beganStudying = user.studyStartYear;
+              participants.push(participant);
+            } else {
+              errors++;
+            }
+          } else {
+            exists++;
+          }
+        } catch (error) {
+          Logger.monitorLog("Error generating user from csv: "+error);
+          errors++;
+        }
+      }
+      
+      const inserted = await User.insertMany(participants);
+      
+      const result = {
+        success: inserted.length,
+        errors: errors,
+        exists: exists,
+      };
+      res.status(200).send(result);
     } catch (e) {
-      Logger.monitorLog(e);
+      Logger.monitorLog("Fatal error generating users from csv: "+e);
       res.sendStatus(500);
     }
   } else {
@@ -206,5 +233,30 @@ router.post("/participants/:sessionName/:mail/send", (req, res) => {
     res.sendStatus(401);
   }
 });
+
+generateCodeInit = async () => {
+  var dateNow = new Date().toISOString();
+  var formatedDate = dateNow.substring(2, 4) + dateNow.substring(5, 7);
+  var code = await generateCode(formatedDate, 0);
+  return code;
+};
+
+generateCode = async (formatedDate, times) => {
+  if (times >= 5) {
+    return null;
+  }
+  var code = formatedDate + Math.random().toString(36).substring(2, 8).toUpperCase();
+  try {
+    const exists = await User.exists({ code: code });
+    if (exists) {
+      return await generateCode(formatedDate, times + 1);
+    } else {
+      return code;
+    }
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
 
 module.exports = router;

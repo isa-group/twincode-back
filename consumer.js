@@ -93,14 +93,14 @@ async function exerciseTimeUp(id, description) {
   }
 }
 
-function  getNextExerciseNumber(participant, listExercises, type) {
+function  getNextExerciseNumber(participant, listExercises) {
   Logger.dbg(`getExercise - ${participant.code} - Init - for code ${participant.code}`);
   
   var num2Send = null;
 
-  if (type == "PAIR") {
+  if (listExercises[0].type == "PAIR") {
   
-    Logger.dbg(`getExercise - ${participant.code} - <${type}> exercise`);
+    Logger.dbg(`getExercise - ${participant.code} - <${listExercises[0].type}> exercise`);
     
     num2Send = participant.visitedPExercises.length;
 
@@ -121,7 +121,7 @@ function  getNextExerciseNumber(participant, listExercises, type) {
 
   } else {
     
-    Logger.dbg(`getExercise - ${participant.code} - <${type}> exercise`);
+    Logger.dbg(`getExercise - ${participant.code} - <${listExercises[0].type}> exercise`);
         
     num2Send = randomNumber(0, listExercises.length);
 
@@ -164,7 +164,7 @@ async function executeStandardSession(session, io) {
     Logger.dbg("executeStandardSession - No tests found");
     return;
   }
-
+  Logger.dbg("executeStandardSession - tests found", tests);
   //Number of tests in a session
   const numTests = tests.length;
   
@@ -206,7 +206,8 @@ async function executeStandardSession(session, io) {
   }
 
   try {
-      potentialParticipants.forEach((p) => {
+    Logger.dbg("executeStandardSession - Saving users' new properties");
+    potentialParticipants.forEach((p) => {
       var participantF = p;
       participantF.visitedPExercises = [];
       participantF.visitedIExercises = [];
@@ -275,14 +276,13 @@ async function executeStandardSession(session, io) {
           Logger.dbg(`executeStandardSession - NEXT EXERCISE - testNumber: ${testNumber}`);
           let testLanguage = tests[testNumber].language;
           let listExercises = tests[testNumber].exercises;
-          let testType = tests[testNumber].type;
 
           Logger.dbg(`executeStandardSession - NEXT EXERCISE - testLanguage: ${testLanguage}`);
           Logger.dbg(`executeStandardSession - NEXT EXERCISE - listExercisesSize: ${listExercises.length}`);
           
           Logger.dbg(`executeStandardSession - NEXT EXERCISE - Calculating the next exercise number for ${(participant1.nextExercise)?"participant1":"participant2"}`);
 
-          var exerciseNumber = (participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises, testType) : getNextExerciseNumber(participant2, listExercises, testType);
+          var exerciseNumber = (participant1.nextExercise) ? getNextExerciseNumber(participant1, listExercises) : getNextExerciseNumber(participant2, listExercises);
           Logger.dbg(`executeStandardSession - NEXT EXERCISE - Exercise number calculated: <${exerciseNumber}>`);
 
           if (exerciseNumber >= listExercises.length) {
@@ -293,8 +293,8 @@ async function executeStandardSession(session, io) {
           var exercise = listExercises[exerciseNumber];
           Logger.dbg(`executeStandardSession - NEXT EXERCISE - Exercise to be sent is: ${exercise.name}`);
 
-          if (testType == "PAIR") {
-            Logger.dbg(`executeStandardSession - NEXT EXERCISE - Exercise type ${testType}`);
+          if (listExercises[0].type == "PAIR") {
+            Logger.dbg(`executeStandardSession - NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
             if (participant1.visitedPExercises.length < listExercises.length/2) {
               Logger.dbg(`executeStandardSession - NEXT EXERCISE - There are still exercises (${participant1.visitedPExercises.length} < ${listExercises.length/2}) `);
               if (participant1.nextExercise || participant2.nextExercise) {
@@ -302,7 +302,7 @@ async function executeStandardSession(session, io) {
                   data: {
                     maxTime: tests[testNumber].testTime,
                     exerciseDescription: exercise.description,
-                    exerciseType: testType,
+                    exerciseType: exercise.type,
                     inputs: exercise.inputs,
                     solutions: exercise.solutions,
                     testLanguage: testLanguage,
@@ -365,8 +365,8 @@ async function executeStandardSession(session, io) {
               });
             }
               
-          } else if (testType == "INDIVIDUAL") {
-            Logger.dbg(`executeStandardSession - NEXT EXERCISE - Exercise type ${testType}`);
+          } else if (listExercises[0].type == "INDIVIDUAL") {
+            Logger.dbg(`executeStandardSession - NEXT EXERCISE - Exercise type ${listExercises[0].type}`);
             if (participant1.nextExercise) {
               if (participant1.visitedIExercises.length < listExercises.length) {
                 Logger.dbg(`executeStandardSession - NEXT EXERCISE - P1 IND - User with code <${participant1.code}> going to next exercise`);
@@ -374,7 +374,7 @@ async function executeStandardSession(session, io) {
                 data: {
                   maxTime: tests[testNumber].testTime,
                   exerciseDescription: exercise.description,
-                  exerciseType: testType,
+                  exerciseType: exercise.type,
                   inputs: exercise.inputs,
                   solutions: exercise.solutions,
                   testLanguage: testLanguage,
@@ -411,7 +411,7 @@ async function executeStandardSession(session, io) {
                 data: {
                   maxTime: tests[testNumber].testTime,
                   exerciseDescription: exercise.description,
-                  exerciseType: testType,
+                  exerciseType: exercise.type,
                   inputs: exercise.inputs,
                   solutions: exercise.solutions,
                   testLanguage: testLanguage,
@@ -445,7 +445,7 @@ async function executeStandardSession(session, io) {
           }
 
 
-          if (testType == "PAIR") {
+          if (listExercises[exerciseNumber].type == "PAIR") {
             Logger.dbg(`executeStandardSession - NEXT EXERCISE - Saving next exercise visited to <${participant1.code}> and <${participant2.code}>`);
             participant1.visitedPExercises.push(exerciseNumber);
             participant1.save();
@@ -465,7 +465,7 @@ async function executeStandardSession(session, io) {
           }
         }
       } catch (err) {
-        Logger.err(`executeStandardSession - Error while trying to check actions for user ${participant1.code} and ${participant2.code}`);
+        Logger.dbg(`executeStandardSession - Error while trying to check actions for user ${participant1.code} and ${participant2.code}`);
       }
       p++;
     }
@@ -539,7 +539,6 @@ async function executeStandardSession(session, io) {
       Logger.dbg("executeStandardSession - Starting new exercise:");
       let testLanguage = tests[testNumber].language;
       let listExercises = tests[testNumber].exercises;
-      let testType = tests[testNumber].type;
       
       // Calculate the maximum amount of participants possible 
       // Rounding the length to the maximum even number.
@@ -551,7 +550,7 @@ async function executeStandardSession(session, io) {
         var participant2 = participants[p+1];
 
         Logger.dbg("executeStandardSession - FIRST EXERCISE - Calculating FIRST exercise");
-        var exerciseNumber = getNextExerciseNumber(participant1, listExercises, testType);
+        var exerciseNumber = getNextExerciseNumber(participant1, listExercises);
         var exercise = listExercises[exerciseNumber];
 
         Logger.dbg(`executeStandardSession - FIRST EXERCISE - Sending exercise <${exerciseNumber}> to participant1 <${participant1.code}>`);
@@ -559,7 +558,7 @@ async function executeStandardSession(session, io) {
           data: {
             maxTime: tests[testNumber].testTime,
             exerciseDescription: exercise.description,
-            exerciseType: testType,
+            exerciseType: exercise.type,
             inputs: exercise.inputs,
             solutions: exercise.solutions,
             testLanguage: testLanguage,
@@ -570,7 +569,7 @@ async function executeStandardSession(session, io) {
           data: {
             maxTime: tests[testNumber].testTime,
             exerciseDescription: exercise.description,
-            exerciseType: testType,
+            exerciseType: exercise.type,
             inputs: exercise.inputs,
             solutions: exercise.solutions,
             testLanguage: testLanguage,
@@ -582,7 +581,7 @@ async function executeStandardSession(session, io) {
           data: {
             maxTime: tests[testNumber].testTime,
             exerciseDescription: exercise.description,
-            exerciseType: testType,
+            exerciseType: exercise.type,
             inputs: exercise.inputs,
             solutions: exercise.solutions,
             testLanguage: testLanguage,
@@ -616,7 +615,7 @@ async function executeStandardSession(session, io) {
 
       sessions.set(session.name, {
         session: session,
-        exerciseType: testType,
+        exerciseType: listExercises[0].type,
       });
 
       timer = timer == 0 ? tests[testNumber].testTime : timer;
@@ -795,7 +794,6 @@ async function executeCustomSession(session, io) {
       } else { //If nothing before happens, it means that there are more exercises to do, and then in goes to the next one
         Logger.dbg("Starting new exercise:");
         let testLanguage = tests[session.testCounter].language;
-        let testType = tests[session.testCounter].type;
         let exercise =
           tests[session.testCounter].exercises[session.exerciseCounter];
         if (exercise) {
@@ -805,7 +803,7 @@ async function executeCustomSession(session, io) {
             data: {
               maxTime: exercise.time,
               exerciseDescription: exercise.description,
-              exerciseType: testType,
+              exerciseType: exercise.type,
               inputs: exercise.inputs,
               solutions: exercise.solutions,
               testLanguage: testLanguage,
@@ -817,7 +815,7 @@ async function executeCustomSession(session, io) {
   
           sessions.set(session.name, {
             session: session,
-            exerciseType: testType,
+            exerciseType: exercise.type,
           });
           timer = exercise.time;
         }
@@ -1369,11 +1367,10 @@ module.exports = {
           Logger.dbg("EVENT msg - tokens.get(pack.token) ", tokens.get(pack.token));
           return;
         }
+        console.log("EVENT msg - tokens.get(pack.token) ", tokens.get(pack.token));
 
+        io.sockets.emit("msg", pack);
 
-        if (sessions.get(tokens.get(pack.token)).exerciseType == "PAIR") {
-          io.sockets.emit("msg", pack);
-        }
         var uid = uids.get(socket.id);
         Logger.log(
           "Chat",

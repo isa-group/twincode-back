@@ -163,6 +163,129 @@ router.get("/status/:sessionName", async (req, res) => {
     });
   }
 });
+router.get("/analytics/:sessionName", async (req, res) => {
+  Logger.dbg("Analytics requested for session: "+req.params.sessionName);
+  const adminSecret = req.headers.authorization;
+
+  if (adminSecret !== process.env.ADMIN_SECRET) {
+    Logger.dbg("Unauthorized access to analitycs");
+    res.sendStatus(401);
+    return;
+  }
+
+  const retrievedSession = await Session.findOne({
+    name: req.params.sessionName,
+    environment: process.env.NODE_ENV,
+  });
+
+  if (retrievedSession == null) {
+    Logger.dbg("Session not found");
+    res.sendStatus(404);
+    return;
+  }
+
+  Logger.dbg("Session found");
+
+  const timelogs = await Log.find({
+    environment: process.env.NODE_ENV,
+    category: "Timing",
+    createdBy: req.params.sessionName,
+  }).sort({ timestamp: -1 }).limit(4);
+
+  if (timelogs == null || timelogs.length < 4) {
+    Logger.dbg("Not enough timelogs, session hasn't finished yet");
+    res.sendStatus(404);
+    return;
+  }
+
+  console.log(timelogs);
+
+  const times = {
+    t1a: timelogs.filter((log) => log.payload == "T1A")[0].timestamp,
+    t1b: timelogs.filter((log) => log.payload == "T1B")[0].timestamp,
+    t2a: timelogs.filter((log) => log.payload == "T2A")[0].timestamp,
+    t2b: timelogs.filter((log) => log.payload == "T2B")[0].timestamp,
+  }
+
+  Logger.dbg("Times retrieved: ", times);
+
+  if (times.t1a == null || times.t1b == null || times.t2a == null || times.t2b == null) {
+    Logger.dbg("Not enough timelogs, session hasn't finished yet");
+    res.sendStatus(404);
+    return;
+  }
+
+  const allLogs = await Log.find({
+    environment: process.env.NODE_ENV,
+    timestamp: { $gte: times.t1a, $lte: times.t2b },
+  });
+  Logger.dbg("All logs retrieved, in total: "+allLogs.length+" logs");
+  const participants = await User.find({
+    environment: process.env.NODE_ENV,
+    subject: req.params.sessionName,
+  });
+  Logger.dbg("All participants retrieved, in total: ", participants.length);
+  const t1logs = await Log.find({
+    environment: process.env.NODE_ENV,
+    timestamp: { $gte: times.t1a, $lte: times.t1b },
+  });
+
+  const t2logs = await Log.find({
+    environment: process.env.NODE_ENV,
+    timestamp: { $gte: times.t2a, $lte: times.t2b },
+  });
+
+  Logger.dbg("T1 logs retrieved, in total: ", t1logs.length);
+  Logger.dbg("T2 logs retrieved, in total: ", t2logs.length);
+
+  const rows = [];
+  for (const participant of participants) {
+    const partner = participants.find((p) => p.room == participant.room && p.code != participant.code);
+    if (partner == null) {
+      continue;
+    }
+    var rowt1 = {};
+    rowt1.id = participant.code;
+    rowt1.group = participant.blind ? "ctrl" : "exp";
+    rowt1.time = "t1";
+    rowt1.ipgender = rowt1.group == "ctrl" ? "none" : partner.gender;
+    rowt1.gender = participant.gender;
+    rowt1.partnerId = partner.code;
+    rowt1.dm = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Chat").length;
+    rowt1.okv = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Verify" && log.payload == true).length;
+    rowt1.kov = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Verify" && log.payload == false).length;
+    rowt1.control = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Control").length;
+    codeLogs = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Code");
+    rowt1.sca = parseCodeLogs(codeLogs,"text");
+    rowt1.scd = parseCodeLogs(codeLogs,"removed");
+        
+    rows.push(rowt1);
+
+    var rowt2 = {};
+    rowt2.id = participant.code;
+    rowt2.group = participant.blind ? "ctrl" : "exp";
+    rowt2.time = "t2";
+    rowt2.ipgender = rowt2.group == "ctrl" ? "none" : oppositeGender(partner.gender);
+    rowt2.gender = participant.gender;
+    rowt2.partnerId = partner.code;
+    rowt2.dm = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Chat").length;
+    rowt2.okv = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Verify" && log.payload == true).length;
+    rowt2.kov = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Verify" && log.payload == false).length;
+    rowt2.control = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Control").length;
+    codeLogs = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Code");
+    rowt2.sca = parseCodeLogs(codeLogs,"text");
+    rowt2.scd = parseCodeLogs(codeLogs,"removed");
+
+    rows.push(rowt2);
+  }
+
+  Logger.dbg("Rows generated, in total: ", rows.length);
+  Logger.dbg(JSON.stringify(rows, null, 2));
+
+  res.send(rows);
+
+});
+
 
 router.get("/sessions/:sessionName/:type", async (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -1133,6 +1256,38 @@ function dataStudents(data, type, keys) {
     }
   }
   return result;
+}
+
+function oppositeGender(gender) {
+  if(gender == "Female") {
+    return "Male";
+  } else {
+    return "Female";
+  }
+}
+
+function parseCodeLogs(logs,field){
+          
+  return logs.reduce( (total,l) => {
+
+    var count = 0; 
+    try {
+
+      for(var i=0;i< l.payload.change[field].length; i++){
+        var changes = l.payload.change[field][i].length;
+        count += changes;
+      }
+
+      return total+count;
+
+    }catch (error) {
+      console.error("Error calculating <"+field+"> count:"+error);
+      console.error("total: "+JSON.stringify(total,null,2));
+      console.error("l: "+JSON.stringify(l,null,2));
+    }
+
+  },0);
+
 }
 
 function writeCsv(userSorted) {

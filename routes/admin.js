@@ -180,7 +180,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
 
   if (retrievedSession == null) {
     Logger.dbg("Session not found");
-    res.sendStatus(404);
+    res.sendStatus(404).send("Session not found");
     return;
   }
 
@@ -194,7 +194,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
 
   if (timelogs == null || timelogs.length < 4) {
     Logger.dbg("Not enough timelogs, session hasn't finished yet");
-    res.sendStatus(404);
+    res.sendStatus(404).send("Not enough timelogs, session hasn't finished yet");
     return;
   }
 
@@ -210,8 +210,8 @@ router.get("/analytics/:sessionName", async (req, res) => {
   Logger.dbg("Times retrieved: ", times);
 
   if (times.t1a == null || times.t1b == null || times.t2a == null || times.t2b == null) {
-    Logger.dbg("Not enough timelogs, session hasn't finished yet");
-    res.sendStatus(404);
+    Logger.dbg("Not enough timelogs, session hasn't finished yet or is corrupted");
+    res.sendStatus(404).send("Not enough timelogs, session hasn't finished yet or is corrupted");
     return;
   }
 
@@ -250,7 +250,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
     rowt1.time = "t1";
     rowt1.ipgender = rowt1.group == "ctrl" ? "none" : partner.gender;
     rowt1.gender = participant.gender;
-    rowt1.partnerId = partner.code;
+    rowt1.partnerid = partner.code;
     rowt1.dm = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Chat").length;
     rowt1.okv = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Verify" && log.payload == true).length;
     rowt1.kov = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Verify" && log.payload == false).length;
@@ -267,7 +267,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
     rowt2.time = "t2";
     rowt2.ipgender = rowt2.group == "ctrl" ? "none" : oppositeGender(partner.gender);
     rowt2.gender = participant.gender;
-    rowt2.partnerId = partner.code;
+    rowt2.partnerid = partner.code;
     rowt2.dm = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Chat").length;
     rowt2.okv = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Verify" && log.payload == true).length;
     rowt2.kov = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Verify" && log.payload == false).length;
@@ -279,10 +279,9 @@ router.get("/analytics/:sessionName", async (req, res) => {
     rows.push(rowt2);
   }
 
-  Logger.dbg("Rows generated, in total: ", rows.length);
-  Logger.dbg(JSON.stringify(rows, null, 2));
+  var rowsFull = enrichWithRatio(rows);
 
-  res.send(rows);
+  res.send(rowsFull);
 
 });
 
@@ -1288,6 +1287,31 @@ function parseCodeLogs(logs,field){
 
   },0);
 
+}
+
+function enrichWithRatio(rows) {
+  var dict = Object.fromEntries(rows.map(row => [row.time + row.id, row]));
+
+  for( var i=0; i<rows.length; i++) {
+    var partnerRow = dict[rows[i].time + rows[i].partnerid];
+    if(partnerRow) {
+      rows[i].dm_rf = rows[i].dm / (rows[i].dm + partnerRow.dm);
+      rows[i].okv_rf = rows[i].okv / (rows[i].okv + partnerRow.okv);
+      rows[i].kov_rf = rows[i].kov / (rows[i].kov + partnerRow.kov);
+      rows[i].control_rf = rows[i].control / (rows[i].control + partnerRow.control);
+      rows[i].sca_rf = rows[i].sca / (rows[i].sca + partnerRow.sca);
+      rows[i].scd_rf = rows[i].scd / (rows[i].scd + partnerRow.scd);
+    } else {
+      rows[i].dm_rf = 1;
+      rows[i].okv_rf = 1;
+      rows[i].kov_rf = 1;
+      rows[i].control_rf = 1;
+      rows[i].sca_rf = 1;
+      rows[i].scd_rf = 1;
+    }
+  }
+
+  return rows;
 }
 
 function writeCsv(userSorted) {

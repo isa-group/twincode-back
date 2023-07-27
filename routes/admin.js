@@ -1295,12 +1295,12 @@ function enrichWithRatio(rows) {
   for( var i=0; i<rows.length; i++) {
     var partnerRow = dict[rows[i].time + rows[i].partnerid];
     if(partnerRow) {
-      rows[i].dm_rf = rows[i].dm / (rows[i].dm + partnerRow.dm);
-      rows[i].okv_rf = rows[i].okv / (rows[i].okv + partnerRow.okv);
-      rows[i].kov_rf = rows[i].kov / (rows[i].kov + partnerRow.kov);
-      rows[i].control_rf = rows[i].control / (rows[i].control + partnerRow.control);
-      rows[i].sca_rf = rows[i].sca / (rows[i].sca + partnerRow.sca);
-      rows[i].scd_rf = rows[i].scd / (rows[i].scd + partnerRow.scd);
+      rows[i].dm_rf = rows[i].dm == 0? 0:rows[i].dm / (rows[i].dm + partnerRow.dm);
+      rows[i].okv_rf = rows[i].okv == 0? 0:rows[i].okv / (rows[i].okv + partnerRow.okv);
+      rows[i].kov_rf = rows[i].kov == 0? 0:rows[i].kov / (rows[i].kov + partnerRow.kov);
+      rows[i].control_rf = rows[i].control == 0? 0:rows[i].control / (rows[i].control + partnerRow.control);
+      rows[i].sca_rf = rows[i].sca == 0? 0:rows[i].sca / (rows[i].sca + partnerRow.sca);
+      rows[i].scd_rf = rows[i].scd == 0? 0:rows[i].scd / (rows[i].scd + partnerRow.scd);
     } else {
       rows[i].dm_rf = 1;
       rows[i].okv_rf = 1;

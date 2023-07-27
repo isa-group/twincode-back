@@ -59,6 +59,38 @@ router.get("/test", async (req, res) => {
   }
 });
 
+router.post("/verify/log", async (req, res) => {
+  Logger.dbg("/verify/log",req.body);
+  const user = await User.findOne({
+    code: req.body.user,
+    environment: process.env.NODE_ENV,
+  });
+
+  if (user) {
+    let session = await Session.findOne({
+      name: user.subject,
+      environment: process.env.NODE_ENV,
+    });
+    
+    if (session) {
+      Logger.log(
+        "Verify",
+        user.code,
+        req.body.status,
+        session.exerciseCounter,
+        session.testCounter
+      );
+      res.sendStatus(200);
+    } else {
+      Logger.dbg("/verify/log - Session not found");
+      res.sendStatus(404);
+    }
+  } else {
+    Logger.dbg("/verify/log - User not found");
+    res.sendStatus(404);
+  }
+});
+
 router.post("/verify", async (req, res) => {
   const user = await User.findOne({
     code: req.body.user,

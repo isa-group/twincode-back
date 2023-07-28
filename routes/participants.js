@@ -85,7 +85,6 @@ router.post("/participants/:sessionName/import", async (req, res) => {
       let users = req.body;
       let participants = [];
       let errors = 0;
-      let success = 0;
       let exists = 0;
       for (const user of users) {
         try {
@@ -94,8 +93,8 @@ router.post("/participants/:sessionName/import", async (req, res) => {
           if (!val) {
             const generatedCode = await generateCodeInit();
       
-            console.log(generatedCode);
-      
+            Logger.dbg("IMPORT PARTICIPANTS - Generated code: "+generatedCode);
+            
             if (generatedCode !== null) {
               var participant = new User();
               participant.code = generatedCode;
@@ -110,27 +109,34 @@ router.post("/participants/:sessionName/import", async (req, res) => {
               participant.beganStudying = user.studyStartYear;
               participants.push(participant);
             } else {
+              Logger.dbg("IMPORT PARTICIPANTS - User not created. Code couldn't generate properly...")
               errors++;
             }
           } else {
+            Logger.dbg("IMPORT PARTICIPANTS - User not created. User already exists...")
             exists++;
           }
         } catch (error) {
-          Logger.monitorLog("Error generating user from csv: "+error);
+          Logger.dbg("IMPORT PARTICIPANTS - Error generating user from csv: "+error);
           errors++;
         }
       }
       
       const inserted = await User.insertMany(participants);
+
+      Logger.dbg("IMPORT PARTICIPANTS - Participants inserted: "+inserted.length);
       
       const result = {
         success: inserted.length,
         errors: errors,
         exists: exists,
       };
+
+      Logger.dbg("IMPORT PARTICIPANTS - Sending result: "+result);
+
       res.status(200).send(result);
     } catch (e) {
-      Logger.monitorLog("Fatal error generating users from csv: "+e);
+      Logger.dbg("IMPORT PARTICIPANTS - Fatal error generating users from csv: "+e);
       res.sendStatus(500);
     }
   } else {
@@ -159,14 +165,13 @@ router.get("/participants/:sessionName/export", (req, res) => {
           beganStudying: 1,
         }
       ).then((users) => {
-        Logger.monitorLog("Exporting participants");
-        console.log(users);
+        Logger.dbg("EXPORT PARTICIPANTS - Exporting participants");
         if (users.length > 0) {
           res.send(users);
         }
       });
     } catch (e) {
-      Logger.monitorLog("Error retrieving users... "+e);
+      Logger.dbg("EXPORT PARTICIPANTS - Error retrieving users... "+e);
       res.sendStatus(500);
     }
   } else {
@@ -181,21 +186,18 @@ router.post("/participants/:sessionName/send", async (req, res) => {
     var errors = 0;
     var success = 0;
     try {
-      Logger.dbg("Session Name: "+req.params.sessionName);
-
       const users = await User.find(
         {
           environment: process.env.NODE_ENV,
           subject: req.params.sessionName,
         },
       );
-      
-      Logger.dbg("Users found: "+users)
 
       if (users) {
+        Logger.dbg("SEND EMAIL TO ALL USERS 'POST' - USERS FOUND, SENDING IN PROCESS")
         for(var i = 0; i<users.length; i++) {
           const user = users[i];
-          Logger.dbg("Sending email to: "+user.mail);
+          Logger.dbg("SENDING EMAIL TO ALL USERS 'POST' - Sending to: "+user.mail);
           const result = await sendUserMail(user);
           if (result) {
             success += 1;
@@ -215,10 +217,11 @@ router.post("/participants/:sessionName/send", async (req, res) => {
       res.send(result);
 
     } catch (err) {
-      Logger.monitorLog("err")
+      Logger.monitorLog("ERROR - SEND EMAIL TO ALL USERS 'POST' - Error: "+err);
       res.sendStatus(500)
     }
   } else {
+    Logger.dbg("SEND EMAIL TO ALL USERS 'POST' - FORBIDDEN, ADMIN TOKEN DO NOT MATCH")
     res.sendStatus(403);
   }
 })
@@ -236,6 +239,7 @@ router.post("/participants/:sessionName/:mail/send", async (req, res) => {
       })
 
       if (user) {
+        Logger.dbg("SEND EMAIL TO USER 'POST' - Sending email to: "+user.mail);
         const result = await sendUserMail(user);
         if(result) {
           res.sendStatus(200)
@@ -247,7 +251,7 @@ router.post("/participants/:sessionName/:mail/send", async (req, res) => {
       }
 
     } catch (e) {
-      Logger.monitorLog(e);
+      Logger.monitorLog("ERROR - SEND EMAIL TO USER 'POST' - "+e);
       res.sendStatus(500);
     }
   } else {
@@ -270,10 +274,10 @@ async function sendUserMail(user) {
 
   transporter.verify((err, success) => {
     if (err) {
-      Logger.monitorLog("Error verifying transporter: "+err);
+      Logger.dbg("SENDUSERMAIL FUNCTION - Error verifying transporter: "+err);
       result = false;
     }
-    else Logger.monitorLog('Your config is correct');
+    else Logger.dbg('SENDUSERMAIL FUNCTION - Your config is correct');
   });
 
   await transporter.sendMail({
@@ -288,11 +292,11 @@ async function sendUserMail(user) {
       <p>But you can click directly <a href="https://twincode.netlify.app/?code=${user.code}">HERE</a> for easy access when the session starts.</p><br/>
       <p>You will receive detailed instructions at the beginning of the session.</p>`, // html body
   }).then((info) => {
-    Logger.monitorLog("Message sent: " + info.messageId + " to " + user.mail);
+    Logger.dbg("SENDUSERMAIL FUNCTION - Message sent: " + info.messageId + " to " + user.mail);
     transporter.close();
     result = true;
   }).catch((error) => {
-    Logger.monitorLog("Error sending mail: "+error);
+    Logger.dbg("ERROR - SENDUSERMAILFUNCTION - Error sending mail: "+error);
     result = false;
   });
   return result;

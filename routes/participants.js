@@ -174,57 +174,78 @@ router.get("/participants/:sessionName/export", (req, res) => {
   }
 });
 
-router.post("/participants/:sessionName/:mail/send", (req, res) => {
+router.post("/participants/:sessionName/send", async (req, res) => {
+  const adminSecret = req.headers.authorization;
+
+  if (adminSecret === process.env.ADMIN_SECRET) {
+    var errors = 0;
+    var success = 0;
+    try {
+      Logger.dbg("Session Name: "+req.params.sessionName);
+
+      const users = await User.find(
+        {
+          environment: process.env.NODE_ENV,
+          subject: req.params.sessionName,
+        },
+      );
+      
+      Logger.dbg("Users found: "+users)
+
+      if (users) {
+        for(var i = 0; i<users.length; i++) {
+          const user = users[i];
+          Logger.dbg("Sending email to: "+user.mail);
+          const result = await sendUserMail(user);
+          if (result) {
+            success += 1;
+          } else {
+            errors +=1;
+          }
+        }
+      } else {
+        errors +=1;
+      }
+        
+
+      const result = {
+        errors: errors,
+        success: success,
+      }
+      res.send(result);
+
+    } catch (err) {
+      Logger.monitorLog("err")
+      res.sendStatus(500)
+    }
+  } else {
+    res.sendStatus(403);
+  }
+})
+
+
+router.post("/participants/:sessionName/:mail/send", async (req, res) => {
   const adminSecret = req.headers.authorization;
 
   if (adminSecret === process.env.ADMIN_SECRET) {
     try {
-      User.findOne({
+      const user = await User.findOne({
         environment: process.env.NODE_ENV,
         subject: req.params.sessionName,
         mail: req.params.mail,
-      }).then((user) => {
-        if (user) {
-          let transporter = nodemailer.createTransport({
-            name: "mail.us.es",
-            host: "mail.us.es",
-            requierTLS: true,
-            port: 587,
-            auth: {
-              user: process.env.EMAIL_USERNAME,
-              pass: process.env.EMAIL_PASSWORD,
-            },
-          });
+      })
 
-          transporter.verify((err, success) => {
-            if (err) Logger.monitorLog("Error verifying transporter: "+err);
-            else Logger.monitorLog('Your config is correct');
-          });
-
-          transporter.sendMail({
-            from: '"TwinCode" < ' + process.env.EMAIL_USERNAME + " > ",
-            to: user.mail, // list of receivers
-            subject: "TwinCode - Your code", // Subject line
-            text: "Welcome to TwinCode", // plain text body
-            html: `
-              <h1>Welcome to TwinCode</h1>
-              <br/>
-              <p>Your anonymous code to participate in the twincode session is the following: <b>${user.code}</b></p>
-              <p>But you can click directly <a href="https://twincode.netlify.app/?code=${user.code}">HERE</a> for easy access when the session starts.</p><br/>
-              <p>You will receive detailed instructions at the beginning of the session.</p>`, // html body
-          }).then((info) => {
-            Logger.monitorLog("Message sent: " + info.messageId + " to " + user.mail);
-            res.sendStatus(200);
-
-            transporter.close();
-            }).catch((error) => {
-              Logger.monitorLog("Error sending mail: "+error);
-              res.sendStatus(500);
-          });
+      if (user) {
+        const result = await sendUserMail(user);
+        if(result) {
+          res.sendStatus(200)
         } else {
-          res.status(404).send("Participant not found!");
+          res.sendStatus(500)
         }
-      });
+      } else {
+        res.status(404).send("Participant not found!");
+      }
+
     } catch (e) {
       Logger.monitorLog(e);
       res.sendStatus(500);
@@ -233,6 +254,49 @@ router.post("/participants/:sessionName/:mail/send", (req, res) => {
     res.sendStatus(401);
   }
 });
+
+async function sendUserMail(user) {
+  var result;
+  let transporter = nodemailer.createTransport({
+    name: "mail.us.es",
+    host: "mail.us.es",
+    requierTLS: true,
+    port: 587,
+    auth: {
+      user: process.env.EMAIL_USERNAME,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+
+  transporter.verify((err, success) => {
+    if (err) {
+      Logger.monitorLog("Error verifying transporter: "+err);
+      result = false;
+    }
+    else Logger.monitorLog('Your config is correct');
+  });
+
+  await transporter.sendMail({
+    from: '"TwinCode" < ' + process.env.EMAIL_USERNAME + " > ",
+    to: user.mail, // list of receivers
+    subject: "TwinCode - Your code", // Subject line
+    text: "Welcome to TwinCode", // plain text body
+    html: `
+      <h1>Welcome to TwinCode</h1>
+      <br/>
+      <p>Your anonymous code to participate in the twincode session is the following: <b>${user.code}</b></p>
+      <p>But you can click directly <a href="https://twincode.netlify.app/?code=${user.code}">HERE</a> for easy access when the session starts.</p><br/>
+      <p>You will receive detailed instructions at the beginning of the session.</p>`, // html body
+  }).then((info) => {
+    Logger.monitorLog("Message sent: " + info.messageId + " to " + user.mail);
+    transporter.close();
+    result = true;
+  }).catch((error) => {
+    Logger.monitorLog("Error sending mail: "+error);
+    result = false;
+  });
+  return result;
+};
 
 generateCodeInit = async () => {
   var dateNow = new Date().toISOString();

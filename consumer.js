@@ -1626,7 +1626,7 @@ module.exports = {
 
           Logger.log("Control",
                       user.code,
-                      "room: "+ user.room,
+                      { room: user.room },
                       sessions.get(tokens.get(user.code)).session.exerciseCounter,
                       sessions.get(tokens.get(user.code)).session.testCounter);
 

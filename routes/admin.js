@@ -198,8 +198,6 @@ router.get("/analytics/:sessionName", async (req, res) => {
     return;
   }
 
-  console.log(timelogs);
-
   const times = {
     t1a: timelogs.filter((log) => log.payload == "T1A")[0].timestamp,
     t1b: timelogs.filter((log) => log.payload == "T1B")[0].timestamp,
@@ -207,7 +205,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
     t2b: timelogs.filter((log) => log.payload == "T2B")[0].timestamp,
   }
 
-  Logger.dbg("Times retrieved: ", times);
+  Logger.dbg("Times retrieved");
 
   if (times.t1a == null || times.t1b == null || times.t2a == null || times.t2b == null) {
     Logger.dbg("Not enough timelogs, session hasn't finished yet or is corrupted");
@@ -254,10 +252,11 @@ router.get("/analytics/:sessionName", async (req, res) => {
     rowt1.dm = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Chat").length;
     rowt1.okv = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Verify" && log.payload == true).length;
     rowt1.kov = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Verify" && log.payload == false).length;
-    rowt1.control = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Control").length;
     codeLogs = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Code");
     rowt1.sca = parseCodeLogs(codeLogs,"text");
     rowt1.scd = parseCodeLogs(codeLogs,"removed");
+    controlLogs = t1logs.filter((log) =>log.category == "Control" && log.payload.room == participant.room);
+    rowt1.ct_sec = parseControlLogs(controlLogs, participant.code, times.t1b);
         
     rows.push(rowt1);
 
@@ -271,10 +270,11 @@ router.get("/analytics/:sessionName", async (req, res) => {
     rowt2.dm = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Chat").length;
     rowt2.okv = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Verify" && log.payload == true).length;
     rowt2.kov = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Verify" && log.payload == false).length;
-    rowt2.control = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Control").length;
     codeLogs = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Code");
     rowt2.sca = parseCodeLogs(codeLogs,"text");
     rowt2.scd = parseCodeLogs(codeLogs,"removed");
+    controlLogs = t2logs.filter((log) =>log.category == "Control" && log.payload.room == participant.room);
+    rowt2.ct_sec = parseControlLogs(controlLogs, participant.code, times.t2b);
 
     rows.push(rowt2);
   }
@@ -1289,6 +1289,32 @@ function parseCodeLogs(logs,field){
 
 }
 
+function parseControlLogs(logs,code,end) {
+  Logger.dbg("START - parseControlLogs: "+code);
+  var totalMiliseconds = 0;
+  const orderedLogs = logs.sort((a,b) => {
+    return new Date(a.timestamp) - new Date(b.timestamp);
+  })
+  var lastTimestamp = null;
+  var lastCode = null;
+  for(var i=0; i<orderedLogs.length; i++) {
+
+    if(i == orderedLogs.length - 1 && orderedLogs[i].createdBy == code) {
+      totalMiliseconds += new Date(end) - new Date(orderedLogs[i].timestamp);
+      continue;
+    }
+
+    if(orderedLogs[i].createdBy == code && (lastCode == null || lastCode != code)) {
+      lastCode = orderedLogs[i].createdBy;
+      lastTimestamp = orderedLogs[i].timestamp;
+    } else if (orderedLogs[i].createdBy != code && lastCode == code) {
+      totalMiliseconds += new Date(orderedLogs[i].timestamp) - new Date(lastTimestamp);
+      lastCode = orderedLogs[i].createdBy;
+    }
+  }
+  return totalMiliseconds / 1000;
+}
+
 function enrichWithRatio(rows) {
   var dict = Object.fromEntries(rows.map(row => [row.time + row.id, row]));
 
@@ -1298,16 +1324,17 @@ function enrichWithRatio(rows) {
       rows[i].dm_rf = rows[i].dm == 0? 0:rows[i].dm / (rows[i].dm + partnerRow.dm);
       rows[i].okv_rf = rows[i].okv == 0? 0:rows[i].okv / (rows[i].okv + partnerRow.okv);
       rows[i].kov_rf = rows[i].kov == 0? 0:rows[i].kov / (rows[i].kov + partnerRow.kov);
-      rows[i].control_rf = rows[i].control == 0? 0:rows[i].control / (rows[i].control + partnerRow.control);
       rows[i].sca_rf = rows[i].sca == 0? 0:rows[i].sca / (rows[i].sca + partnerRow.sca);
       rows[i].scd_rf = rows[i].scd == 0? 0:rows[i].scd / (rows[i].scd + partnerRow.scd);
+      rows[i].ct_rf = rows[i].ct_sec == 0? 0:rows[i].ct_sec / (rows[i].ct_sec + partnerRow.ct_sec);
+      Logger.dbg("ct "+rows[i].ct+" partner ct "+partnerRow.ct+" ratio "+rows[i].ct_rf)
     } else {
-      rows[i].dm_rf = 1;
-      rows[i].okv_rf = 1;
-      rows[i].kov_rf = 1;
-      rows[i].control_rf = 1;
-      rows[i].sca_rf = 1;
-      rows[i].scd_rf = 1;
+      rows[i].dm_rf = 0;
+      rows[i].okv_rf = 0;
+      rows[i].kov_rf = 0;
+      rows[i].sca_rf = 0;
+      rows[i].scd_rf = 0;
+      rows[i].ct_rf = 0;
     }
   }
 

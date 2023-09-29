@@ -256,6 +256,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
     rowt1.sca = parseCodeLogs(codeLogs,"text");
     rowt1.scd = parseCodeLogs(codeLogs,"removed");
     controlLogs = t1logs.filter((log) =>log.category == "Control" && log.payload.room == participant.room);
+    rowt1.ct = controlLogs.filter((log) => log.createdBy == participant.code).length;
     rowt1.ct_sec = parseControlLogs(controlLogs, participant.code, times.t1b);
         
     rows.push(rowt1);
@@ -274,6 +275,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
     rowt2.sca = parseCodeLogs(codeLogs,"text");
     rowt2.scd = parseCodeLogs(codeLogs,"removed");
     controlLogs = t2logs.filter((log) =>log.category == "Control" && log.payload.room == participant.room);
+    rowt2.ct = controlLogs.filter((log) => log.createdBy == participant.code).length;
     rowt2.ct_sec = parseControlLogs(controlLogs, participant.code, times.t2b);
 
     rows.push(rowt2);

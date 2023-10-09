@@ -1015,8 +1015,9 @@ async function notifyParticipants(sessionName, io) {
       user.blind = myBlind;
       user.room = myRoom;
       user.exerciseSwitch = (myRoom%2==0);
+      user.shown_gender = myBlind?participant.shown_gender:'None';
 
-      Logger.dbg("notifyParticipants - Saving user", user, ["code", "firstName", "gender", "room", "blind"]);
+      Logger.dbg("notifyParticipants - Saving user", user, ["code", "firstName", "gender", "room", "blind", "shown_gender"]);
       user.save();
       // Until here, all the changes have been saved on database *
 

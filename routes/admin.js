@@ -246,7 +246,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
     rowt1.id = participant.code;
     rowt1.group = participant.blind ? "ctrl" : "exp";
     rowt1.time = "t1";
-    rowt1.ipgender = rowt1.group == "ctrl" ? "none" : partner.gender;
+    rowt1.ipgender = rowt1.group == "ctrl" ? "none" : partner.shown_gender;
     rowt1.gender = participant.gender;
     rowt1.partnerid = partner.code;
     rowt1.dm = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Chat").length;
@@ -265,7 +265,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
     rowt2.id = participant.code;
     rowt2.group = participant.blind ? "ctrl" : "exp";
     rowt2.time = "t2";
-    rowt2.ipgender = rowt2.group == "ctrl" ? "none" : oppositeGender(partner.gender);
+    rowt2.ipgender = rowt2.group == "ctrl" ? "none" : oppositeGender(partner.shown_gender);
     rowt2.gender = participant.gender;
     rowt2.partnerid = partner.code;
     rowt2.dm = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Chat").length;

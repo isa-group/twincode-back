@@ -859,6 +859,7 @@ router.delete("/sessions/:sessionName", (req, res) => {
         })
           .then((response) => {
             result.users = response;
+            res.send(result);
           })
           .catch((error) => {
             let errorMsg = "Something bad happened...";

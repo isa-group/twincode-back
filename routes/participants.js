@@ -98,8 +98,8 @@ router.post("/participants/:sessionName/import", async (req, res) => {
             if (generatedCode !== null) {
               var participant = new User();
               participant.code = generatedCode;
-              participant.firstName = user.name;
-              participant.surname = user.surname;
+              participant.firstName = "ANONYMOUS";
+              participant.surname = "ANONYMOUS";
               participant.mail = user.email;
               participant.subject = req.params.sessionName;
               participant.environment = process.env.NODE_ENV;

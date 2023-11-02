@@ -841,7 +841,6 @@ router.delete("/sessions/:sessionName", (req, res) => {
       })
         .then((response) => {
           result.tests = response;
-          res.send(result);
         }
         )
         .catch((error) => {
@@ -853,6 +852,23 @@ router.delete("/sessions/:sessionName", (req, res) => {
           return;
         }
         );
+
+        User.deleteMany({
+          environment: process.env.NODE_ENV,
+          subject: req.params.sessionName
+        })
+          .then((response) => {
+            result.users = response;
+            res.send(result);
+          })
+          .catch((error) => {
+            let errorMsg = "Something bad happened...";
+          if (error.message) {
+            errorMsg = error.message;
+          }
+          res.status(400).send({ errorMsg });
+          return;
+          })
       
     } catch (e) {
       console.log(e);

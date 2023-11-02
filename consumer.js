@@ -1235,8 +1235,9 @@ module.exports = {
           environment: process.env.NODE_ENV,
         });
         if (user) {
+          tokens.set(pack, user.subject);
+          
           Logger.dbg("EVENT clientReconnection - user found", user, ["code", "socketId"]);
-
           var oldSocket = user.socketId;
 
           userToSocketID.set(user.code, socket.id);
@@ -1304,8 +1305,6 @@ module.exports = {
               } else {
                 Logger.dbg("EVENT clientReconnection - Last event wasn't an exercise", lastEvent[0]);
               }
-
-
             }
           } else {
             Logger.dbg("EVENT clientReconnection : LAST EVENT NOT FOUND for session " + user.subject, lastEvent);
@@ -1314,7 +1313,6 @@ module.exports = {
         } else {
           Logger.dbg("EVENT clientReconnection : USER NOT FOUND", pack);
         }
-        tokens.set(pack, user.subject);
 
       });
 

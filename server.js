@@ -153,6 +153,37 @@ app.get("/finishMessage", async (req, res) => {
   }
 });
 
+app.get("/storage", async (req, res) => {
+  const code = req.query.code;
+  Logger.dbg("/storage",code);
+  try {
+    const user = await User.findOne({
+      code: code,
+      environment: process.env.NODE_ENV,
+    });
+    const peer = await User.findOne({
+      room: user.room,
+      subject: user.subject,
+      environment: process.env.NODE_ENV,
+      code: { $ne: user.code }
+    });
+    if (!user || !peer) {
+      Logger.dbgerr("/storage - 404 - "+ code);
+      res.json({ error: "User or peer not found" });
+      return;
+    }
+    const data = {
+      user: {code: user.code, blind: user.blind},
+      pairedTo: peer.shown_gender,
+    }
+    res.json(data);
+
+  } catch (err) {
+    Logger.dbgerr("/storage - 500 - "+ code,err);
+    res.sendStatus(500);
+  }
+});
+
 app.get("/connectedUsers", (req, res) => {
   Logger.dbg("/connectedUsers");
   res.send(Object.keys(app._io.sockets.sockets));

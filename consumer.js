@@ -234,17 +234,17 @@ async function executeStandardSession(session, io) {
     potentialParticipants.forEach((p) => {
       //Filter out the one not connected : they don't have the property socketId! 
       if (p.socketId) {
-        Logger.dbg(`executeStandardSession - participant with code <${p.code}> is connected`);
+        //Logger.dbg(`executeStandardSession - participant with code <${p.code}> is connected`);
         participants.push(p);
       }
     });
 
-    Logger.dbg(`executeStandardSession - participants length: ${participants.length}`);
+    //Logger.dbg(`executeStandardSession - participants length: ${participants.length}`);
     if (participants.length % 2 != 0) {
       participants = participants.splice(0, participants.length-1);
     }
 
-    Logger.dbg(`executeStandardSession - sorting participants list`);
+    //Logger.dbg(`executeStandardSession - sorting participants list`);
     participants.sort(function(a, b) {
       return a.room - b.room;
     });
@@ -252,14 +252,14 @@ async function executeStandardSession(session, io) {
     // Calculate the maximum amount of participants possible 
     // Rounding the length to the maximum even number.
     const maxParticipants = (Math.floor(participants.length/2))*2;
-    Logger.dbg(`executeStandardSession - maxParticipants: ${maxParticipants}`);
+    //Logger.dbg(`executeStandardSession - maxParticipants: ${maxParticipants}`);
 
 
     for (let p = 0; p < maxParticipants; p++) {
       try {
         var participant1 = participants[p];
         var participant2 = participants[p+1];
-        Logger.dbg(`executeStandardSession - checking actions for participants: ${participant1.code} and ${participant2.code}`);
+        //Logger.dbg(`executeStandardSession - checking actions for participants: ${participant1.code} and ${participant2.code}`);
         
         if (participant1.nextExercise || participant2.nextExercise) {
           Logger.dbg(`executeStandardSession - NEXT EXERCISE - ${participant1.code} or ${participant2.code} tried to validate a code`);
@@ -493,7 +493,7 @@ async function executeStandardSession(session, io) {
       io.to(sessionName).emit("countDown", {
         data: timer,
       });
-      Logger.dbg(timer);
+      //Logger.dbg(timer);
       timer--;
     } else if (session.exerciseCounter == maxExercises) { //If timer goes to 0, and exercise in a test is the same as actual exercise, it goes to the next test
       Logger.dbg("executeStandardSession - Going to the next test!");
@@ -565,6 +565,7 @@ async function executeStandardSession(session, io) {
             testIndex: session.testCounter,
           }
         });
+
         lastSessionEvent.set(participant1.socketId, ["newExercise", {
           data: {
             maxTime: tests[testNumber].testTime,
@@ -573,6 +574,19 @@ async function executeStandardSession(session, io) {
             inputs: exercise.inputs,
             solutions: exercise.solutions,
             testLanguage: testLanguage,
+            testIndex: session.testCounter,
+          }
+        }]);
+
+        lastSessionEvent.set(participant2.socketId, ["newExercise", {
+          data: {
+            maxTime: tests[testNumber].testTime,
+            exerciseDescription: exercise.description,
+            exerciseType: exercise.type,
+            inputs: exercise.inputs,
+            solutions: exercise.solutions,
+            testLanguage: testLanguage,
+            testIndex: session.testCounter,
           }
         }]);
 
@@ -807,6 +821,7 @@ async function executeCustomSession(session, io) {
               inputs: exercise.inputs,
               solutions: exercise.solutions,
               testLanguage: testLanguage,
+              testIndex: session.testCounter,
             },
           }];
           io.to(sessionName).emit(event[0], event[1]);
@@ -1229,7 +1244,7 @@ module.exports = {
       });
 
       socket.on("clientReconnection", async (pack) => {
-        Logger.dbg("EVENT clientReconnection ", pack);
+        Logger.dbg("EVENT clientReconnection ",pack);
         const user = await User.findOne({
           code: pack,
           environment: process.env.NODE_ENV,
@@ -1252,27 +1267,34 @@ module.exports = {
           const userSession = await Session.findOne({
             name: user.subject
           });
-          let lastEvent;
-          
-          // RECOVER LAST EVENT OF USER SESSION
-          if (userSession.isStandard) {
-            lastEvent = lastSessionEvent.get(oldSocket);
-            lastSessionEvent.set(user.socketId, lastEvent);
-          } else {
-            lastEvent = lastSessionEvent.get(user.subject);
+
+          const peer = await User.findOne({
+            room: user.room,
+            subject: user.subject,
+            environment: process.env.NODE_ENV,
+            code: { $ne: user.code }
+          });
+          // If peer not null, create var peerSocketId
+          var peerSocketId = null;
+          if (peer) {
+            peerSocketId = peer.socketId;
           }
-
-
-          if (lastEvent && lastEvent.length) {
+          // RECOVER LAST EVENT OF USER SESSION
+          let lastEvent = lastSessionEvent.get(oldSocket)??lastSessionEvent.get(peerSocketId);
+          lastSessionEvent.set(user.socketId, lastEvent);
+          Logger.dbg("EVENT clientReconnection - last event", lastEvent)
+          Logger.dbg("EVENT clientReconnection - last session event", lastSessionEvent)
+          if (lastEvent) {
             Logger.dbg("EVENT clientReconnection - Last Recovered Event", lastEvent[0]);
             if (lastEvent.length == 1) {
               Logger.dbg("EVENT clientReconnection - Submitted last event without data", lastEvent[0]);
-              io.to(socket.id).emit(lastEvent[0]);
+              io.to(user.socketId).emit(lastEvent[0]);
             } else {
               Logger.dbg("EVENT clientReconnection - Submitted last event with data", lastEvent[0]);
+              Logger.dbg("EVENT clientReconnection - Submitted last event with data", lastEvent[1]);
 
               // SEND LAST EVENT OF THE SESSION TO RECONNECTED USER
-              io.to(socket.id).emit(lastEvent[0], lastEvent[1]);
+              io.to(user.socketId).emit(lastEvent[0], lastEvent[1]);
 
               if (lastEvent[0] == "newExercise" && lastEvent[1]) {
                 Logger.dbg("EVENT clientReconnection - Session in the middle of an exercise.");
@@ -1280,17 +1302,10 @@ module.exports = {
                 if (lastEvent[1].data && lastEvent[1].data.exerciseType == "PAIR") {
                   Logger.dbg("EVENT clientReconnection - Session in the middle of an exercise to be done in PAIRs...");
 
-                  // FIND PEER SOCKET 
-                  const peer = await User.findOne({
-                    room: user.room,
-                    subject: user.subject,
-                    environment: process.env.NODE_ENV,
-                    code: { $ne: user.code }
-                  });
-
                   if (peer) {
                     Logger.dbg("EVENT clientReconnection - Peer found for " + user.code, peer, ["code"]);
-                    io.to(peer.socketId).emit("requestBulkCodeEvent", user.socketId);
+                    io.to(peerSocketId).emit("userReconnectingEvent", true);
+                    io.to(peerSocketId).emit("requestBulkCodeEvent", user.socketId);
                     Logger.dbg("EVENT clientReconnection - Submitted requestBulkCodeEvent to peer", peer, ["code", "socketId"]);
                   } else {
                     Logger.dbg("EVENT clientReconnection - PEER NOT FOUND with query ", {
@@ -1307,7 +1322,7 @@ module.exports = {
               }
             }
           } else {
-            Logger.dbg("EVENT clientReconnection : LAST EVENT NOT FOUND for session " + user.subject, lastEvent);
+            Logger.dbg("EVENT clientReconnection : LAST EVENT NOT FOUND for session " + user.subject);
           }
 
         } else {
@@ -1315,10 +1330,16 @@ module.exports = {
         }
 
       });
-
+      socket.on("userReconnectingEnd", async (pack) => {
+        Logger.dbg("EVENT userReconnectingEnd ", pack);
+        io.to(pack.data.peerSocketId).emit("userReconnectingEvent", pack.data.status);
+      });
       socket.on("bulkCode", async (pack) => {
         Logger.dbg("EVENT bulkCode ", pack);
-        io.to(pack.data.peerSocketId).emit("bulkCodeUpdate", pack.data.code);
+        io.to(pack.data.peerSocketId).emit("bulkCodeUpdate", {
+          code: pack.data.code,
+          peerSocketId: pack.data.socketId,
+        });
         Logger.dbg("EVENT clientReconnection - Submitted bulkCodeUpdate to peer " + pack.data.peerSocketId, pack.data.code);
       });
 
@@ -1357,7 +1378,6 @@ module.exports = {
       });
 
       socket.on("msg", (pack) => {
-
         Logger.dbg("EVENT msg", pack);
 
         if (sessions.get(tokens.get(pack.token)) == null) {

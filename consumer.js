@@ -1418,6 +1418,46 @@ module.exports = {
         );
       });
 
+      socket.on("sendValidation", async (data) => {
+        Logger.dbg("EVENT sendValidation", data);
+        try {
+          if (!socket) {
+            Logger.dbg("EVENT sendValidation - socket is null");
+            return;
+          }
+          const user = await User.findOne({
+            socketId: socket.id,
+            environment: process.env.NODE_ENV,
+          });
+
+          if(!user) {
+            Logger.dbg("EVENT sendValidation - user is null");
+            return;
+          }
+
+          Logger.dbg(`EVENT sendValidation - user <${user.code}>` );
+
+          const pair = await User.findOne({
+            subject: user.subject,
+            room: user.room,
+            code: { $ne: user.code },
+            environment: process.env.NODE_ENV,
+          });
+
+          if(!pair) {
+            Logger.dbg("EVENT sendValidation - pair is null");
+            return;
+          }
+
+          Logger.dbg(`EVENT sendValidation - sending to pair <${pair}>` );
+
+          io.to(pair.socketId).emit("receiveValidation", data);
+
+        } catch (err) {
+          Logger.dbgerr(`EVENT sendValidation - ERROR <${err}>`);
+        }
+      })
+
       socket.on("registry", async (pack) => {
         Logger.dbg("EVENT registry", pack);
         Logger.dbg("Registry event for: " + socket.id + "," + pack.uid);

@@ -180,7 +180,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
 
   if (retrievedSession == null) {
     Logger.dbg("Session not found");
-    res.sendStatus(404).send("Session not found");
+    res.status(404).send("Session not found");
     return;
   }
 
@@ -194,7 +194,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
 
   if (timelogs == null || timelogs.length < 4) {
     Logger.dbg("Not enough timelogs, session hasn't finished yet");
-    res.sendStatus(404).send("Not enough timelogs, session hasn't finished yet");
+    res.status(404).send("Not enough timelogs, session hasn't finished yet");
     return;
   }
 
@@ -209,7 +209,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
 
   if (times.t1a == null || times.t1b == null || times.t2a == null || times.t2b == null) {
     Logger.dbg("Not enough timelogs, session hasn't finished yet or is corrupted");
-    res.sendStatus(404).send("Not enough timelogs, session hasn't finished yet or is corrupted");
+    res.status(404).send("Not enough timelogs, session hasn't finished yet or is corrupted");
     return;
   }
 

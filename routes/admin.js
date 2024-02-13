@@ -16,6 +16,13 @@ var createCsvWriter = csvwriter.createObjectCsvWriter
  * SESSIONS
  */
 
+/**
+ * @method post
+ * @description Starts a session
+ * @param {string} sessionName - The name of the session
+ * @returns {json} - The session started
+ * */
+
 router.post("/startSession/:sessionName", async (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -75,6 +82,13 @@ router.get("/sessions", async (req, res) => {
   }
 });
 
+/**
+ * @method get
+ * @description Get the logs of a session
+ * @param {string} sessionName - The name of the session
+ * @returns {json} - The logs of the session
+ * */
+
 router.get("/sessions/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
   console.log("ENTORNO DE NODE: " + process.env.NODE_ENV);
@@ -103,6 +117,13 @@ router.get("/sessions/:sessionName", (req, res) => {
     res.sendStatus(401);
   }
 });
+
+/**
+ * @method get
+ * @description Get the tests of a session
+ * @param {string} sessionName - The name of the session
+ * @returns {json} - The tests of the session
+ * */
 
 router.get("/tests/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -145,6 +166,13 @@ router.get("/tests/:sessionName", (req, res) => {
     res.sendStatus(401);
   }
 });
+
+/**
+ * @method get
+ * @description Get status of a session
+ * @param {string} sessionName - The name of the session
+ * @returns {json} - The status of the session
+ */
 
 router.get("/status/:sessionName", async (req, res) => {
   const retrievedSession = await Session.findOne({
@@ -288,6 +316,15 @@ router.get("/analytics/:sessionName", async (req, res) => {
 });
 
 
+/**
+ * @method get
+ * @description Get the logs of a session
+ * @param {string} sessionName - The name of the session
+ * @param {string} type - The type of logs to retrieve
+ * @returns {json} - The logs of the session
+ * 
+ */
+
 router.get("/sessions/:sessionName/:type", async (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -320,6 +357,17 @@ router.get("/sessions/:sessionName/:type", async (req, res) => {
     res.sendStatus(401);
   }
 });
+
+/**
+  * @method post
+  * @description Creates a new session
+  * @param {string} name - The name of the session
+  * @param {Array[string]} tokens - The tokens of the session
+  * @param {Array[Object]} tokenPairing - The token pairing of the session
+  * @param {boolean} blindParticipant - The blind participant of the session
+  * @param {boolean} isStandard - The standard of the session
+  * @returns {json} - The created session
+ */
 
 router.post("/sessions", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -362,6 +410,13 @@ router.post("/sessions", (req, res) => {
   }
 });
 
+/**
+ * METHOD: POST
+ * URL: /tests
+ * DESCRIPTION: Creates a new test
+ * RESPONSE: JSON
+ */
+
 router.post("/tests", (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -401,6 +456,11 @@ router.post("/tests", (req, res) => {
   }
 });
 
+/**
+ * @method post
+ * @description Resets a session
+ * */
+
 router.post("/resetSession", async (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -427,6 +487,13 @@ router.post("/resetSession", async (req, res) => {
   }
 });
 
+/**
+ * @method post
+ * @description Starts a session
+ * @param {string} sessionName - The name of the session
+ * @returns {json} - The session started
+ */
+
 router.post("/startSession/:sessionName", async (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -437,6 +504,14 @@ router.post("/startSession/:sessionName", async (req, res) => {
     res.sendStatus(401);
   }
 });
+
+/**
+ * @method put
+ * @description Updates a session
+ * @param {string} sessionName - The name of the session
+ * @param {number} orderNumber - The order number of the test
+ * @returns {json} - The updated session
+ * */
 
 router.put("/tests/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -471,6 +546,13 @@ router.put("/tests/:sessionName", (req, res) => {
     res.sendStatus(401);
   }
 });
+
+/**
+ * @method put
+ * @description Updates the activation of a session
+ * @param {string} sessionName - The name of the session
+ * @returns {json} - The updated session
+ */
 
 router.put("/sessions/:sessionName/toggleActivation", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -512,6 +594,17 @@ router.put("/sessions/:sessionName/toggleActivation", (req, res) => {
     res.sendStatus(401);
   }
 });
+
+/**
+ * @method put
+ * @description Updates a session
+ * @param {string} sessionName - The name of the session
+ * @param {Array[string]} tokens - The tokens of the session
+ * @param {Array[Object]} tokenPairing - The token pairing of the session
+ * @param {boolean} blindParticipant - The blind participant of the session
+ * @param {boolean} isStandard - The standard of the session
+ * @returns {json} - The updated session
+ */
 
 router.put("/sessions/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -571,6 +664,20 @@ router.put("/sessions/:sessionName", (req, res) => {
  * TESTS
  */
 
+/**
+ * @method post
+ * @description Creates a new test
+ * @param {string} session - The name of the session
+ * @param {string} name - The name of the test
+ * @param {string} description - The description of the test
+ * @param {number} orderNumber - The order number of the test
+ * @param {number} time - The time of the test
+ * @param {boolean} peerChange - The peer change of the test
+ * @param {array} exercises - The exercises of the test
+ * @param {string} type - The type of the test
+ * @returns {json} - The created test
+ * */
+
 router.post("/tests", (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -608,6 +715,13 @@ router.post("/tests", (req, res) => {
     res.sendStatus(401);
   }
 });
+
+/**
+ * @method get
+ * @description Get the tests of a session
+ * @param {string} sessionName - The name of the session
+ * @returns {json} - The tests of the session
+ * */
 
 router.get("/tests/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -651,6 +765,13 @@ router.get("/tests/:sessionName", (req, res) => {
   }
 });
 
+/**
+ * @method put
+ * @description Updates a test
+ * @param {string} sessionName - The name of the session
+ * @returns {json} - The updated test
+ */
+
 router.put("/tests/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -684,6 +805,13 @@ router.put("/tests/:sessionName", (req, res) => {
   }
 });
 
+/**
+ * @method delete
+ * @description Deletes a test
+ * @param {string} sessionName - The name of the session
+ * @param {string} orderNumber - The order number of the test
+ * @returns {json} - The deleted test
+ */
 
 router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -740,6 +868,15 @@ router.delete("/tests/:sessionName/:orderNumber", (req, res) => {
   }
 });
 
+/**
+ * @method get
+ * @description Get the tests of a session
+ * @param {string} sessionName - The name of the session
+ * @param {string} orderNumber - The order number of the test
+ * @returns {json} - The tests of the session
+ * 
+ */
+
 router.get("/tests/:sessionName/:orderNumber", async (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -750,6 +887,15 @@ router.get("/tests/:sessionName/:orderNumber", async (req, res) => {
     res.sendStatus(401);
   }
 });
+
+/**
+ * @method delete
+ * @description Deletes an exercise
+ * @param {string} sessionName - The name of the session
+ * @param {string} orderNumber - The order number of the test
+ * @param {string} exercise - The name of the exercise
+ * @returns {json} - The deleted exercise
+ */
 
 router.delete("/tests/exercise/:exercise", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -781,6 +927,17 @@ router.delete("/tests/exercise/:exercise", (req, res) => {
   }
 });
 
+/**
+ * @method delete
+ * @description Deletes a test
+ * @param {string} sessionName - The name of the session
+ * @param {string} orderNumber - The order number of the test
+ * @param {string} exercise - The name of the exercise
+ * @param {string} validation - The validation of the exercise
+ * @returns {json} - The deleted test
+ * 
+ */
+
 router.delete("/tests/:sessionName/:orderNumber/:exercise/:validation", (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -811,6 +968,13 @@ router.delete("/tests/:sessionName/:orderNumber/:exercise/:validation", (req, re
     res.sendStatus(401);
   }
 });
+
+/**
+  * @method delete
+  * @description Deletes a session
+  * @param {string} sessionName - The name of the session
+  * @returns {json} - The deleted session
+  */
 
 router.delete("/sessions/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -880,8 +1044,124 @@ router.delete("/sessions/:sessionName", (req, res) => {
 });
 
 /**
+  * @method get
+  * @description Get the logs of a session
+  * @param {string} sessionName - The name of the session
+  * @param {string} type - The type of logs to retrieve
+  * @returns {json} - The logs of the session
+ */
+
+router.get('/api/v1/standard/:session/', async (req, res) => {
+  const session = req.params.session; 
+
+  if(req.headers.authorization !== process.env.ADMIN_SECRET){
+    res.status(401).json({error: "Unauthorized access"});
+    return;
+  }
+
+  const logQuery = { category: "Timing", createdBy : session };
+
+
+  const foundLogs = await Log.find(logQuery);
+
+  const timingLogs = foundLogs.filter(log => log.payload == "T1A" || log.payload == "T1B" || log.payload == "T2A" || log.payload == "T2B");
+
+
+  const arrayoftimes = [];
+
+  for (var i = 0; i < timingLogs.length; i++) {
+    var tl = timingLogs[i];
+  
+    if (arrayoftimes.length == 0) {
+      arrayoftimes.push({ [tl.payload]: tl.timestamp });
+    } else {
+      var last = arrayoftimes[arrayoftimes.length - 1];
+      if (tl.payload in last) {
+        arrayoftimes.push({ [tl.payload]: tl.timestamp });
+
+      } else {
+        last[tl.payload] = tl.timestamp;
+      }
+    }
+  }
+  
+
+  const arrTimes = arrayoftimes.filter(log => log.T1A && log.T1B && log.T2A && log.T2B && log.T1A < log.T1B && log.T2A < log.T2B);
+
+  const ValidTime = arrTimes[arrTimes.length - 1];
+
+  if(!ValidTime){
+    res.status(404).json({error: "No valid times found, it might be that the session is a custom session"});
+    return;
+  }
+
+  const FilteredSessions = Session.find({name: session});
+
+
+  
+
+  if (FilteredSessions.length == 0){
+    res.status(404).json({error: "No sessions found"});
+    return;
+  }
+
+  User.find({subject: session}, (err, users) => {
+    if (err) {
+      res.status(500).send(err);
+      return;
+    }
+
+    Log.find({
+      timestamp: {
+        $gte: ValidTime.T1A,
+        $lte: ValidTime.T2B
+      }
+    }, (err, logs) => {
+      if (err) {
+        res.status(500).send(err);
+        return;
+      }
+
+      if (logs.length == 0) {
+        res.status(404).json({error: "No logs found"})
+        return;
+      }
+
+      const times = {
+        t1a: ValidTime.T1A,
+        t1b: ValidTime.T1B,
+        t2a: ValidTime.T2A,
+        t2b: ValidTime.T2B
+      };
+
+      const dataset = {
+        times: times,
+        session: session,
+        generatedOn: new Date(),
+        participantCount: users.length,
+        participants: users,
+        logs: logs,
+        logsCount: logs.length
+      };
+
+      res.send(enrichDataset(dataset));
+    });
+
+
+  });
+
+
+  
+});
+
+
+
+/**
  * EXERCISES
  */
+
+
+
 
 router.get("/tests/:testName/exercise/:exerciseId", async (req, res) => {
   await Test.findOne({
@@ -1382,5 +1662,199 @@ function writeCsv(userSorted) {
     .writeRecords(userSorted)
     .then(() => console.log('Data uploaded into csv successfully'));
 
+
+}
+
+function convertToCSV(arr){
+  const array = [Object.keys(arr[0])].concat(arr)
+    
+  return array.map(it => {
+    return Object.values(it).toString()
+  }).join('\n')
+}
+
+function createDatasetCSVFile(dataset){
+  var csvFilename = "analysis/"+dataset.session+".csv";
+
+  fs.writeFile (csvFilename, convertToCSV(dataset.summary), function(err) {
+
+      if (err) throw err;
+      
+      console.log('Dataset generation in CSV completed: '+csvFilename);
+
+  });
+}
+
+function createDatasetJSONFile(dataset){
+
+  var jsonFilename = "analysis/"+dataset.session+".json";
+
+  fs.writeFile (jsonFilename, JSON.stringify(dataset,null,2), function(err) {
+
+      if (err) throw err;
+      
+      console.log('Dataset generation in JSON completed: '+jsonFilename);
+ 
+  });
+}
+
+function enrichDataset (dataset){
+     
+  console.log(`Enriching dataset from session ${dataset.session} with ${dataset.participantCount} participants and ${dataset.logsCount} logs`);
+
+  var T1A = new Date(dataset.times.t1a);
+  var T1B = new Date(dataset.times.t1b);
+  var T2A = new Date(dataset.times.t2a);
+  var T2B = new Date(dataset.times.t2b);
+
+  console.log(`Times: t1<${dataset.times.t1a}>-<${dataset.times.t1b}> t2<${dataset.times.t2a}>-<${dataset.times.t2b}>`);
+
+
+  const logsT1 = dataset.logs
+                          .filter( 
+                            (l) => (
+                              ((new Date(l.timestamp).getTime()) >= T1A.getTime()) && 
+                              ((new Date(l.timestamp).getTime()) < T1B.getTime())                           
+                            )
+                           );
+  
+  const logsT2 = dataset.logs
+                           .filter( 
+                             (l) => (
+                               ((new Date(l.timestamp).getTime()) >= T2A.getTime()) && 
+                               ((new Date(l.timestamp).getTime()) < T2B.getTime())                           
+                             )
+                            );
+                            
+  console.log("T1 Log count: "+logsT1.length);
+  console.log("T2 Log count: "+logsT2.length);
+
+  function opposite(gender){
+    if (gender == "Male")
+      return "Female"
+    else
+      return "Male"
+  }
+  
+  function getRows(t,participants,logs){
+  
+    return dataset.participants.map( (p) =>{
+  
+      var partners = dataset.participants.filter( (prt) => ((p.room == prt.room) && (p.code != prt.code)));
+      
+          if(partners.length == 1){
+      
+            try{      
+              var partner = partners[0]; 
+              
+              var group = (p.blind)? "ctrl":"exp";
+              
+              var ipgender = "none";
+      
+              if(group == "exp"){
+
+                ipgender = (t == "t1") ? partner.gender : opposite(partner.gender);
+
+                if ((ipgender != "Male") && (ipgender != "Female")){
+                  ipgender = "Female";
+                }
+
+              }
+              
+              var codeLogs = logs.filter( (l) => ((l.category == "Code") && (l.createdBy == p.code)));
+      
+              var chatLogs = logs.filter( (l) => ((l.category == "Chat") && (l.createdBy == p.code)));
+
+              var okvLogs = logs.filter( (l) => ((l.category == "Verify") && (l.createdBy == p.code) && (l.payload == true)));
+
+              var kovLogs = logs.filter( (l) => ((l.category == "Verify") && (l.createdBy == p.code) && (l.payload == false)));
+
+              function parseCodeLogs(logs,field){
+      
+                return logs.reduce( (total,l) => {
+      
+                  var count = 0; 
+                  try {
+        
+                    for(var i=0;i< l.payload.change[field].length; i++){
+                      var changes = l.payload.change[field][i].length;
+                      count += changes;
+                    }
+        
+                    return total+count;
+        
+                  }catch (error) {
+                    console.error("Error calculating <"+field+"> count:"+error);
+                    console.error("total: "+JSON.stringify(total,null,2));
+                    console.error("l: "+JSON.stringify(l,null,2));
+                  }
+        
+                },0);
+      
+              }
+      
+              var row = { 
+                id: p.code,
+                group: group,
+                time: t,
+                ipgender: ipgender,
+                gender: p.gender,
+                partnerid: partner.code,
+                sca: parseCodeLogs(codeLogs,"text"),
+                scd: parseCodeLogs(codeLogs,"removed"),
+                okv: okvLogs.length,
+                kov: kovLogs.length,
+                dm: chatLogs.length
+              };
+      
+              console.log(`Processed participant ${row.id} with parther ${row.partnerid} in ${t}`);
+              return row;
+      
+            }catch (error) {
+                console.error("ERROR:"+error);
+            }
+          
+          }else{
+            if(partners.length >1 ){
+                console.log(partners);
+                console.log(`WARNING: Skyping participant ${p.code} because it has more than 1 partner`);
+            }else if (partners.length ==0){
+                console.log(`WARNING: Skyping participant ${p.code} because it has NO partners`);
+            }
+          }
+    
+    }).filter( (e) => (e!= null));
+  }
+  
+  function enrichCountWithRatio(summary){
+      var s=[];
+      for(var i =0; i < summary.length; i++)
+        for(var j=0; j < summary.length; j++)
+          if (summary[i].partnerid == summary[j].id){
+            var sca_total = summary[i].sca + summary[j].sca; 
+            var scd_total = summary[i].scd + summary[j].scd; 
+            var okv_total = summary[i].okv + summary[j].okv; 
+            var kov_total = summary[i].kov + summary[j].kov; 
+            var dm_total = summary[i].dm + summary[j].dm; 
+
+            summary[i].sca_rf = (!sca_total)? Number(0).toFixed(4) : Number(summary[i].sca / sca_total).toFixed(4);
+            summary[i].scd_rf = (!scd_total)? Number(0).toFixed(4) : Number(summary[i].scd / scd_total).toFixed(4);
+            summary[i].okv_rf = (!okv_total)? Number(0).toFixed(4) : Number(summary[i].okv / okv_total).toFixed(4);
+            summary[i].kov_rf = (!kov_total)? Number(0).toFixed(4) : Number(summary[i].kov / kov_total).toFixed(4);
+            summary[i].dm_rf =  (!dm_total)? Number(0).toFixed(4) : Number(summary[i].dm / dm_total).toFixed(4);
+
+            s.push(summary[i]);
+          }
+         
+      return s;
+  }
+
+  var dataT1 = enrichCountWithRatio(getRows("t1",dataset.participants,logsT1));
+    
+  var dataT2 = enrichCountWithRatio(getRows("t2",dataset.participants,logsT2));
+  
+  dataset.summary = dataT1.concat(dataT2);
+
+  return dataset;
 
 }

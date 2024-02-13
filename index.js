@@ -7,7 +7,7 @@ const socket = require("socket.io");
 const Logger = require("./logger.js");
 
 // Global utility constants
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 dbConnect().then(
   async () => {

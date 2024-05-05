@@ -274,7 +274,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
     rowt1.id = participant.code;
     rowt1.group = participant.blind ? "ctrl" : "exp";
     rowt1.time = "t1";
-    rowt1.ipgender = rowt1.group == "ctrl" ? "none" : partner.shown_gender;
+    rowt1.ipgender = rowt1.group == "ctrl" ? "none" : partner.shown_gender?partner.shown_gender:partner.gender;
     rowt1.gender = participant.gender;
     rowt1.partnerid = partner.code;
     rowt1.dm = t1logs.filter((log) => log.createdBy == participant.code && log.category == "Chat").length;
@@ -293,7 +293,7 @@ router.get("/analytics/:sessionName", async (req, res) => {
     rowt2.id = participant.code;
     rowt2.group = participant.blind ? "ctrl" : "exp";
     rowt2.time = "t2";
-    rowt2.ipgender = rowt2.group == "ctrl" ? "none" : oppositeGender(partner.shown_gender);
+    rowt2.ipgender = rowt2.group == "ctrl" ? "none" : partner.shown_gender?oppositeGender(partner.shown_gender):oppositeGender(partner.gender);
     rowt2.gender = participant.gender;
     rowt2.partnerid = partner.code;
     rowt2.dm = t2logs.filter((log) => log.createdBy == participant.code && log.category == "Chat").length;
@@ -1588,7 +1588,6 @@ function parseCodeLogs(logs,field){
 }
 
 function parseControlLogs(logs,code,end) {
-  Logger.dbg("START - parseControlLogs: "+code);
   var totalMiliseconds = 0;
   const orderedLogs = logs.sort((a,b) => {
     return new Date(a.timestamp) - new Date(b.timestamp);
@@ -1625,7 +1624,6 @@ function enrichWithRatio(rows) {
       rows[i].sca_rf = rows[i].sca == 0? 0:rows[i].sca / (rows[i].sca + partnerRow.sca);
       rows[i].scd_rf = rows[i].scd == 0? 0:rows[i].scd / (rows[i].scd + partnerRow.scd);
       rows[i].ct_rf = rows[i].ct_sec == 0? 0:rows[i].ct_sec / (rows[i].ct_sec + partnerRow.ct_sec);
-      Logger.dbg("ct "+rows[i].ct+" partner ct "+partnerRow.ct+" ratio "+rows[i].ct_rf)
     } else {
       rows[i].dm_rf = 0;
       rows[i].okv_rf = 0;

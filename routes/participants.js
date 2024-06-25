@@ -3,8 +3,9 @@ var express = require("express");
 const router = express.Router();
 const Test = require("../models/Test.js");
 const Logger = require("../logger.js");
-const User = require("../models/User.js");
+const User = require("../models/User");
 const nodemailer = require("nodemailer");
+const { faker } = require("@faker-js/faker");
 
 router.get("/participants/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
@@ -89,12 +90,12 @@ router.post("/participants/:sessionName/import", async (req, res) => {
       for (const user of users) {
         try {
           const val = await User.exists({ mail: user.email, subject: req.params.sessionName, environment: process.env.NODE_ENV });
-      
+
           if (!val) {
             const generatedCode = await generateCodeInit();
-      
-            Logger.dbg("IMPORT PARTICIPANTS - Generated code: "+generatedCode);
-            
+
+            Logger.dbg("IMPORT PARTICIPANTS - Generated code: " + generatedCode);
+
             if (generatedCode !== null) {
               var participant = new User();
               participant.code = generatedCode;
@@ -109,34 +110,34 @@ router.post("/participants/:sessionName/import", async (req, res) => {
               participant.beganStudying = user.studyStartYear;
               participants.push(participant);
             } else {
-              Logger.dbg("IMPORT PARTICIPANTS - User not created. Code couldn't generate properly...")
+              Logger.dbg("IMPORT PARTICIPANTS - User not created. Code couldn't generate properly...");
               errors++;
             }
           } else {
-            Logger.dbg("IMPORT PARTICIPANTS - User not created. User already exists...")
+            Logger.dbg("IMPORT PARTICIPANTS - User not created. User already exists...");
             exists++;
           }
         } catch (error) {
-          Logger.dbg("IMPORT PARTICIPANTS - Error generating user from csv: "+error);
+          Logger.dbg("IMPORT PARTICIPANTS - Error generating user from csv: " + error);
           errors++;
         }
       }
-      
+
       const inserted = await User.insertMany(participants);
 
-      Logger.dbg("IMPORT PARTICIPANTS - Participants inserted: "+inserted.length);
-      
+      Logger.dbg("IMPORT PARTICIPANTS - Participants inserted: " + inserted.length);
+
       const result = {
         success: inserted.length,
         errors: errors,
         exists: exists,
       };
 
-      Logger.dbg("IMPORT PARTICIPANTS - Sending result: "+result);
+      Logger.dbg("IMPORT PARTICIPANTS - Sending result: " + result);
 
       res.status(200).send(result);
     } catch (e) {
-      Logger.dbg("IMPORT PARTICIPANTS - Fatal error generating users from csv: "+e);
+      Logger.dbg("IMPORT PARTICIPANTS - Fatal error generating users from csv: " + e);
       res.sendStatus(500);
     }
   } else {
@@ -171,7 +172,7 @@ router.get("/participants/:sessionName/export", (req, res) => {
         }
       });
     } catch (e) {
-      Logger.dbg("EXPORT PARTICIPANTS - Error retrieving users... "+e);
+      Logger.dbg("EXPORT PARTICIPANTS - Error retrieving users... " + e);
       res.sendStatus(500);
     }
   } else {
@@ -194,37 +195,37 @@ router.post("/participants/:sessionName/send", async (req, res) => {
       );
 
       if (users) {
-        Logger.dbg("SEND EMAIL TO ALL USERS 'POST' - USERS FOUND, SENDING IN PROCESS")
-        for(var i = 0; i<users.length; i++) {
+        Logger.dbg("SEND EMAIL TO ALL USERS 'POST' - USERS FOUND, SENDING IN PROCESS");
+        for (var i = 0; i < users.length; i++) {
           const user = users[i];
-          Logger.dbg("SENDING EMAIL TO ALL USERS 'POST' - Sending to: "+user.mail);
+          Logger.dbg("SENDING EMAIL TO ALL USERS 'POST' - Sending to: " + user.mail);
           const result = await sendUserMail(user);
           if (result) {
             success += 1;
           } else {
-            errors +=1;
+            errors += 1;
           }
         }
       } else {
-        errors +=1;
+        errors += 1;
       }
-        
+
 
       const result = {
         errors: errors,
         success: success,
-      }
+      };
       res.send(result);
 
     } catch (err) {
-      Logger.monitorLog("ERROR - SEND EMAIL TO ALL USERS 'POST' - Error: "+err);
-      res.sendStatus(500)
+      Logger.monitorLog("ERROR - SEND EMAIL TO ALL USERS 'POST' - Error: " + err);
+      res.sendStatus(500);
     }
   } else {
-    Logger.dbg("SEND EMAIL TO ALL USERS 'POST' - FORBIDDEN, ADMIN TOKEN DO NOT MATCH")
+    Logger.dbg("SEND EMAIL TO ALL USERS 'POST' - FORBIDDEN, ADMIN TOKEN DO NOT MATCH");
     res.sendStatus(403);
   }
-})
+});
 
 
 router.post("/participants/:sessionName/:mail/send", async (req, res) => {
@@ -236,22 +237,22 @@ router.post("/participants/:sessionName/:mail/send", async (req, res) => {
         environment: process.env.NODE_ENV,
         subject: req.params.sessionName,
         mail: req.params.mail,
-      })
+      });
 
       if (user) {
-        Logger.dbg("SEND EMAIL TO USER 'POST' - Sending email to: "+user.mail);
+        Logger.dbg("SEND EMAIL TO USER 'POST' - Sending email to: " + user.mail);
         const result = await sendUserMail(user);
-        if(result) {
-          res.sendStatus(200)
+        if (result) {
+          res.sendStatus(200);
         } else {
-          res.sendStatus(500)
+          res.sendStatus(500);
         }
       } else {
         res.status(404).send("Participant not found!");
       }
 
     } catch (e) {
-      Logger.monitorLog("ERROR - SEND EMAIL TO USER 'POST' - "+e);
+      Logger.monitorLog("ERROR - SEND EMAIL TO USER 'POST' - " + e);
       res.sendStatus(500);
     }
   } else {
@@ -274,7 +275,7 @@ async function sendUserMail(user) {
 
   transporter.verify((err, success) => {
     if (err) {
-      Logger.dbg("SENDUSERMAIL FUNCTION - Error verifying transporter: "+err);
+      Logger.dbg("SENDUSERMAIL FUNCTION - Error verifying transporter: " + err);
       result = false;
     }
     else Logger.dbg('SENDUSERMAIL FUNCTION - Your config is correct');
@@ -296,7 +297,7 @@ async function sendUserMail(user) {
     transporter.close();
     result = true;
   }).catch((error) => {
-    Logger.dbg("ERROR - SENDUSERMAILFUNCTION - Error sending mail: "+error);
+    Logger.dbg("ERROR - SENDUSERMAILFUNCTION - Error sending mail: " + error);
     result = false;
   });
   return result;
@@ -326,5 +327,52 @@ generateCode = async (formatedDate, times) => {
     return null;
   }
 };
+
+// faker.seed(123);
+
+router.post("/participants/new", async (req, res) => {
+  try {
+    const user = createRandomParticipant();
+    await user.save();
+    res.status(201).json(user)
+  } catch (e) {
+    console.log(e);
+    res.sendStatus(500);
+  }
+});
+
+function createRandomParticipant() {
+  const gender = faker.person.sex();
+  const firstName = faker.person.firstName(gender);
+  const birthDate = faker.date.birthdate();
+
+  // For a random subject
+  const subjects = ["TFM", "Flock", "twinTFM", "sp20", "pl20", "twincode-demo"];
+  const randomIndex = Math.floor(Math.random() * subjects.length);
+  const randomSubject = subjects[randomIndex];
+
+  // To ensure beganStudying is after birthDate
+  const birthYear = birthDate.getFullYear();
+  const minStudyYear = birthYear + 5;
+  const studyStartDate = new Date(minStudyYear, 0, 1);
+  const beganStudying = faker.date.between({ from: studyStartDate, to: Date.now() });
+
+  const user = new User({
+    code: faker.number.int({ min: 10, max: 100 }).toString(),
+    firstName: firstName,
+    surname: faker.person.lastName(),
+    mail: faker.internet.email({ firstName: firstName }),
+    gender: gender,
+    shown_gender: faker.person.sex(),
+    birthDate: birthDate,
+    subject: randomSubject,
+    beganStudying: beganStudying.getFullYear(),
+    visitedPExercises: [],
+    visitedIExercises: [],
+    nextExercise: true
+  });
+
+  return user;
+}
 
 module.exports = router;

@@ -24,6 +24,7 @@
     "mocha": "^9.2.0",
     "mongoose": "^5.9.7",
     "nodemailer": "^6.7.2",
+    "openai": "^4.52.2",
     "papaparse": "^5.2.0",
     "pug": "^2.0.4",
     "socket.io": "^2.4.1"

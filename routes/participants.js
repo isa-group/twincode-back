@@ -56,7 +56,7 @@ router.get("/participants/:sessionName", (req, res) => {
   }
 });
 
-router.delete("/participants/:sessionName/:mail", (req, res) => {
+router.delete("/participants/:sessionName/:code", (req, res) => {
   const adminSecret = req.headers.authorization;
 
   if (adminSecret === process.env.ADMIN_SECRET) {
@@ -64,10 +64,10 @@ router.delete("/participants/:sessionName/:mail", (req, res) => {
       User.findOneAndRemove({
         environment: process.env.NODE_ENV,
         subject: req.params.sessionName,
-        mail: req.params.mail,
+        code: req.params.code,
       }).then((user) => {
         if (user) {
-          res.send("Participant " + user.mail + " successfully deleted!");
+          res.send("Participant " + user.code + " successfully deleted!");
         } else {
           res.status(404).send("Participant not found!");
         }

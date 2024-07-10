@@ -1,14 +1,10 @@
 require("dotenv").config();
-const openai = require("openai")
 const Logger = require("./logger.js");
 const Session = require("./models/Session.js");
 const User = require("./models/User.js");
 const Room = require("./models/Room.js");
 const Test = require("./models/Test.js");
 const { dbg } = require("./logger.js");
-
-
-
 
 let uids = new Map();
 let rooms = new Map();
@@ -19,58 +15,9 @@ let userToSocketID = new Map();
 let lastSessionEvent = new Map();
 let threadforUser = new Map();
 
-const contextES = "Eres un estudiante de segundo curso de universidad. Estás hablando con un estudiante para hacer un proyecto juntos. El estudiante te envia un mensaje y un codigo, tu necesitas responder al estudiante con un mensaje y un codigo pero no puedes hacer todo el debes enviar 1 linea de codigo maximo y 20 caracteres, si el codigo no esta completo no importa. Esto es solo una conversación, el texto de respuesta debe ser una conversación y el usuario debe poder continuar la conversación. Las resolutios del código debe hacerlas el alumno, no tú. Si el alumno te pide ayuda puedes escribir código de lo contrario no puedes, solo puedes escribir código si el alumno te pide ayuda. El código debe tener un máximo de una línea y 20 caracteres. Si el estudiante pide un mensaje como Hola, Hola o algo así no se puede escribir código y responder con un texto de 3 palabras como máximo. el retorno es un JSON con el mensaje y el código o sólo el mensaje. Cuando envías el código debes enviar todo el código. El código debe estar en JavaScript. ES OBLIGATORIO QUE LA RESPUESTA DE TEXTO UTILICE ABREVIATURAS UTILIZA 1 ABREVIATURA CADA 6 PALABRAS Y COMETAS ALGO DE ERRORES DE ORTOGRAFÍA PERO NO MUY OBVIOS. ES OBLIGATORIO QUE LA RESPUESTA A HOLA O CUALQUIER SALUDO SEA HOLA O ALGUN SIMILAR EN FORMATO INFORMAL. ES UNA CONVERSACIÓN INFORMAL PERO ENTRE DESCONOCIDOS EVITA TERMINOS COMO BRO Y LAS EXCLAMACIONES. LAS COMAS LAS PUEDES OMITIR EL 90% DE LAS VECES. DEBES DE DEVOLVER UN JSON VALIDO CON EL MENSAJE Y EL CODIGO O SOLO EL MENSAJE. TU RESPUESTA DEBE DE SER message:message y code:code si tuvieses que completar el código o solo message:message si no tienes que completar el código o solo code:code si no tienes ningun mensaje que enviarle.  Puedes definir funciones dentro de la funcion principal si necesitas recursividad. ENVIAS UN JSON VÁLIDO. NO DEBES DE ESCRIBIR TODO EL CÓDIGO YA QUE EL ESTUDIANTE TIENE QUE APRENDER. RECUERDA QUE ERES UN ESTUDIANTE ES DECIR UN IGUAL AL USUARIO QUE TE ESCRIBE. TU TIENES EL PODER DE ESCRIBIR CÓDIGO Y ES UNA ACTIVIDAD EN PAREJA NO LE HABLES CON LO QUE VAS A HACER. USA LA PRIMERA PERSONA DEL PLURAL CUANDO SEA NECESARIO, SI NO LA DEL SINGULAR. LENGUAJE INFORMAL CON ABREVIATURAS CUANDO LAS NECESITES PERO NUNCA EN SUSTANTIVOS Y FALTAS DE ORTOGRAFÍAS LEVES, CON UN POCO DE VACILE Y EN ESPAÑOL DE ESPAÑA, NO CONOCES LAS MAYÚSCULAS NI LAS TILDES. Añade \n cuando sea necesario. EN LOS PRIMEROS 2 MENSAJES ESTÁ PROHIBIDO ESCRIBIR CÓDIGO. TIENES TOTALMENTE PROHIBIDO DAR TUS DATOS PERSONALES COMO GRUPO EN EL QUE TE ENCUENTRAS"
-
-
-const openaiClient = new openai.OpenAI(process.env.OPENAI_API_KEY);
-const assistant = await openai.beta.assistants.create({
-  name: "AI Customer",
-  instructions: contextES,
-  model: "gpt-4-1106-preview"
-});
-
-
 //A function to parse an entrance into a json
 function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
-}
-
-//A function to send and recive response from openai API
-async function chatToAI(message, socket) {
-
-  //First retrieves the thread for the user, if not exists, creates it
-  let thread = threadforUser.get(socket.id);
-  if (!thread) {
-    thread = await openai.beta.threads.create();
-    threadforUser.set(socket.id, thread);
-  }
-
-  const rmessage = await openai.beta.threads.messages.create(
-    thread.id,
-    {
-      role: "user",
-      content: message,
-    }
-  );
-
-  let run = await openai.beta.threads.runs.createAndPoll(
-    thread.id,
-    {
-      assistant_id: assistant.id,
-    }
-  );
-
-
-  if (run.status === "completed") {
-    const messages = await openai.beta.threads.messages.list(
-      run.thread_id
-    );
-    const lastMessage = messages.data[messages.data.length - 1];
-
-    return lastMessage.content;
-    
-  }
-
 }
 
 //A simple wait function to wait a specified period of ms

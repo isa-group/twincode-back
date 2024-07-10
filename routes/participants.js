@@ -7,6 +7,9 @@ const User = require("../models/User");
 const nodemailer = require("nodemailer");
 const { faker } = require("@faker-js/faker");
 
+faker.locale = "es";
+faker.seed(new Date().getTime());
+
 router.get("/participants/:sessionName", (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -180,6 +183,51 @@ router.get("/participants/:sessionName/export", (req, res) => {
   }
 });
 
+router.post("/participants/:sessionName/bot", async (req, res) => {
+    const adminSecret = req.headers.authorization;
+    
+    if (adminSecret === process.env.ADMIN_SECRET) {
+        try {
+            var generatedCode = await generateCodeInit();
+
+            Logger.dbg("ADD BOT - Generated code: " + generatedCode);
+
+            if (generatedCode !== null) {
+
+                // Add 'B' to the code to identify it as a bot
+                generatedCode = "B" + generatedCode;
+
+                var participant = new User();
+                participant.code = generatedCode;
+                participant.firstName = "BOT";
+                participant.surname = "BOT";
+                participant.mail = "noreply@example.com";
+                participant.subject = req.params.sessionName;
+                participant.environment = process.env.NODE_ENV;
+                participant.gender = genders[Math.floor(Math.random * genders.length)];
+                participant.shown_gender = participant.gender;
+                participant.birthDate = faker.date.birthdate({min: 18, max: 34, mode: 'age'});
+                participant.beganStudying = faker.date.past({years: 5}).getFullYear();
+                
+                const created = await participant.save();
+                Logger.dbg("ADD BOT - Participant created: " + created);
+
+                res.sendStatus(200);
+
+            } else {
+                Logger.dbg("IMPORT PARTICIPANTS - User not created. Code couldn't generate properly...");
+                errors++;
+            }
+
+        } catch (e) {
+            console.log(e);
+            res.sendStatus(500);
+        }
+    } else {
+        res.sendStatus(401);
+    }
+});
+
 router.post("/participants/:sessionName/send", async (req, res) => {
   const adminSecret = req.headers.authorization;
 
@@ -327,52 +375,5 @@ generateCode = async (formatedDate, times) => {
     return null;
   }
 };
-
-// faker.seed(123);
-
-router.post("/participants/new", async (req, res) => {
-  try {
-    const user = createRandomParticipant();
-    await user.save();
-    res.status(201).json(user)
-  } catch (e) {
-    console.log(e);
-    res.sendStatus(500);
-  }
-});
-
-function createRandomParticipant() {
-  const gender = faker.person.sex();
-  const firstName = faker.person.firstName(gender);
-  const birthDate = faker.date.birthdate();
-
-  // For a random subject
-  const subjects = ["TFM", "Flock", "twinTFM", "sp20", "pl20", "twincode-demo"];
-  const randomIndex = Math.floor(Math.random() * subjects.length);
-  const randomSubject = subjects[randomIndex];
-
-  // To ensure beganStudying is after birthDate
-  const birthYear = birthDate.getFullYear();
-  const minStudyYear = birthYear + 5;
-  const studyStartDate = new Date(minStudyYear, 0, 1);
-  const beganStudying = faker.date.between({ from: studyStartDate, to: Date.now() });
-
-  const user = new User({
-    code: faker.number.int({ min: 10, max: 100 }).toString(),
-    firstName: firstName,
-    surname: faker.person.lastName(),
-    mail: faker.internet.email({ firstName: firstName }),
-    gender: gender,
-    shown_gender: faker.person.sex(),
-    birthDate: birthDate,
-    subject: randomSubject,
-    beganStudying: beganStudying.getFullYear(),
-    visitedPExercises: [],
-    visitedIExercises: [],
-    nextExercise: true
-  });
-
-  return user;
-}
 
 module.exports = router;

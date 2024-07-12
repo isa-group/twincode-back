@@ -5,6 +5,7 @@ const User = require("./models/User.js");
 const Room = require("./models/Room.js");
 const Test = require("./models/Test.js");
 const { dbg } = require("./logger.js");
+const { get } = require("mongoose");
 
 let uids = new Map();
 let rooms = new Map();
@@ -1387,9 +1388,27 @@ module.exports = {
         }
         console.log("EVENT msg - tokens.get(pack.token) ", tokens.get(pack.token));
 
-        io.sockets.emit("msg", pack);
+        // if pair is a bot (code starts with "B"), then use the bot api to answer
 
-        var uid = uids.get(socket.id);
+        var user = User.findOne({
+          code: pack.token,
+          environment: process.env.NODE_ENV,
+        });
+
+        var peer = User.findOne({
+          code: { $ne: user.code },
+          room: user.room,
+          environment: process.env.NODE_ENV,
+          subject: user.subject,
+        });
+
+        if (peer && peer.code.startsWith("B")) {
+          Logger.dbg("EVENT msg - Bot detected: ", peer, ["code"]);
+          getMsgFromLeia(pack, user.subject, user.room);
+        } else {
+          io.sockets.emit("msg", pack);
+        }
+
         Logger.log(
           "Chat",
           pack.token,
@@ -1398,6 +1417,32 @@ module.exports = {
           sessions.get(tokens.get(pack.token)).session.testCounter
         );
       });
+
+      getMsgFromLeia = async (pack, subject, room) => {
+        fetch(process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: pack.data,
+            question: "Fibonacci",
+            code: "var a = 0;"
+          })
+        })
+        .then((res) => res.json())
+        .then((data) => {
+          console.log(data);
+          if(data.message) {
+            pack.data = data.message;
+            pack.uid = "LEIA";
+            io.sockets.emit("msg", pack);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        })
+      },
 
       socket.on("giveControl", (pack) => {
         Logger.dbg("EVENT giveControl", pack);

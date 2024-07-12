@@ -7,7 +7,6 @@ const User = require("../models/User");
 const nodemailer = require("nodemailer");
 const { faker } = require("@faker-js/faker");
 
-faker.locale = "es";
 faker.seed(new Date().getTime());
 
 router.get("/participants/:sessionName", (req, res) => {
@@ -204,8 +203,10 @@ router.post("/participants/:sessionName/bot", async (req, res) => {
                 participant.mail = "noreply@example.com";
                 participant.subject = req.params.sessionName;
                 participant.environment = process.env.NODE_ENV;
-                participant.gender = genders[Math.floor(Math.random * genders.length)];
+                genders = ['Male', 'Female']
+                participant.gender = genders[Math.floor(Math.random() * genders.length)];
                 participant.shown_gender = participant.gender;
+                Logger.dbg("ADD BOT - gender: " + participant.gender);
                 participant.birthDate = faker.date.birthdate({min: 18, max: 34, mode: 'age'});
                 participant.beganStudying = faker.date.past({years: 5}).getFullYear();
                 

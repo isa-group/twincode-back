@@ -6,6 +6,7 @@ const Room = require("./models/Room.js");
 const Test = require("./models/Test.js");
 const { dbg } = require("./logger.js");
 const { get } = require("mongoose");
+const axios = require("axios");
 
 let uids = new Map();
 let rooms = new Map();
@@ -19,6 +20,36 @@ let threadforUser = new Map();
 //A function to parse an entrance into a json
 function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
+}
+
+async function sendMsgToLeia(pack, subject, room, io) {
+
+    url = process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}`;
+    Logger.dbg("Send Message To LEIA - URL <" + url + ">");
+    
+    axios.post(url, {
+    eventType: "message",
+    eventContent: {
+        code: "var a = 0;",
+        message: pack.data,
+        question: "Crea la sucesión de fibonacci"
+    }
+    }, {
+    headers: {
+        "Content-Type": "application/json",
+    }
+    })
+    .then((response) => {
+    console.log(response.data);
+    if(response.data.message) {
+        pack.data = response.data.message;
+        pack.uid = "LEIA";
+        io.sockets.emit("msg", pack);
+    }
+    })
+    .catch((error) => {
+    Logger.dbgerr("Send Message To LEIA - ERROR <" + error + ">");
+    });
 }
 
 //A simple wait function to wait a specified period of ms
@@ -1377,7 +1408,7 @@ module.exports = {
         }
       });
 
-      socket.on("msg", (pack) => {
+      socket.on("msg", async (pack) => {
         Logger.dbg("EVENT msg", pack);
 
         if (sessions.get(tokens.get(pack.token)) == null) {
@@ -1390,21 +1421,21 @@ module.exports = {
 
         // if pair is a bot (code starts with "B"), then use the bot api to answer
 
-        var user = User.findOne({
+        var user = await User.findOne({
           code: pack.token,
           environment: process.env.NODE_ENV,
         });
 
-        var peer = User.findOne({
-          code: { $ne: user.code },
+        var botPeer = await User.findOne({
+          code: { $ne: user.code, $regex: /^B/ },
           room: user.room,
           environment: process.env.NODE_ENV,
           subject: user.subject,
         });
 
-        if (peer && peer.code.startsWith("B")) {
-          Logger.dbg("EVENT msg - Bot detected: ", peer, ["code"]);
-          getMsgFromLeia(pack, user.subject, user.room);
+        if (botPeer) {
+          Logger.dbg("EVENT msg - Bot detected: ", botPeer, ["code"]);
+          sendMsgToLeia(pack, user.subject, user.room, io);
         } else {
           io.sockets.emit("msg", pack);
         }
@@ -1417,32 +1448,6 @@ module.exports = {
           sessions.get(tokens.get(pack.token)).session.testCounter
         );
       });
-
-      getMsgFromLeia = async (pack, subject, room) => {
-        fetch(process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: pack.data,
-            question: "Fibonacci",
-            code: "var a = 0;"
-          })
-        })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log(data);
-          if(data.message) {
-            pack.data = data.message;
-            pack.uid = "LEIA";
-            io.sockets.emit("msg", pack);
-          }
-        })
-        .catch((err) => {
-          console.log(err);
-        })
-      },
 
       socket.on("giveControl", (pack) => {
         Logger.dbg("EVENT giveControl", pack);

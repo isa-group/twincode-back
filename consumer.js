@@ -30,9 +30,9 @@ async function sendMsgToLeia(pack, subject, room, io) {
     axios.post(url, {
     eventType: "message",
     eventContent: {
-        code: "var a = 0;",
-        message: pack.data,
-        question: "Crea la sucesión de fibonacci"
+        code: pack.data.code,
+        message: pack.data.message,
+        question: pack.data.exercise
     }
     }, {
     headers: {
@@ -1437,13 +1437,13 @@ module.exports = {
           Logger.dbg("EVENT msg - Bot detected: ", botPeer, ["code"]);
           sendMsgToLeia(pack, user.subject, user.room, io);
         } else {
-          io.sockets.emit("msg", pack);
+          io.sockets.emit("msg", pack.data.message);
         }
 
         Logger.log(
           "Chat",
           pack.token,
-          pack.data,
+          pack.data.message,
           sessions.get(tokens.get(pack.token)).session.exerciseCounter,
           sessions.get(tokens.get(pack.token)).session.testCounter
         );

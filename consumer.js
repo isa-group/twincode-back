@@ -40,11 +40,14 @@ async function sendMsgToLeia(pack, subject, room, io) {
     }
     })
     .then((response) => {
-    console.log(response.data);
+      Logger.dbg("Response from LEIA - " + response.data);
     if(response.data.message) {
         pack.data = response.data.message;
+        waitTime = response.data.message.length * 150;
         pack.uid = "LEIA";
-        io.sockets.emit("msg", pack);
+        setTimeout(() => {
+          io.sockets.emit("msg", pack);
+        }, waitTime);
     }
     })
     .catch((error) => {

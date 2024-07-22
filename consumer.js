@@ -41,14 +41,19 @@ async function sendMsgToLeia(pack, subject, room, io) {
     })
     .then((response) => {
       Logger.dbg("Response from LEIA - " + response.data);
-    if(response.data.message) {
-        pack.data = response.data.message;
-        waitTime = response.data.message.length * 150;
-        pack.uid = "LEIA";
-        setTimeout(() => {
-          io.sockets.emit("msg", pack);
-        }, waitTime);
-    }
+      if(response.data.message) {
+          pack.data = response.data.message;
+          waitTime = response.data.message.length * 150;
+          pack.uid = "LEIA";
+          setTimeout(() => {
+            io.sockets.emit("msg", pack);
+          }, waitTime);
+      }
+      if(response.data.code) {
+          pack.code = response.data.code;
+          pack.uid = "LEIA";
+          io.sockets.emit("leiaCode", pack);
+      }
     })
     .catch((error) => {
     Logger.dbgerr("Send Message To LEIA - ERROR <" + error + ">");

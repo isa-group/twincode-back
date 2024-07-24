@@ -22,9 +22,9 @@ function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
 }
 
-async function sendMsgToLeia(pack, subject, room, io) {
+async function sendMsgToLeia(pack, subject, room, gender, io) {
 
-    url = process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}`;
+    url = process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}/events`;
     Logger.dbg("Send Message To LEIA - URL <" + url + ">");
     
     axios.post(url, {
@@ -32,17 +32,19 @@ async function sendMsgToLeia(pack, subject, room, io) {
     eventContent: {
         code: pack.data.code,
         message: pack.data.message,
-        question: pack.data.exercise
+        question: pack.data.exercise,
+        gender: gender
     }
     }, {
     headers: {
         "Content-Type": "application/json",
+        "x-api-key": process.env.LEIA_API_KEY
     }
     })
     .then((response) => {
-      Logger.dbg("Response from LEIA - " + response.data);
+      Logger.dbg("Response from LEIA - " + JSON.stringify(response.data, null, 2));
       if(response.data.message) {
-          pack.data = response.data.message;
+          pack.data.message = response.data.message;
           waitTime = response.data.message.length * 150;
           pack.uid = "LEIA";
           setTimeout(() => {
@@ -50,7 +52,7 @@ async function sendMsgToLeia(pack, subject, room, io) {
           }, waitTime);
       }
       if(response.data.code) {
-          pack.code = response.data.code;
+          pack.data.code = response.data.code;
           pack.uid = "LEIA";
           io.sockets.emit("leiaCode", pack);
       }
@@ -1443,9 +1445,9 @@ module.exports = {
 
         if (botPeer) {
           Logger.dbg("EVENT msg - Bot detected: ", botPeer, ["code"]);
-          sendMsgToLeia(pack, user.subject, user.room, io);
+          sendMsgToLeia(pack, user.subject, user.room, botPeer.gender, io);
         } else {
-          io.sockets.emit("msg", pack.data.message);
+          io.sockets.emit("msg", pack);
         }
 
         Logger.log(

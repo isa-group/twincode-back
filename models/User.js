@@ -11,7 +11,7 @@ const UserSchema = new Schema({
   mail: { type: String, required: true },
   academicMail: { type: String },
   gender: { type: String, required: true },
-  shown_gender: { type: String, required: true }, 
+  shown_gender: { type: String, required: true },
   jsexp: { type: String, required: false },
   birthDate: { type: Date, required: true },
   subject: { type: String, required: true },
@@ -37,4 +37,4 @@ UserSchema.index(
   }
 );
 
-module.exports = mongoose.model("User", UserSchema);
+module.exports = mongoose.model('User', UserSchema);

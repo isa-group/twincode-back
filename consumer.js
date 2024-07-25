@@ -1,11 +1,12 @@
 require("dotenv").config();
-
 const Logger = require("./logger.js");
 const Session = require("./models/Session.js");
 const User = require("./models/User.js");
 const Room = require("./models/Room.js");
 const Test = require("./models/Test.js");
 const { dbg } = require("./logger.js");
+const { get } = require("mongoose");
+const axios = require("axios");
 
 let uids = new Map();
 let rooms = new Map();
@@ -14,11 +15,51 @@ let tokens = new Map();
 let connectedUsers = new Map();
 let userToSocketID = new Map();
 let lastSessionEvent = new Map();
-
+let threadforUser = new Map();
 
 //A function to parse an entrance into a json
 function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
+}
+
+async function sendMsgToLeia(pack, subject, room, gender, io) {
+
+    url = process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}/events`;
+    Logger.dbg("Send Message To LEIA - URL <" + url + ">");
+    
+    axios.post(url, {
+    eventType: "message",
+    eventContent: {
+        code: pack.data.code,
+        message: pack.data.message,
+        question: pack.data.exercise,
+        gender: gender
+    }
+    }, {
+    headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.LEIA_API_KEY
+    }
+    })
+    .then((response) => {
+      Logger.dbg("Response from LEIA - " + JSON.stringify(response.data, null, 2));
+      if(response.data.message) {
+          pack.data.message = response.data.message;
+          waitTime = response.data.message.length * 150;
+          pack.uid = "LEIA";
+          setTimeout(() => {
+            io.sockets.emit("msg", pack);
+          }, waitTime);
+      }
+      if(response.data.code) {
+          pack.data.code = response.data.code;
+          pack.uid = "LEIA";
+          io.sockets.emit("leiaCode", pack);
+      }
+    })
+    .catch((error) => {
+    Logger.dbgerr("Send Message To LEIA - ERROR <" + error + ">");
+    });
 }
 
 //A simple wait function to wait a specified period of ms
@@ -1377,7 +1418,7 @@ module.exports = {
         }
       });
 
-      socket.on("msg", (pack) => {
+      socket.on("msg", async (pack) => {
         Logger.dbg("EVENT msg", pack);
 
         if (sessions.get(tokens.get(pack.token)) == null) {
@@ -1388,13 +1429,31 @@ module.exports = {
         }
         console.log("EVENT msg - tokens.get(pack.token) ", tokens.get(pack.token));
 
-        io.sockets.emit("msg", pack);
+        // if pair is a bot (code starts with "B"), then use the bot api to answer
 
-        var uid = uids.get(socket.id);
+        var user = await User.findOne({
+          code: pack.token,
+          environment: process.env.NODE_ENV,
+        });
+
+        var botPeer = await User.findOne({
+          code: { $ne: user.code, $regex: /^B/ },
+          room: user.room,
+          environment: process.env.NODE_ENV,
+          subject: user.subject,
+        });
+
+        if (botPeer) {
+          Logger.dbg("EVENT msg - Bot detected: ", botPeer, ["code"]);
+          sendMsgToLeia(pack, user.subject, user.room, botPeer.gender, io);
+        } else {
+          io.sockets.emit("msg", pack);
+        }
+
         Logger.log(
           "Chat",
           pack.token,
-          pack.data,
+          pack.data.message,
           sessions.get(tokens.get(pack.token)).session.exerciseCounter,
           sessions.get(tokens.get(pack.token)).session.testCounter
         );

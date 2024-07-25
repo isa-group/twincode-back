@@ -27,6 +27,7 @@
     "openai": "^4.52.2",
     "papaparse": "^5.2.0",
     "pug": "^2.0.4",
+    "@faker-js/faker": "^8.4.1",
     "socket.io": "^2.4.1"
   },
   "repository": {
@@ -34,7 +35,6 @@
     "url": "https://github.com/pafmon/flockjs"
   },
   "devDependencies": {
-    "@faker-js/faker": "^8.4.1",
     "@types/dotenv": "^8.2.0",
     "nodemon": "^2.0.12"
   }

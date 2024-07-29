@@ -274,7 +274,7 @@ async function executeStandardSession(session, io) {
     var participants = [];
     potentialParticipants.forEach((p) => {
       //Filter out the one not connected : they don't have the property socketId! 
-      if (p.socketId) {
+      if (p.socketId || /^B/.test(p.code)) {
         //Logger.dbg(`executeStandardSession - participant with code <${p.code}> is connected`);
         participants.push(p);
       }
@@ -926,7 +926,7 @@ async function notifyParticipants(sessionName, io) {
   Logger.dbg("notifyParticipants - Number of potential participants: " + potentialParticipants.length);
   potentialParticipants.forEach((p) => {
     //Filter out the one not connected : they don't have the property socketId! 
-    if (p.socketId) {
+    if (p.socketId || /^B/.test(p.code)) {
       Logger.dbg("notifyParticipants - Including connected participant", p.mail);
       participants.push(p);
     } else {
@@ -1008,15 +1008,79 @@ async function notifyParticipants(sessionName, io) {
   var controlList = [];
   var expertimentList = [];
 
-  for (ui = 0; ui < l.length; ui++) {
-    if (ui % 2 == 0) expertimentList[expertimentList.length] = l[ui];
-    else controlList[controlList.length] = l[ui];
-  }
+    //ControlList -> Bots + Remaining Participants
+    //ExpertimentList -> Participants
+
+  /**
+   * l = [P1, P2, P3, P4, B1, B2]
+   * ControlList = [B1, B2, P4]
+   * ExpertimentList = [P1, P2, P3]
+   * */
+
+  const bots = l.filter((p) => /^B/.test(p.code));
+  l = l.filter((p) => !/^B/.test(p.code));
+  
+
+  
+
+  controlList = bots.length > l.length ? bots.slice(0, l.length) : bots;
+
+  expertimentList = l;
+
+  /**
+   * l = [P1, P2, P3, P4]
+   * ControlList = [B1, B2]
+   * ExpertimentList = l
+   * length of l = 4
+   * lenght of controlList = 2
+   * 
+   * res = ExpertimentList.lenght - controlList.length = 2
+   * res = ⌊res / 2⌋ = 1
+   * 
+   * expertimentList[:res] = [P1]
+   * expertimentList[res:] = [P2, P3, P4]
+   * 
+   * controlList = [B1, B2]
+   * controlList = controlList + expertimentList[:res] = [B1, B2, P1]
+   * expertimentList = expertimentList[res:] = [P2, P3, P4]
+   * 
+   */
+
+
+  let res = expertimentList.length - controlList.length;
+
+  res = Math.floor(res / 2);
+
+  controlList = controlList.concat(expertimentList.slice(0, res));
+  expertimentList = expertimentList.slice(res);
+
+  Logger.dbg("notifyParticipants - Control list", controlList, ["code", "mail"]);
+  Logger.dbg("notifyParticipants - Expertiment list", expertimentList, ["code", "mail"]);
+
+
+
+  // for (ui = 0; ui < l.length; ui++) {
+  //   // if (ui % 2 == 0) expertimentList[expertimentList.length] = l[ui];
+  //   // else controlList[controlList.length] = l[ui];
+  // }
 
   participantNumber = 0;
 
+  //Add room 0 to controlList
+  for (i = 0; i < controlList.length; i++) {
+    controlList[i].room = 0;
+    controlList[i].blind = session.blindParticipant;
+  }
+  participants = controlList.concat(expertimentList);
+
+  roomCount = Math.floor(participants.length / 2);
+
+
+
   for (i = 0; i < roomCount; i++) {
     //Now we put together 1 participant of each group (control and experiment)
+    Logger.dbg("notifyParticipants - Bot <" + controlList[i] + ">:\n")
+    Logger.dbg("notifyParticipants - Participant <" + expertimentList[i] + ">:\n")
     let peer1 = controlList[i];
     let peer2 = expertimentList[i];
 

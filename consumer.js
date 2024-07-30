@@ -22,9 +22,11 @@ function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
 }
 
-async function sendMsgToLeia(pack, subject, room, gender, io) {
+async function sendMsgToLeia(pack, subject, room, gender, waitTime, io) {
 
-    url = process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}/events`;
+    const startTime = new Date().getTime();
+
+    url = process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}/events?lang=en`;
     Logger.dbg("Send Message To LEIA - URL <" + url + ">");
     
     axios.post(url, {
@@ -42,14 +44,26 @@ async function sendMsgToLeia(pack, subject, room, gender, io) {
     }
     })
     .then((response) => {
+      const endTime = new Date().getTime();
+      const elapsedTime = endTime - startTime;
       Logger.dbg("Response from LEIA - " + JSON.stringify(response.data, null, 2));
       if(response.data.message) {
           pack.data.message = response.data.message;
-          waitTime = response.data.message.length * 150;
+          // Time to think the message and type, plus the time to read the message
+          waitTime += parseInt(response.data.message.length) * 50;
+          Logger.dbg("Send Message To LEIA - TOTAL BOT WAIT TIME <" + waitTime + ">");
+          Logger.dbg("Send Message To LEIA - RESPONSE ELAPSED TIME <" + elapsedTime + ">");
           pack.uid = "LEIA";
-          setTimeout(() => {
+          if (waitTime < elapsedTime) {
+            Logger.dbg("Send Message To LEIA - RESPONSE TIME <Sending immediately>");
             io.sockets.emit("msg", pack);
-          }, waitTime);
+          } else {
+            const diff = waitTime - elapsedTime;
+            Logger.dbg("Send Message To LEIA - RESPONSE TIME <Sending in " + diff + " ms>");
+            setTimeout(() => {
+              io.sockets.emit("msg", pack);
+            }, diff);
+          }
       }
       if(response.data.code) {
           pack.data.code = response.data.code;
@@ -1509,7 +1523,11 @@ module.exports = {
 
         if (botPeer) {
           Logger.dbg("EVENT msg - Bot detected: ", botPeer, ["code"]);
-          sendMsgToLeia(pack, user.subject, user.room, botPeer.gender, io);
+
+          // Wait time to simulate bot reading the message
+          var waitTime = pack.data.message.split(" ").length * 100;
+          Logger.dbg("EVENT msg - Bot read time: ", waitTime);
+          sendMsgToLeia(pack, user.subject, user.room, botPeer.gender, waitTime, io);
         } else {
           io.sockets.emit("msg", pack);
         }

@@ -6,6 +6,7 @@ var cors = require("cors");
 const Logger = require("./logger.js");
 const Session = require("./models/Session.js");
 const User = require("./models/User.js");
+// const Config = require("./models/Config.js");
 const io = require("socket.io");
 
 var app = express();
@@ -28,11 +29,15 @@ const tests = require("./routes/tests.js");
 const admin = require("./routes/admin");
 const consumer = require("./consumer.js");
 const participants = require("./routes/participants");
+const leia = require("./routes/leia");
+const config = require("./routes/config");
 
 app.use(auth);
 app.use(tests);
 app.use(admin);
 app.use(participants);
+app.use(leia);
+app.use(config);
 
 app.get("/", (req, res) => {
   res.redirect(process.env.FRONTEND_URL);

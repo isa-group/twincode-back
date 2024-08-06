@@ -7,6 +7,7 @@ const Logger = require("../logger.js");
 const User = require("../models/User.js");
 const Session = require("../models/Session.js");
 const Log = require("../models/Log.js");
+const SystemConfig = require("../models/SystemConfig.js");
 const consumer = require("../consumer.js");
 // Import csv-writer
 const csvwriter = require('csv-writer');
@@ -32,6 +33,49 @@ router.post("/startSession/:sessionName", async (req, res) => {
   } else {
     res.sendStatus(401);
   }
+});
+
+router.get("/systemconfig", async (req, res) => { 
+  const adminSecret = req.headers.authorization;
+
+  if (adminSecret === process.env.ADMIN_SECRET) {
+    try {
+        const systemConfig = await SystemConfig.findOne({ environment: process.env.NODE_ENV });
+        const languages = process.env.LANGUAGES ? process.env.LANGUAGES.split(",") : ["en"];
+        res.send({ config: systemConfig, languages: languages });
+    } catch (e) {
+        console.log(e);
+        res.sendStatus(500);
+        }
+    }
+    else {
+        res.sendStatus(401);
+    }
+});
+
+router.put("/systemconfig", async (req, res) => {
+    const adminSecret = req.headers.authorization;
+    
+    if (adminSecret === process.env.ADMIN_SECRET) {
+        const languages = process.env.LANGUAGES ? process.env.LANGUAGES.split(",") : ["en"];
+        if (languages.includes(req.body.languaje)) {
+            try {
+                const systemConfig = await SystemConfig.findOne({ environment: process.env.NODE_ENV });
+                systemConfig.languaje = req.body.languaje;
+                systemConfig.modified = new Date();
+                await systemConfig.save();
+                res.sendStatus(200);
+            }
+            catch (e) {
+                console.log(e);
+                res.sendStatus(500);
+            }
+        } else {
+            res.status(400).send("Language not supported");
+        }
+    } else {
+        res.sendStatus(401);
+    }
 });
 
 router.get("/sessions", async (req, res) => {

@@ -55,11 +55,8 @@ router.get("/systemconfig", async (req, res) => {
 
 router.put("/systemconfig", async (req, res) => {
     const adminSecret = req.headers.authorization;
-    console.log(JSON.stringify(req.body));
     if (adminSecret === process.env.ADMIN_SECRET) {
         const languages = process.env.LANGUAGES ? process.env.LANGUAGES.split(",") : ["en"];
-        console.log(languages);
-        console.log(req.body.language);
         if (languages.includes(req.body.language)) {
             try {
                 const systemConfig = await SystemConfig.findOne({ environment: process.env.NODE_ENV });

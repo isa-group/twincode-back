@@ -5,12 +5,14 @@ const app = require("./server.js");
 const consumer = require("./consumer.js");
 const socket = require("socket.io");
 const Logger = require("./logger.js");
+const { initializeSystemConfig } = require("./models/SystemConfig");
 
 // Global utility constants
 const PORT = process.env.PORT || 3001;
 
 dbConnect().then(
   async () => {
+    await initializeSystemConfig();
     const server = await app.listen(PORT, () => {
       Logger.monitorLog("Listening on port " + PORT);
       Logger.dbg("Listening on port " + PORT);

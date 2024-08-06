@@ -24,9 +24,13 @@ function toJSON(obj) {
 
 async function sendMsgToLeia(pack, subject, room, gender, waitTime, io) {
 
+    const systemConfig = await SystemConfig.findOne({
+        environment: process.env.NODE_ENV,
+    });
+
     const startTime = new Date().getTime();
 
-    url = process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}/events?lang=en`;
+    url = process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}/events?lang=`+systemConfig.languaje?systemConfig.languaje:"en";
     Logger.dbg("Send Message To LEIA - URL <" + url + ">");
     
     axios.post(url, {

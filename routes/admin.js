@@ -7,7 +7,7 @@ const Logger = require("../logger.js");
 const User = require("../models/User.js");
 const Session = require("../models/Session.js");
 const Log = require("../models/Log.js");
-const SystemConfig = require("../models/SystemConfig.js");
+const { SystemConfig } = require("../models/SystemConfig.js");
 const consumer = require("../consumer.js");
 // Import csv-writer
 const csvwriter = require('csv-writer');
@@ -55,13 +55,15 @@ router.get("/systemconfig", async (req, res) => {
 
 router.put("/systemconfig", async (req, res) => {
     const adminSecret = req.headers.authorization;
-    
+    console.log(JSON.stringify(req.body));
     if (adminSecret === process.env.ADMIN_SECRET) {
         const languages = process.env.LANGUAGES ? process.env.LANGUAGES.split(",") : ["en"];
-        if (languages.includes(req.body.languaje)) {
+        console.log(languages);
+        console.log(req.body.language);
+        if (languages.includes(req.body.language)) {
             try {
                 const systemConfig = await SystemConfig.findOne({ environment: process.env.NODE_ENV });
-                systemConfig.languaje = req.body.languaje;
+                systemConfig.language = req.body.language;
                 systemConfig.modified = new Date();
                 await systemConfig.save();
                 res.sendStatus(200);

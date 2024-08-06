@@ -6,7 +6,7 @@ languages = process.env.LANGUAGES ? process.env.LANGUAGES.split(",") : ["en"];
 
 const SystemConfigSchema = new Schema({
     modified: { type: Date, default: Date.now },
-    languaje: { 
+    language: { 
         type: String, 
         enum: languages,
         default: "en",
@@ -25,11 +25,11 @@ const SystemConfig = mongoose.model("SystemConfig", SystemConfigSchema);
 
 async function initializeSystemConfig() {
     try {
-      const config = await SystemConfig.findOne();
+      const config = await SystemConfig.findOne({ environment: process.env.NODE_ENV });
       if (!config) {
         const defaultConfig = new SystemConfig({
           environment: process.env.NODE_ENV || "development",
-          languaje: "en"
+          language: "en"
         });
         await defaultConfig.save();
         console.log("System Configuration initialized.");

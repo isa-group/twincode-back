@@ -4,6 +4,7 @@ const Session = require("./models/Session.js");
 const User = require("./models/User.js");
 const Room = require("./models/Room.js");
 const Test = require("./models/Test.js");
+const { SystemConfig } = require("./models/SystemConfig.js");
 const { dbg } = require("./logger.js");
 const { get } = require("mongoose");
 const axios = require("axios");
@@ -29,8 +30,8 @@ async function sendMsgToLeia(pack, subject, room, gender, waitTime, io) {
     });
 
     const startTime = new Date().getTime();
-
-    url = process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}/events?lang=`+systemConfig.languaje?systemConfig.languaje:"en";
+    const language = systemConfig.language?systemConfig.language:"en";
+    url = process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}/events?lang=` + language;
     Logger.dbg("Send Message To LEIA - URL <" + url + ">");
     
     axios.post(url, {
@@ -970,7 +971,6 @@ async function notifyParticipants(sessionName, io) {
   Logger.dbg("notifyParticipants - MANUAL pairing");
 
   var participantCount = participants.length;
-  var roomCount = Math.floor(participantCount / 2);
 
   //If there are an odd number of participants, one of them randomly will be disconnected
   if ((participantCount % 2) == 0)
@@ -1082,17 +1082,16 @@ async function notifyParticipants(sessionName, io) {
   //   // else controlList[controlList.length] = l[ui];
   // }
 
-  participantNumber = 0;
-
   //Add room 0 to controlList
   for (i = 0; i < controlList.length; i++) {
     controlList[i].room = 0;
     controlList[i].blind = session.blindParticipant;
   }
   participants = controlList.concat(expertimentList);
+  console.log("Participants after concat: " + participants);
+  console.log("Participants after concat: " + participants.length);
 
-  roomCount = Math.floor(participants.length / 2);
-
+  var roomCount = Math.floor(participants.length / 2);
 
 
   for (i = 0; i < roomCount; i++) {

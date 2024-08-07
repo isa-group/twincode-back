@@ -976,10 +976,12 @@ async function notifyParticipants(sessionName, io) {
   if ((participantCount % 2) == 0)
     Logger.dbg("notifyParticipants - the participant count is even, PERFECT PAIRING! :-)");
   else {
-    excluded = participants[participantCount - 1];
+    //If there is any bot, it will be the one disconnected
+    var excludedIndex = participants.findIndex((p) => /^B/.test(p.code));
+    excluded = participants[excludedIndex];
     Logger.dbg("notifyParticipants - the participant count is odd: IMPERFECT PAIRING :-(");
     Logger.dbg("   -> One participant will be excluded: ", excluded, ["code", "mail"]);
-    participants = participants.slice(0, participantCount-1);
+    participants.splice(excludedIndex, 1);
   }
 
   var initialRoom = 100; //First room (So in pairing, ther can be as minimum, 200 participants, that will be in pairs from room 0 to room 99 before they are well paired)

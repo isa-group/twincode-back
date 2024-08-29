@@ -23,7 +23,7 @@ function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
 }
 
-async function sendMsgToLeia(pack, subject, room, gender, waitTime, io) {
+async function sendMsgToLeia(pack, subject, room, gender, pLanguage, waitTime, io) {
 
     const systemConfig = await SystemConfig.findOne({
         environment: process.env.NODE_ENV,
@@ -31,23 +31,23 @@ async function sendMsgToLeia(pack, subject, room, gender, waitTime, io) {
 
     const startTime = new Date().getTime();
     const language = systemConfig.language?systemConfig.language:"en";
-    url = process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}/events?lang=` + language;
+    url = process.env.LEIA_API_URL + `/api/v1/session/${subject}/room/${room}/events?lang=` + language + `&type=${pLanguage}`;
     Logger.dbg("Send Message To LEIA - URL <" + url + ">");
     
     axios.post(url, {
-    eventType: "message",
-    eventContent: {
+      eventType: "message",
+      eventContent: {
         code: pack.data.code,
         message: pack.data.message,
         question: pack.data.exercise,
         gender: gender
-    }
-    }, {
-    headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.LEIA_API_KEY
-    }
-    })
+      }},
+      {
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": process.env.LEIA_API_KEY
+        }
+      })
     .then((response) => {
       const endTime = new Date().getTime();
       const elapsedTime = endTime - startTime;
@@ -1532,7 +1532,32 @@ module.exports = {
           // Wait time to simulate bot reading the message
           var waitTime = pack.data.message.split(" ").length * 100;
           Logger.dbg("EVENT msg - Bot read time: ", waitTime);
-          sendMsgToLeia(pack, user.subject, user.room, botPeer.gender, waitTime, io);
+
+          try {
+            let test = null
+
+            const room = await Room.findOne({
+              session: user.subject,
+              name: user.room.toString(),
+              environment: process.env.NODE_ENV,
+            });
+            if (room) {
+              test = await Test.findOne({
+                orderNumber: room.currentTest,
+                environment: process.env.NODE_ENV,
+                session: user.subject,
+              });
+            }
+            
+            const pLang = "javascript"
+            if (test) {
+              pLang = test.language ? test.language : pLang;
+            }
+
+            sendMsgToLeia(pack, user.subject, user.room, botPeer.gender, pLang, waitTime, io);
+          } catch (err) {
+            Logger.dbgerr(`EVENT msg - ERROR <${err}>`);
+          }
         } else {
           io.sockets.emit("msg", pack);
         }

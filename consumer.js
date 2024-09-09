@@ -1511,6 +1511,8 @@ module.exports = {
           return;
         }
         console.log("EVENT msg - tokens.get(pack.token) ", tokens.get(pack.token));
+        Logger.dbg("control point")
+        console.log(pack) // !!!!!!
 
         // if pair is a bot (code starts with "B"), then use the bot api to answer
 
@@ -1534,26 +1536,24 @@ module.exports = {
           Logger.dbg("EVENT msg - Bot read time: ", waitTime);
 
           try {
-            let test = null
 
-            const room = await Room.findOne({
-              session: user.subject,
-              name: user.room.toString(),
-              environment: process.env.NODE_ENV,
+            const session = await Session.findOne({
+              name: user.subject,
+              environment: process.env.NODE_ENV
             });
-            if (room) {
-              test = await Test.findOne({
-                orderNumber: room.currentTest,
-                environment: process.env.NODE_ENV,
-                session: user.subject,
-              });
-            }
-            
-            const pLang = "javascript"
-            if (test) {
-              pLang = test.language ? test.language : pLang;
-            }
 
+            const test = await Test.findOne({
+              environment: process.env.NODE_ENV,
+              session: session.name,
+              orderNumber: session.testCounter
+            });
+            
+            let pLang = "javascript"
+            if (test) {
+              pLang = test.language
+            }
+            console.log("pLang")
+            console.log(pLang)
             sendMsgToLeia(pack, user.subject, user.room, botPeer.gender, pLang, waitTime, io);
           } catch (err) {
             Logger.dbgerr(`EVENT msg - ERROR <${err}>`);

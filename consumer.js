@@ -8,6 +8,7 @@ const { SystemConfig } = require("./models/SystemConfig.js");
 const { dbg } = require("./logger.js");
 const { get } = require("mongoose");
 const axios = require("axios");
+const diff = require("diff");
 
 let uids = new Map();
 let rooms = new Map();
@@ -71,7 +72,7 @@ async function sendMsgToLeia(pack, subject, room, gender, waitTime, io) {
           }
       }
       if(response.data.code) {
-          pack.data.code = response.data.code;
+          pack.data.changes = getChanges(pack.data.code, response.data.code);
           pack.uid = "LEIA";
           io.sockets.emit("leiaCode", pack);
       }
@@ -79,6 +80,16 @@ async function sendMsgToLeia(pack, subject, room, gender, waitTime, io) {
     .catch((error) => {
     Logger.dbgerr("Send Message To LEIA - ERROR <" + error + ">");
     });
+}
+
+function getChanges(code1, code2) {
+    const differences = diff.diffChars(code1, code2);
+    const dmp = diff.convertChangesToDMP(differences);
+    const dmpCharByChar = dmp.flatMap((change) => {
+        const [op, text] = change;
+        return [...text].map((char) => [op, char]);
+    });
+    return dmpCharByChar;
 }
 
 //A simple wait function to wait a specified period of ms

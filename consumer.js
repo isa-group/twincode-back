@@ -24,7 +24,7 @@ function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
 }
 
-async function sendMsgToLeia(pack, subject, room, gender, pLanguage, waitTime, io) {
+async function sendMsgToLeia(pack, subject, room, bot, exerciseCounter, testCounter, pLanguage, waitTime, io) {
 
     const systemConfig = await SystemConfig.findOne({
         environment: process.env.NODE_ENV,
@@ -41,7 +41,7 @@ async function sendMsgToLeia(pack, subject, room, gender, pLanguage, waitTime, i
         code: pack.data.code,
         message: pack.data.message,
         question: pack.data.exercise,
-        gender: gender
+        gender: bot.gender
       }},
       {
         headers: {
@@ -56,7 +56,7 @@ async function sendMsgToLeia(pack, subject, room, gender, pLanguage, waitTime, i
       if(response.data.message) {
           pack.data.message = response.data.message;
           // Time to think the message and type, plus the time to read the message
-          waitTime += parseInt(response.data.message.length) * 50;
+          waitTime += parseInt(response.data.message.length) * 300 + 500;
           Logger.dbg("Send Message To LEIA - TOTAL BOT WAIT TIME <" + waitTime + ">");
           Logger.dbg("Send Message To LEIA - RESPONSE ELAPSED TIME <" + elapsedTime + ">");
           pack.uid = "LEIA";
@@ -70,6 +70,13 @@ async function sendMsgToLeia(pack, subject, room, gender, pLanguage, waitTime, i
               io.sockets.emit("msg", pack);
             }, diff);
           }
+          Logger.log(
+            "Chat",
+            bot.code,
+            response.data.message,
+            exerciseCounter,
+            testCounter
+          );
       }
       if(response.data.code) {
           pack.data.changes = getChanges(pack.data.code, response.data.code);
@@ -1521,6 +1528,10 @@ module.exports = {
           Logger.dbg("EVENT msg - tokens.get(pack.token) ", tokens.get(pack.token));
           return;
         }
+
+        const exerciseCounter = sessions.get(tokens.get(pack.token)).session.exerciseCounter;
+        const testCounter = sessions.get(tokens.get(pack.token)).session.testCounter;
+
         console.log("EVENT msg - tokens.get(pack.token) ", tokens.get(pack.token));
         Logger.dbg("control point")
         console.log(pack) // !!!!!!
@@ -1563,9 +1574,9 @@ module.exports = {
             if (test) {
               pLang = test.language
             }
-            console.log("pLang")
-            console.log(pLang)
-            sendMsgToLeia(pack, user.subject, user.room, botPeer.gender, pLang, waitTime, io);
+
+            sendMsgToLeia(pack, user.subject, user.room, botPeer, exerciseCounter, testCounter, pLang, waitTime, io);
+
           } catch (err) {
             Logger.dbgerr(`EVENT msg - ERROR <${err}>`);
           }
@@ -1577,8 +1588,8 @@ module.exports = {
           "Chat",
           pack.token,
           pack.data.message,
-          sessions.get(tokens.get(pack.token)).session.exerciseCounter,
-          sessions.get(tokens.get(pack.token)).session.testCounter
+          exerciseCounter,
+          testCounter
         );
       });
 

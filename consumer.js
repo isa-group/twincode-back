@@ -24,6 +24,7 @@ function toJSON(obj) {
   return JSON.stringify(obj, null, 2);
 }
 
+// This function is used to send a message to Leia
 async function sendMsgToLeia(pack, subject, room, bot, exerciseCounter, testCounter, pLanguage, waitTime, io) {
 
     const systemConfig = await SystemConfig.findOne({
@@ -88,6 +89,7 @@ async function sendMsgToLeia(pack, subject, room, bot, exerciseCounter, testCoun
     Logger.dbgerr("Send Message To LEIA - ERROR <" + error + ">");
     });
 }
+
 
 function getChanges(code1, code2) {
     const differences = diff.diffChars(code1, code2);
@@ -170,6 +172,7 @@ async function exerciseTimeUp(id, description) {
     }
   }
 }
+
 
 function  getNextExerciseNumber(participant, listExercises) {
   Logger.dbg(`getExercise - ${participant.code} - Init - for code ${participant.code}`);
@@ -990,23 +993,38 @@ async function notifyParticipants(sessionName, io) {
 
   var participantCount = participants.length;
 
-  //If there are an odd number of participants, one of them randomly will be disconnected
-  if ((participantCount % 2) == 0)
-    Logger.dbg("notifyParticipants - the participant count is even, PERFECT PAIRING! :-)");
-  else {
-    //If there is any bot, it will be the one disconnected
-    var excludedIndex = participants.findIndex((p) => /^B/.test(p.code));
-    excluded = participants[excludedIndex];
-    Logger.dbg("notifyParticipants - the participant count is odd: IMPERFECT PAIRING :-(");
-    Logger.dbg("   -> One participant will be excluded: ", excluded, ["code", "mail"]);
-    participants.splice(excludedIndex, 1);
+  const ignoreSpareParticipant = (participants) => {
+    usersList = []
+    botsList = []
+
+    for (p of participants) {
+      if (/^B/.test(p.code)) {
+        botsList.push(p);
+      } else {
+        usersList.push(p);
+      }
+    }
+
+    if (usersList.length > botsList.length) {
+      usersToRemove = usersList.length - botsList.length;
+      for (i = 0; i < usersToRemove; i++) {
+        usersList.pop();
+      }
+    } else if (botsList.length > usersList.length) {
+      botsToRemove = botsList.length - usersList.length;
+      for (i = 0; i < botsToRemove; i++) {
+        botsList.pop();
+      }
+    }
+    
+    return [...usersList, ...botsList];
   }
+
+  participants = ignoreSpareParticipant(participants);
 
   var initialRoom = 100; //First room (So in pairing, ther can be as minimum, 200 participants, that will be in pairs from room 0 to room 99 before they are well paired)
 
   Logger.dbg("notifyParticipants - Re-assigning rooms to avoid race conditions!");
-
-
   
   //Participants array shuffled
   participants = shuffleArray(participants);

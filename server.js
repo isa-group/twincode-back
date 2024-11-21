@@ -78,6 +78,10 @@ app.post("/registerUser", async (req, res) => {
 });
 
 app.get("/joinSession", async (req, res) => {
+  console.log("")
+  console.log("")
+  console.log("")
+  
   Logger.dbg("/joinSession",req.query);
   User.findOne({
     code: req.query.code,

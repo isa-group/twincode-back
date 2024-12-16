@@ -999,6 +999,7 @@ async function notifyParticipants(sessionName, io) {
     Logger.dbg("notifyParticipants - Excluded index: " + excludedIndex);
     Logger.dbg("notifyParticipants - Participants: " + participants);
     excluded = participants[excludedIndex];
+    Logger.dbg("notifyParticipants - Excluded participant: " + excluded);
     Logger.dbg("notifyParticipants - the participant count is odd: IMPERFECT PAIRING :-(");
     Logger.dbg("   -> One participant will be excluded: ", excluded, ["code", "mail"]);
     participants.splice(excludedIndex, 1);
